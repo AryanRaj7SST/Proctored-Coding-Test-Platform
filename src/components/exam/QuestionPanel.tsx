@@ -1,0 +1,1 @@
+export default function QuestionPanel() { return <aside className="rounded-xl border bg-white p-4 shadow-sm"><h2 className="font-medium">Question</h2><p className="mt-2 text-slate-600">TODO: Render the selected question description and points.</p></aside>; }

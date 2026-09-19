@@ -1,0 +1,41 @@
+{
+  "name": "proctored-coding-platform",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "npm@10.9.2",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "runner:dev": "npm --prefix runner run dev"
+  },
+  "dependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "next": "^15.5.4",
+    "next-auth": "5.0.0-beta.29",
+    "prisma": "^6.16.2",
+    "@prisma/client": "^6.16.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.3.1",
+    "@types/node": "^24.5.2",
+    "@types/react": "^19.1.13",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^9.35.0",
+    "eslint-config-next": "^15.5.4",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^4.1.13",
+    "@tailwindcss/postcss": "^4.1.13",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2"
+  }
+}

@@ -1,0 +1,1 @@
+export default function ViolationTable() { return <div className="rounded-xl border bg-white p-6"><p className="text-slate-600">TODO: Render database-backed proctor violations and live status.</p></div>; }

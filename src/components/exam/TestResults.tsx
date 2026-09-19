@@ -1,0 +1,1 @@
+export default function TestResults() { return <section className="rounded-xl border bg-white p-4 shadow-sm"><h2 className="font-medium">Test Results</h2><p className="mt-2 text-slate-600">TODO: Render test case results without exposing hidden test specifications.</p></section>; }

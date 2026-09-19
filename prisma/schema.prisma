@@ -1,0 +1,141 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum QuestionType {
+  WEB
+  PROGRAMMING
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+}
+
+enum ProctorEventType {
+  TAB_HIDDEN
+  WINDOW_BLUR
+  FULLSCREEN_EXIT
+  PASTE
+  COPY
+  HEARTBEAT_LOST
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  role          Role           @default(STUDENT)
+  createdAt     DateTime       @default(now())
+  attempts      Attempt[]
+  proctorEvents ProctorEvent[]
+
+  @@index([role])
+}
+
+model AllowedEmail {
+  id    String @id @default(cuid())
+  email String @unique
+  role  Role   @default(STUDENT)
+  batch String?
+
+  @@index([role])
+}
+
+model Question {
+  id           String         @id @default(cuid())
+  title        String
+  description  String
+  type         QuestionType
+  starterHtml  String?
+  starterCss   String?
+  starterJs    String?
+  testSpec     String
+  points       Int            @default(0)
+  examQuestions ExamQuestion[]
+  attempts     Attempt[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([type])
+}
+
+model Exam {
+  id             String         @id @default(cuid())
+  title          String
+  durationMinutes Int
+  startTime      DateTime?
+  endTime        DateTime?
+  examQuestions  ExamQuestion[]
+  attempts       Attempt[]
+  proctorEvents  ProctorEvent[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+}
+
+model ExamQuestion {
+  examId     String
+  questionId String
+  order      Int
+  exam       Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@id([examId, questionId])
+  @@unique([examId, order])
+  @@index([questionId])
+}
+
+model Attempt {
+  id            String         @id @default(cuid())
+  userId        String
+  examId        String
+  questionId    String
+  html          String?
+  css           String?
+  js            String?
+  score         Int?
+  status        AttemptStatus  @default(IN_PROGRESS)
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam          Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question      Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  testResults   TestResult[]
+
+  @@index([userId, examId])
+  @@index([examId, questionId])
+}
+
+model TestResult {
+  id        String  @id @default(cuid())
+  attemptId String
+  testName  String
+  passed    Boolean
+  message   String?
+  attempt   Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+}
+
+model ProctorEvent {
+  id         String          @id @default(cuid())
+  userId     String
+  examId     String
+  type       ProctorEventType
+  occurredAt DateTime        @default(now())
+  durationMs Int?
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam       Exam            @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@index([userId, examId])
+  @@index([examId, occurredAt])
+}

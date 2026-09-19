@@ -1,0 +1,1 @@
+export default function ConsolePanel() { return <section className="rounded-xl border bg-slate-950 p-4 text-sm text-slate-100"><h2 className="font-medium">Console</h2><p className="mt-2 text-slate-400">TODO: Surface sandboxed console output from the runner.</p></section>; }

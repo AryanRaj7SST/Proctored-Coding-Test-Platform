@@ -1,0 +1,1 @@
+export default function QuestionForm() { return <form className="max-w-2xl space-y-4 rounded-xl border bg-white p-6"><p className="text-slate-600">TODO: Add validated question creation fields and submit to the questions API.</p></form>; }
