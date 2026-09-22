@@ -29,8 +29,7 @@
     "db:reset": "prisma migrate reset --force",
     "runner:dev": "npm --prefix runner run dev",
     "runner:build": "npm --prefix runner run build",
-    "zip": "bash scripts/make-zip.sh",
-    "postinstall": "prisma generate"
+    "zip": "bash scripts/make-zip.sh"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
