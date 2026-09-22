@@ -1,0 +1,4 @@
+This directory holds static assets served at the site root (favicon, robots.txt,
+etc.). It is intentionally empty in the base repository; the Dockerfile expects
+it to exist so the standalone build's `COPY --from=build /app/public ./public`
+step does not fail.

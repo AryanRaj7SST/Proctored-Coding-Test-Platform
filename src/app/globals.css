@@ -1,0 +1,54 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-ink-950 text-slate-200 antialiased;
+}
+
+/* Visible, consistent keyboard focus everywhere (accessibility #40). */
+:focus-visible {
+  outline: 2px solid theme('colors.brand.500');
+  outline-offset: 2px;
+}
+
+::selection {
+  background: theme('colors.brand.600');
+  color: #fff;
+}
+
+/* Thin scrollbars that match the IDE surface. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: theme('colors.ink.600') transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: theme('colors.ink.600');
+  border-radius: 6px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+/* Hide Next.js dev overlay indicator and issue badges */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay] {
+  display: none !important;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}

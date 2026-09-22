@@ -1,0 +1,401 @@
+// Proctored Coding Platform -- data model
+// Design notes:
+//  * Hidden test code lives ONLY in QuestionTest.testCode and is never selected
+//    into any payload returned to a student (see src/server/services/*).
+//  * An Attempt snapshots the question + its tests (Attempt.snapshot) at the
+//    moment it is created, so editing a question tomorrow cannot change a score
+//    awarded yesterday (see docs/architecture.md #question-versioning).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum QuestionType {
+  WEB
+  PROGRAMMING
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum TestType {
+  DECLARATIVE // JSON behaviour spec interpreted by the runner (default, safe)
+  PLAYWRIGHT  // raw Playwright script, admin-authored, runner-side only
+}
+
+enum ExamStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  ENDED
+  ARCHIVED
+}
+
+enum AssignmentStatus {
+  ASSIGNED
+  STARTED
+  SUBMITTED
+  EXPIRED
+}
+
+enum AttemptStatus {
+  IN_PROGRESS
+  SUBMITTED
+  AUTO_SUBMITTED
+  EXPIRED
+}
+
+enum TestRunStatus {
+  QUEUED
+  RUNNING
+  COMPLETED
+  FAILED
+  TIMEOUT
+}
+
+enum TestRunKind {
+  PRACTICE   // student pressed "Run Test Cases"
+  SUBMISSION // graded run triggered by submit / auto-submit
+  VALIDATION // admin validating a question against its reference solution
+}
+
+enum ProctorEventType {
+  TAB_HIDDEN
+  WINDOW_BLUR
+  WINDOW_FOCUS
+  FULLSCREEN_EXIT
+  FULLSCREEN_ENTER
+  COPY
+  CUT
+  PASTE
+  CONTEXT_MENU
+  PAGE_UNLOAD
+  HEARTBEAT_LOST
+  EXAM_STARTED
+  EXAM_SUBMITTED
+}
+
+enum SessionStatus {
+  ACTIVE
+  AWAY
+  DISCONNECTED
+  SUBMITTED
+  EXPIRED
+}
+
+enum ValidationStatus {
+  NOT_VALIDATED
+  PASSED
+  FAILED
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  image     String?
+  role      Role     @default(STUDENT)
+  batch     String?
+  active    Boolean  @default(true)
+  lastLogin DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attempts      Attempt[]
+  assignments   ExamAssignment[]
+  proctorEvents ProctorEvent[]
+  sessions      ExamSession[]
+  auditLogs     AuditLog[]
+
+  @@index([role])
+  @@index([batch])
+  @@map("users")
+}
+
+model AllowedEmail {
+  id        String   @id @default(cuid())
+  email     String   @unique // always stored lowercase + trimmed
+  role      Role     @default(STUDENT)
+  batch     String?
+  active    Boolean  @default(true)
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@index([batch])
+  @@map("allowed_emails")
+}
+
+model Question {
+  id           String       @id @default(cuid())
+  title        String
+  slug         String       @unique
+  description  String       @db.Text // markdown-lite, rendered safely
+  instructions String?      @db.Text
+  type         QuestionType @default(WEB)
+  language     String?      // reserved for PROGRAMMING questions
+  starterHtml  String       @default("") @db.Text
+  starterCss   String       @default("") @db.Text
+  starterJs    String       @default("") @db.Text
+  // Optional reference solution used by "Validate Question".
+  referenceHtml String?     @db.Text
+  referenceCss  String?     @db.Text
+  referenceJs   String?     @db.Text
+  mediaUrl      String?     // illustrative image/video shown in the question panel
+  points       Int          @default(0) // derived from tests on save
+  difficulty   Difficulty   @default(EASY)
+  tags         String[]     @default([])
+  active       Boolean      @default(true)
+  version      Int          @default(1) // bumped whenever content or tests change
+  validation   ValidationStatus @default(NOT_VALIDATED)
+  validatedAt  DateTime?
+  validationMessage String?  @db.Text
+  createdById  String?
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  tests         QuestionTest[]
+  examQuestions ExamQuestion[]
+  attempts      Attempt[]
+
+  @@index([active])
+  @@index([type])
+  @@map("questions")
+}
+
+model QuestionTest {
+  id               String   @id @default(cuid())
+  questionId       String
+  name             String
+  description      String?  @db.Text // shown to students only when hidden = false
+  testType         TestType @default(DECLARATIVE)
+  testCode         String   @db.Text // JSON spec or Playwright source -- SERVER ONLY
+  expectedBehavior String?  @db.Text
+  points           Int      @default(10)
+  order            Int      @default(0)
+  hidden           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  results  TestResult[]
+
+  @@unique([questionId, name])
+  @@index([questionId, order])
+  @@map("question_tests")
+}
+
+model Exam {
+  id              String     @id @default(cuid())
+  title           String
+  description     String?    @db.Text
+  durationMinutes Int        @default(60)
+  startTime       DateTime?
+  endTime         DateTime?
+  status          ExamStatus @default(DRAFT)
+  active          Boolean    @default(true)
+  batch           String?
+  maxViolations   Int        @default(0) // 0 = never auto-submit on violations
+  shuffleQuestions Boolean   @default(false)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  questions   ExamQuestion[]
+  assignments ExamAssignment[]
+  attempts    Attempt[]
+  sessions    ExamSession[]
+  events      ProctorEvent[]
+
+  @@index([status])
+  @@index([batch])
+  @@map("exams")
+}
+
+model ExamQuestion {
+  id            String @id @default(cuid())
+  examId        String
+  questionId    String
+  order         Int    @default(0)
+  pointsOverride Int?
+
+  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  @@unique([examId, questionId])
+  @@unique([examId, order])
+  @@index([examId])
+  @@map("exam_questions")
+}
+
+model ExamAssignment {
+  id         String           @id @default(cuid())
+  examId     String
+  userId     String
+  assignedAt DateTime         @default(now())
+  status     AssignmentStatus @default(ASSIGNED)
+
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, userId])
+  @@index([userId])
+  @@map("exam_assignments")
+}
+
+model Attempt {
+  id         String        @id @default(cuid())
+  userId     String
+  examId     String
+  questionId String
+  html       String        @default("") @db.Text
+  css        String        @default("") @db.Text
+  js         String        @default("") @db.Text
+  score      Int           @default(0)
+  maxScore   Int           @default(0)
+  status     AttemptStatus @default(IN_PROGRESS)
+  // Frozen copy of the question + its tests (incl. points) at attempt creation.
+  snapshot   Json
+  questionVersion Int      @default(1)
+  startedAt  DateTime      @default(now())
+  submittedAt DateTime?
+  gradedAt   DateTime?
+  updatedAt  DateTime      @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam     Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Restrict)
+
+  testResults TestResult[]
+  testRuns    TestRun[]
+  events      ProctorEvent[]
+
+  @@unique([userId, examId, questionId])
+  @@index([examId, status])
+  @@index([userId])
+  @@map("attempts")
+}
+
+model TestResult {
+  id         String   @id @default(cuid())
+  attemptId  String
+  testRunId  String?
+  testId     String?  // null when the question test row was later deleted
+  testName   String
+  passed     Boolean
+  hidden     Boolean  @default(true)
+  points     Int      @default(0)
+  pointsAwarded Int   @default(0)
+  message    String?  @db.Text // student-safe message only
+  durationMs Int      @default(0)
+  final      Boolean  @default(false) // true = counted towards the stored score
+  createdAt  DateTime @default(now())
+
+  attempt Attempt       @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  test    QuestionTest? @relation(fields: [testId], references: [id], onDelete: SetNull)
+  testRun TestRun?      @relation(fields: [testRunId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId, final])
+  @@index([testRunId])
+  @@map("test_results")
+}
+
+model TestRun {
+  id          String        @id @default(cuid())
+  attemptId   String?
+  questionId  String?       // set for VALIDATION runs
+  userId      String?
+  kind        TestRunKind   @default(PRACTICE)
+  status      TestRunStatus @default(QUEUED)
+  passedCount Int           @default(0)
+  failedCount Int           @default(0)
+  totalCount  Int           @default(0)
+  score       Int           @default(0)
+  maxScore    Int           @default(0)
+  durationMs  Int           @default(0)
+  startedAt   DateTime      @default(now())
+  completedAt DateTime?
+  logs        String?       @db.Text // sanitised runner log
+  error       String?       @db.Text // sanitised error summary
+
+  attempt Attempt? @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  results TestResult[]
+
+  @@index([attemptId])
+  @@index([status])
+  @@index([startedAt])
+  @@map("test_runs")
+}
+
+model ProctorEvent {
+  id         String           @id @default(cuid())
+  userId     String
+  examId     String
+  attemptId  String?
+  type       ProctorEventType
+  occurredAt DateTime         @default(now())
+  durationMs Int?
+  violation  Boolean          @default(true) // informational events are false
+  metadata   Json?
+  createdAt  DateTime         @default(now())
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam    Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  attempt Attempt? @relation(fields: [attemptId], references: [id], onDelete: SetNull)
+
+  @@index([userId, examId])
+  @@index([examId, occurredAt])
+  @@index([attemptId])
+  @@map("proctor_events")
+}
+
+model ExamSession {
+  id            String        @id @default(cuid())
+  userId        String
+  examId        String
+  startedAt     DateTime      @default(now())
+  lastHeartbeat DateTime      @default(now())
+  endedAt       DateTime?
+  expiresAt     DateTime      // server-authoritative deadline for this sitting
+  status        SessionStatus @default(ACTIVE)
+  userAgent     String?
+  violationCount Int          @default(0) // denormalised counter, DB is the source of truth
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  exam Exam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, examId])
+  @@index([examId, status])
+  @@index([lastHeartbeat])
+  @@map("exam_sessions")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+  ip        String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
