@@ -42,6 +42,8 @@
     "@codemirror/state": "^6.4.1",
     "@codemirror/theme-one-dark": "^6.1.2",
     "@codemirror/view": "^6.34.1",
+    "@neon/config": "^1.7.2",
+    "@neon/env": "^1.4.3",
     "@prisma/client": "^6.16.0",
     "clsx": "^2.1.1",
     "codemirror": "^6.0.1",

@@ -25,3 +25,4 @@ e2e-admin-state.json
 *.zip
 scratch/
 runner/node_modules/
+.neon
