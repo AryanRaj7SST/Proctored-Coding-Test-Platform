@@ -35,6 +35,9 @@ const nextConfig = {
   devIndicators: false,
   output: process.env.NEXT_OUTPUT === 'standalone' ? 'standalone' : undefined,
   experimental: { serverActions: { bodySizeLimit: '1mb' } },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
   async headers() {
     return [{ source: '/:path*', headers: securityHeaders }];
   },

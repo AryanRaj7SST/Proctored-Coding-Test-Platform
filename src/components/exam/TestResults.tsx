@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Spinner } from '@/components/ui';
+import { Spinner } from '@/components/ui';
 import { cn, formatDuration } from '@/lib/utils';
 
 export interface StudentTestResult {

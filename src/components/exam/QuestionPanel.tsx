@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { Badge } from '@/components/ui';
 import { cn } from '@/lib/utils';
 
 export interface StudentQuestion {
@@ -55,15 +54,15 @@ function RichText({ text }: { text: string }) {
 
 export function QuestionPanel({
   question,
-  earned,
-  maxScore,
+  earned: _earned,
+  maxScore: _maxScore,
   order = 1,
   bookmarked = false,
   onToggleBookmark,
 }: {
   question: StudentQuestion;
-  earned: number | null;
-  maxScore: number;
+  earned?: number | null;
+  maxScore?: number;
   order?: number;
   bookmarked?: boolean;
   onToggleBookmark?: () => void;

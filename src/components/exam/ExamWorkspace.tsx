@@ -9,15 +9,13 @@ import { QuestionPanel, type StudentQuestion } from './QuestionPanel';
 import { TestResults, type RunOutcome } from './TestResults';
 import { ExamTimer } from './ExamTimer';
 import { TabSwitchModal } from '@/components/proctor/TabSwitchModal';
-import { Badge, Button, ConfirmDialog, Spinner, Tabs, ResizeHandle } from '@/components/ui';
+import { Button, ConfirmDialog, Spinner, ResizeHandle } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useProctor } from '@/hooks/useProctor';
 import { apiPatch, apiPost, ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
-  Code2,
-  CircleDot,
   User,
   Info,
   Check,
@@ -28,12 +26,7 @@ import {
   Eye,
   EyeOff,
   Maximize2,
-  FileCode,
-  Terminal,
-  Play,
-  Send,
   AlertTriangle,
-  CheckCircle2,
   Settings,
 } from 'lucide-react';
 
@@ -97,7 +90,6 @@ export function ExamWorkspace({ examId }: { examId: string }) {
   const [runError, setRunError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmSubmit, setConfirmSubmit] = React.useState(false);
-  const [drawerOpen, setDrawerOpen] = React.useState(true);
 
   const [clock, setClock] = React.useState({ msRemaining: 0, syncedAt: Date.now() });
   const [expired, setExpired] = React.useState(false);
@@ -178,7 +170,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
     [attempt, locked],
   );
 
-  const { state: saveState, savedAt, flush } = useAutosave(code, saveCode, { enabled: Boolean(attempt) && !locked });
+  const { state: saveState, flush } = useAutosave(code, saveCode, { enabled: Boolean(attempt) && !locked });
 
   /* ------------------------------------------------------------ heartbeat */
 
@@ -288,7 +280,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
       await flush();
       const res = await apiPost<RunOutcome>(`/api/attempts/${attempt.id}/run`, code);
       setOutcome(res);
-      setDrawerOpen(true);
+      setBottomTab('tests');
       toast.push(
         res.failedCount === 0 ? 'All test cases passed.' : `${res.passedCount}/${res.totalCount} test cases passed.`,
         res.failedCount === 0 ? 'success' : 'info',
@@ -296,7 +288,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Test execution failed. Please try again.';
       setRunError(message);
-      setDrawerOpen(true);
+      setBottomTab('tests');
       toast.push(message, 'error');
     } finally {
       setRunning(false);
@@ -314,7 +306,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
         code,
       );
       setOutcome({ ...res, graded: true });
-      setDrawerOpen(true);
+      setBottomTab('output');
       setData((prev) => {
         if (!prev) return prev;
         const questions = prev.questions.slice();
