@@ -1041,10 +1041,12 @@ async function main() {
   // Link questions to exam
   await prisma.examQuestion.deleteMany({ where: { examId: exam.id } });
   for (let i = 0; i < questionIds.length; i++) {
+    const qId = questionIds[i];
+    if (!qId) continue;
     await prisma.examQuestion.create({
       data: {
         examId: exam.id,
-        questionId: questionIds[i],
+        questionId: qId,
         order: i,
       },
     });
