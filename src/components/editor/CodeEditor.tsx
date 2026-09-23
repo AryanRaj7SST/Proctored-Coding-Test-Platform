@@ -56,6 +56,8 @@ export function CodeEditor({
   language,
   onChange,
   readOnly = false,
+  preventPaste = false,
+  onPasteAttempt,
   onSaveShortcut,
   onRunShortcut,
   height = '100%',
@@ -64,6 +66,8 @@ export function CodeEditor({
   language: CodeLanguage;
   onChange: (next: string) => void;
   readOnly?: boolean;
+  preventPaste?: boolean;
+  onPasteAttempt?: () => void;
   onSaveShortcut?: () => void;
   onRunShortcut?: () => void;
   height?: string | number;
@@ -76,9 +80,11 @@ export function CodeEditor({
   const onChangeRef = React.useRef(onChange);
   const saveRef = React.useRef(onSaveShortcut);
   const runRef = React.useRef(onRunShortcut);
+  const pasteAttemptRef = React.useRef(onPasteAttempt);
   onChangeRef.current = onChange;
   saveRef.current = onSaveShortcut;
   runRef.current = onRunShortcut;
+  pasteAttemptRef.current = onPasteAttempt;
 
   // Mount once per (language, readOnly) pair. In practice each tab (HTML/CSS/
   // JS) already gets its own <CodeEditor> instance keyed by the caller, and
@@ -121,6 +127,16 @@ export function CodeEditor({
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChangeRef.current(update.state.doc.toString());
         }),
+        EditorView.domEventHandlers({
+          paste(event) {
+            if (preventPaste) {
+              event.preventDefault();
+              pasteAttemptRef.current?.();
+              return true;
+            }
+            return false;
+          },
+        }),
       ],
     });
 
@@ -146,5 +162,17 @@ export function CodeEditor({
     }
   }, [value]);
 
-  return <div ref={hostRef} style={{ height }} className="h-full overflow-hidden" />;
+  return (
+    <div
+      ref={hostRef}
+      style={{ height }}
+      className="h-full overflow-hidden"
+      onPaste={(e) => {
+        if (preventPaste) {
+          e.preventDefault();
+          pasteAttemptRef.current?.();
+        }
+      }}
+    />
+  );
 }

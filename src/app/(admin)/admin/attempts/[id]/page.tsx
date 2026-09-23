@@ -129,7 +129,13 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <AttemptCodeViewer html={attempt.html} css={attempt.css} js={attempt.js} starter={starter} />
+        <AttemptCodeViewer
+          html={attempt.html}
+          css={attempt.css}
+          js={attempt.js}
+          starter={starter}
+          runs={attempt.testRuns}
+        />
 
         <div className="space-y-4">
           <ManualGradingCard

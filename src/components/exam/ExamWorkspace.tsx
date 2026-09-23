@@ -218,6 +218,21 @@ export function ExamWorkspace({ examId }: { examId: string }) {
     onCountChange: setViolationCount,
   });
 
+  const handleAcknowledgeAway = React.useCallback(async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await requestFullscreen();
+      }
+    } catch {
+      /* browser gesture fallback */
+    }
+    dismissAway();
+  }, [requestFullscreen, dismissAway]);
+
+  const handlePasteAttempt = React.useCallback(() => {
+    toast.push('Pasting code is disabled during this exam to ensure academic integrity.', 'error');
+  }, [toast]);
+
   React.useEffect(() => {
     if (!data) return;
     // Fullscreen must be requested from a gesture; the Start Exam click on the
@@ -842,6 +857,8 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                         value={editorValue}
                         language={language as 'html' | 'css' | 'javascript'}
                         readOnly={locked}
+                        preventPaste={!locked}
+                        onPasteAttempt={handlePasteAttempt}
                         onChange={(next) =>
                           setCode((prev) => ({ ...prev, [pane === 'js' ? 'js' : pane]: next }))
                         }
@@ -1030,7 +1047,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
         message={awayMessage}
         violationCount={violationCount}
         maxViolations={maxViolations}
-        onAcknowledge={dismissAway}
+        onAcknowledge={handleAcknowledgeAway}
       />
 
       <ConfirmDialog

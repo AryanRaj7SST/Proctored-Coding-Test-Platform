@@ -83,6 +83,7 @@ enum ProctorEventType {
   PASTE
   CONTEXT_MENU
   PAGE_UNLOAD
+  PAGE_RELOAD
   HEARTBEAT_LOST
   EXAM_STARTED
   EXAM_SUBMITTED
@@ -328,6 +329,7 @@ model TestRun {
   durationMs  Int           @default(0)
   startedAt   DateTime      @default(now())
   completedAt DateTime?
+  code        Json? // Snapshot of { html, css, js } at time of execution
   logs        String?       @db.Text // sanitised runner log
   error       String?       @db.Text // sanitised error summary
 

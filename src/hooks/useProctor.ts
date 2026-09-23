@@ -83,6 +83,31 @@ export function useProctor({ examId, attemptId, enabled, onViolation, onCountCha
 
     let blurTimer: ReturnType<typeof setTimeout> | null = null;
 
+    // Detect page reload on mount
+    try {
+      const navEntries = performance.getEntriesByType('navigation');
+      const isReload =
+        (navEntries.length > 0 && (navEntries[0] as PerformanceNavigationTiming).type === 'reload') ||
+        (performance as unknown as { navigation?: { type?: number } })?.navigation?.type === 1;
+
+      if (isReload) {
+        setAwayMessage('Refreshing or reloading the exam page is prohibited. This has been recorded.');
+        void send('PAGE_RELOAD');
+      }
+    } catch {
+      /* ignore */
+    }
+
+    // Ensure fullscreen is active; if not, prompt the student to return to full screen
+    const initialFsCheck = setTimeout(() => {
+      if (!document.fullscreenElement) {
+        setAwayMessage(
+          (prev) =>
+            prev ?? 'Fullscreen is required during the exam. Please return to full screen to continue.',
+        );
+      }
+    }, 400);
+
     const onVisibility = () => {
       if (document.hidden) sendLeave('TAB_HIDDEN');
       else onReturn();
@@ -121,8 +146,12 @@ export function useProctor({ examId, attemptId, enabled, onViolation, onCountCha
     };
 
     const onFullscreen = () => {
-      if (document.fullscreenElement) void send('FULLSCREEN_ENTER');
-      else void send('FULLSCREEN_EXIT');
+      if (document.fullscreenElement) {
+        void send('FULLSCREEN_ENTER');
+      } else {
+        setAwayMessage('Leaving fullscreen is prohibited during the exam. This has been recorded.');
+        void send('FULLSCREEN_EXIT');
+      }
     };
 
     const onCopy = () => void send('COPY');
@@ -154,6 +183,7 @@ export function useProctor({ examId, attemptId, enabled, onViolation, onCountCha
     window.addEventListener('pagehide', onUnload);
 
     return () => {
+      clearTimeout(initialFsCheck);
       if (blurTimer) clearTimeout(blurTimer);
       document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('blur', onBlur);

@@ -17,6 +17,7 @@ export type ProctorEventType =
   | 'PASTE'
   | 'CONTEXT_MENU'
   | 'PAGE_UNLOAD'
+  | 'PAGE_RELOAD'
   | 'HEARTBEAT_LOST'
   | 'EXAM_STARTED'
   | 'EXAM_SUBMITTED';
@@ -27,6 +28,7 @@ export const VIOLATION_TYPES: ProctorEventType[] = [
   'WINDOW_BLUR',
   'FULLSCREEN_EXIT',
   'PASTE',
+  'PAGE_RELOAD',
   'HEARTBEAT_LOST',
 ];
 
@@ -127,6 +129,8 @@ export function violationMessage(type: ProctorEventType): string {
       return 'Leaving fullscreen is prohibited during the exam. This has been recorded.';
     case 'PASTE':
       return 'Pasting code into the editor is not allowed. This has been recorded.';
+    case 'PAGE_RELOAD':
+      return 'Refreshing or reloading the exam page is prohibited. This has been recorded.';
     case 'HEARTBEAT_LOST':
       return 'Your connection dropped during the exam. This has been recorded.';
     default:

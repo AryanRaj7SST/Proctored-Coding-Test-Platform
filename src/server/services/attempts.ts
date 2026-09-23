@@ -134,6 +134,11 @@ export async function executeTests(params: {
       status: 'RUNNING',
       totalCount: spec.tests.length,
       maxScore: snapshot.tests.reduce((s, t) => s + t.points, 0),
+      code: {
+        html: params.code.html,
+        css: params.code.css,
+        js: params.code.js,
+      },
     },
   });
 

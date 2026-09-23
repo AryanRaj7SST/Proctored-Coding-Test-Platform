@@ -25,14 +25,26 @@ export function TabSwitchModal({
 }) {
   const remaining = maxViolations > 0 ? Math.max(0, maxViolations - violationCount) : null;
 
+  const title = message?.includes('fullscreen')
+    ? 'Fullscreen required'
+    : message?.includes('reloading') || message?.includes('Refreshing')
+      ? 'Page reload detected'
+      : message?.includes('Pasting')
+        ? 'Pasting is prohibited'
+        : 'Tab switching is prohibited';
+
   return (
     <Modal
       open={open}
-      title="Tab switching is prohibited"
+      title={title}
       dismissible={false}
       footer={
-        <Button onClick={onAcknowledge} autoFocus>
-          I understand
+        <Button
+          onClick={onAcknowledge}
+          autoFocus
+          className="bg-blue-600 font-medium text-white hover:bg-blue-700"
+        >
+          Continue in Full Screen
         </Button>
       }
     >

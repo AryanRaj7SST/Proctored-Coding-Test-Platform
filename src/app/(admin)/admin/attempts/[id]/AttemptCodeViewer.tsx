@@ -5,6 +5,16 @@ import { Card, CardBody, CardHeader, Tabs, Badge } from '@/components/ui';
 import { PreviewFrame } from '@/components/editor/PreviewFrame';
 import { CodeEditor, type CodeLanguage } from '@/components/editor/CodeEditor';
 
+export interface RunHistoryItem {
+  id: string;
+  kind: string;
+  status: string;
+  passedCount: number;
+  totalCount: number;
+  startedAt: string | Date;
+  code?: unknown;
+}
+
 export interface StarterCode {
   html?: string;
   css?: string;
@@ -13,26 +23,47 @@ export interface StarterCode {
 
 /**
  * Enhanced AttemptCodeViewer with CodeMirror syntax highlighting, starter code comparison,
- * copy-to-clipboard, responsive sandbox viewports (Desktop/Tablet/Mobile), and code metrics.
+ * copy-to-clipboard, responsive sandbox viewports (Desktop/Tablet/Mobile), code metrics,
+ * and historical snapshot replay across test runs.
  */
 export function AttemptCodeViewer({
   html,
   css,
   js,
   starter = {},
+  runs = [],
 }: {
   html: string;
   css: string;
   js: string;
   starter?: StarterCode;
+  runs?: RunHistoryItem[];
 }) {
   const [tab, setTab] = React.useState<'preview' | 'html' | 'css' | 'js'>('preview');
   const [codeMode, setCodeMode] = React.useState<'submitted' | 'starter' | 'side-by-side'>('submitted');
   const [viewport, setViewport] = React.useState<'desktop' | 'tablet' | 'mobile'>('desktop');
   const [key, setKey] = React.useState(1);
   const [copied, setCopied] = React.useState(false);
+  const [selectedRunId, setSelectedRunId] = React.useState<string>('latest');
 
-  const submittedCode = tab === 'html' ? html : tab === 'css' ? css : js;
+  const runsWithCode = React.useMemo(() => runs.filter((r) => r.code && typeof r.code === 'object'), [runs]);
+
+  const activeCode = React.useMemo(() => {
+    if (selectedRunId !== 'latest') {
+      const target = runs.find((r) => r.id === selectedRunId);
+      if (target?.code && typeof target.code === 'object') {
+        const c = target.code as { html?: string; css?: string; js?: string };
+        return {
+          html: c.html ?? '',
+          css: c.css ?? '',
+          js: c.js ?? '',
+        };
+      }
+    }
+    return { html, css, js };
+  }, [selectedRunId, runs, html, css, js]);
+
+  const submittedCode = tab === 'html' ? activeCode.html : tab === 'css' ? activeCode.css : activeCode.js;
   const starterCode =
     tab === 'html' ? (starter.html ?? '') : tab === 'css' ? (starter.css ?? '') : (starter.js ?? '');
 
@@ -152,16 +183,37 @@ export function AttemptCodeViewer({
         }
       />
       <CardBody className="space-y-3">
-        <Tabs
-          tabs={[
-            { id: 'preview', label: 'Live Preview' },
-            { id: 'html', label: 'HTML' },
-            { id: 'css', label: 'CSS' },
-            { id: 'js', label: 'JavaScript' },
-          ]}
-          active={tab}
-          onChange={(id) => setTab(id as typeof tab)}
-        />
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <Tabs
+            tabs={[
+              { id: 'preview', label: 'Live Preview' },
+              { id: 'html', label: 'HTML' },
+              { id: 'css', label: 'CSS' },
+              { id: 'js', label: 'JavaScript' },
+            ]}
+            active={tab}
+            onChange={(id) => setTab(id as typeof tab)}
+          />
+
+          {runsWithCode.length > 0 ? (
+            <div className="flex items-center gap-1.5 text-xs">
+              <span className="font-medium text-slate-400">Snapshot:</span>
+              <select
+                value={selectedRunId}
+                onChange={(e) => setSelectedRunId(e.target.value)}
+                className="rounded border border-ink-700 bg-ink-850 px-2 py-1 text-xs text-slate-200 focus:outline-none"
+              >
+                <option value="latest">Final Submitted Code</option>
+                {runsWithCode.map((r, idx) => (
+                  <option key={r.id} value={r.id}>
+                    Run #{runsWithCode.length - idx} ({r.kind.toLowerCase()} · {r.passedCount}/{r.totalCount}{' '}
+                    passed)
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
+        </div>
 
         {tab === 'preview' ? (
           <div className="flex justify-center overflow-auto rounded-md bg-ink-950 p-3 ring-1 ring-ink-700">
