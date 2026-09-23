@@ -334,6 +334,8 @@ export function ExamWorkspace({ examId }: { examId: string }) {
   const submit = React.useCallback(async () => {
     if (!attempt || submitting || locked) return;
     setSubmitting(true);
+    setRunError(null);
+    setBottomTab('tests');
     setConfirmSubmit(false);
     try {
       await flush();
@@ -342,7 +344,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
         code,
       );
       setOutcome({ ...res, graded: true });
-      setBottomTab('output');
+      setBottomTab('tests');
       setData((prev) => {
         if (!prev) return prev;
         const questions = prev.questions.slice();
@@ -357,7 +359,10 @@ export function ExamWorkspace({ examId }: { examId: string }) {
       });
       toast.push(`Submitted. Score ${res.score}/${res.maxScore}.`, 'success');
     } catch (err) {
-      toast.push(err instanceof ApiError ? err.message : 'Submission failed. Please try again.', 'error');
+      const message = err instanceof ApiError ? err.message : 'Submission failed. Please try again.';
+      setRunError(message);
+      setBottomTab('tests');
+      toast.push(message, 'error');
     } finally {
       setSubmitting(false);
     }
@@ -950,7 +955,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                     <div className="h-full overflow-auto bg-white p-4">
                       <TestResults
                         outcome={outcome}
-                        running={running}
+                        running={running || submitting}
                         error={runError}
                         expectedTests={slot.question.publicTests}
                         theme="light"

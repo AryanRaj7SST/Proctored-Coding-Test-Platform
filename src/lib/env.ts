@@ -21,7 +21,7 @@ export const env = {
   authSecret: required('AUTH_SECRET'),
   googleId: required('AUTH_GOOGLE_ID'),
   googleSecret: required('AUTH_GOOGLE_SECRET'),
-  runnerUrl: required('RUNNER_URL', 'http://localhost:4000'),
+  runnerUrl: required('RUNNER_URL', 'http://127.0.0.1:4000'),
   runnerSecret: required('RUNNER_SECRET'),
   runnerTimeoutMs: int('RUNNER_TIMEOUT_MS', 30_000),
   maxCodeBytes: int('MAX_CODE_BYTES', 200_000),

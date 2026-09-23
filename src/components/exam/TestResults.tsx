@@ -32,6 +32,48 @@ export interface ExpectedTest {
   points: number;
 }
 
+export type DotStatus = 'idle' | 'running' | 'passed' | 'failed';
+
+export function StatusDot({ status }: { status: DotStatus }) {
+  switch (status) {
+    case 'running':
+      return (
+        <span
+          className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
+          title="Evaluating…"
+        />
+      );
+    case 'passed':
+      return (
+        <span
+          aria-hidden="true"
+          className="shadow-xs flex h-4 w-4 items-center justify-center rounded-full bg-[#16a34a] text-[10px] font-bold text-white"
+          title="Passed"
+        >
+          ✓
+        </span>
+      );
+    case 'failed':
+      return (
+        <span
+          aria-hidden="true"
+          className="shadow-xs flex h-4 w-4 items-center justify-center rounded-full bg-[#dc2626] text-[10px] font-bold text-white"
+          title="Failed"
+        >
+          ✕
+        </span>
+      );
+    case 'idle':
+    default:
+      return (
+        <span
+          className="inline-block h-3.5 w-3.5 rounded-full border-2 border-slate-300 bg-white shadow-inner"
+          title="Not evaluated yet"
+        />
+      );
+  }
+}
+
 export function TestResults({
   outcome,
   running,
@@ -121,42 +163,20 @@ export function TestResults({
         {testList.length > 0 ? (
           <ul className={cn('divide-y', isLight ? 'divide-slate-100' : 'divide-ink-800')}>
             {testList.map((t) => {
+              const status: DotStatus = running
+                ? 'running'
+                : t.passed === true
+                  ? 'passed'
+                  : t.passed === false
+                    ? 'failed'
+                    : 'idle';
+
               return (
                 <li key={t.id} className="px-4 py-3">
                   <div className="flex items-start gap-2.5">
                     {/* Status Icon / Dot / Spinner */}
                     <div className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center">
-                      {running ? (
-                        /* Revolving loading animation */
-                        <span
-                          className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"
-                          title="Evaluating…"
-                        />
-                      ) : t.passed === true ? (
-                        /* Correct: white tick with green circular background */
-                        <span
-                          aria-hidden="true"
-                          className="shadow-xs flex h-4 w-4 items-center justify-center rounded-full bg-[#16a34a] text-[10px] font-bold text-white"
-                          title="Passed"
-                        >
-                          ✓
-                        </span>
-                      ) : t.passed === false ? (
-                        /* Incorrect: red circular background with white cross */
-                        <span
-                          aria-hidden="true"
-                          className="shadow-xs flex h-4 w-4 items-center justify-center rounded-full bg-[#dc2626] text-[10px] font-bold text-white"
-                          title="Failed"
-                        >
-                          ✕
-                        </span>
-                      ) : (
-                        /* Initial state: white dot with subtle border */
-                        <span
-                          className="inline-block h-3.5 w-3.5 rounded-full border-2 border-slate-300 bg-white shadow-inner"
-                          title="Not evaluated yet"
-                        />
-                      )}
+                      <StatusDot status={status} />
                     </div>
 
                     {/* Test Title & Error Output */}

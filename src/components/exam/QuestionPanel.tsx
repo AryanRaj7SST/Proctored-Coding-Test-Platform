@@ -19,36 +19,212 @@ export interface StudentQuestion {
 }
 
 /**
- * Render the question text.
- *
- * The body is plain text with light structure (blank lines make paragraphs,
- * `- ` makes bullets). It is rendered as React text nodes -- never
- * dangerouslySetInnerHTML -- so an admin-authored description cannot inject
- * markup into the exam page.
+ * Helper to render inline markdown: `code`, **bold**, links, and plain text.
+ */
+function renderInline(str: string): React.ReactNode[] {
+  const regex = /(`[^`]+`|\*\*[^*]+\*\*|\[[^\]]+\]\([^)]+\))/g;
+  const parts = str.split(regex);
+  return parts.map((part, idx) => {
+    if (part.startsWith('`') && part.endsWith('`') && part.length >= 2) {
+      return (
+        <code
+          key={idx}
+          className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px] font-medium text-blue-600 border border-slate-200/60"
+        >
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (part.startsWith('**') && part.endsWith('**') && part.length >= 4) {
+      return (
+        <strong key={idx} className="font-semibold text-slate-900">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    const linkMatch = part.match(/^\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)$/);
+    if (linkMatch && linkMatch[1] && linkMatch[2]) {
+      return (
+        <a
+          key={idx}
+          href={linkMatch[2]}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 underline hover:text-blue-700"
+        >
+          {linkMatch[1]}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
+interface ParsedBlock {
+  type: 'heading' | 'image' | 'list' | 'paragraph';
+  level?: number;
+  alt?: string;
+  url?: string;
+  items?: string[];
+  text?: string;
+}
+
+/**
+ * Render structured question text safely without dangerouslySetInnerHTML.
+ * Supports headings (# to ####), lists (- or *), markdown images (![alt](url)),
+ * inline code, bold, and paragraphs.
  */
 function RichText({ text }: { text: string }) {
-  const blocks = text.replace(/\r\n/g, '\n').split(/\n{2,}/);
+  const blocks = React.useMemo(() => {
+    const rawLines = text.replace(/\r\n/g, '\n').split('\n');
+    const result: ParsedBlock[] = [];
+    let currentList: string[] | null = null;
+    let currentParagraph: string[] | null = null;
+
+    const flushList = () => {
+      if (currentList && currentList.length > 0) {
+        result.push({ type: 'list', items: currentList });
+        currentList = null;
+      }
+    };
+
+    const flushParagraph = () => {
+      if (currentParagraph && currentParagraph.length > 0) {
+        result.push({ type: 'paragraph', text: currentParagraph.join(' ') });
+        currentParagraph = null;
+      }
+    };
+
+    for (const line of rawLines) {
+      const trimmed = line.trim();
+
+      // Blank line flushes lists/paragraphs
+      if (!trimmed) {
+        flushList();
+        flushParagraph();
+        continue;
+      }
+
+      // Image: ![alt](url)
+      const imageMatch = trimmed.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/);
+      if (imageMatch && imageMatch[1] !== undefined && imageMatch[2]) {
+        flushList();
+        flushParagraph();
+        result.push({ type: 'image', alt: imageMatch[1], url: imageMatch[2] });
+        continue;
+      }
+
+      // Headings: # to ######
+      const headingMatch = trimmed.match(/^(#{1,6})\s+(.*)$/);
+      if (headingMatch && headingMatch[1] && headingMatch[2]) {
+        flushList();
+        flushParagraph();
+        result.push({
+          type: 'heading',
+          level: headingMatch[1].length,
+          text: headingMatch[2],
+        });
+        continue;
+      }
+
+      // List items: - item or * item
+      const listMatch = trimmed.match(/^[-*]\s+(.*)$/);
+      if (listMatch && listMatch[1]) {
+        flushParagraph();
+        if (!currentList) currentList = [];
+        currentList.push(listMatch[1]);
+        continue;
+      }
+
+      // Regular text (accumulate into paragraph)
+      flushList();
+      if (!currentParagraph) currentParagraph = [];
+      currentParagraph.push(trimmed);
+    }
+
+    flushList();
+    flushParagraph();
+    return result;
+  }, [text]);
+
   return (
-    <>
+    <div className="space-y-2">
       {blocks.map((block, i) => {
-        const lines = block.split('\n');
-        const isList = lines.every((l) => /^\s*[-*]\s+/.test(l));
-        if (isList) {
+        if (block.type === 'image' && block.url) {
+          const isHttp = block.url.startsWith('http://') || block.url.startsWith('https://');
+          if (!isHttp) return null;
           return (
-            <ul key={i} className="my-2 list-disc space-y-1 pl-5">
-              {lines.map((l, j) => (
-                <li key={j}>{l.replace(/^\s*[-*]\s+/, '')}</li>
+            <div
+              key={i}
+              className="my-3 overflow-hidden rounded-md border border-slate-200 bg-slate-50 p-2 shadow-xs"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={block.url}
+                alt={block.alt || 'Question diagram'}
+                className="max-h-96 w-auto max-w-full rounded object-contain mx-auto"
+                loading="lazy"
+              />
+            </div>
+          );
+        }
+
+        if (block.type === 'heading' && block.text) {
+          const content = renderInline(block.text);
+          if (block.level === 1 || block.level === 2 || block.level === 3) {
+            return (
+              <h3
+                key={i}
+                className="mt-4 mb-1.5 border-b border-slate-100 pb-1 text-xs font-bold uppercase tracking-wider text-slate-900"
+              >
+                {content}
+              </h3>
+            );
+          }
+          if (block.level === 4) {
+            return (
+              <h4 key={i} className="mt-3 mb-1 text-xs font-semibold text-slate-800">
+                {content}
+              </h4>
+            );
+          }
+          if (block.level === 5) {
+            return (
+              <h5 key={i} className="mt-2.5 mb-1 text-xs font-semibold text-slate-700">
+                {content}
+              </h5>
+            );
+          }
+          return (
+            <h6 key={i} className="mt-2 mb-1 text-xs font-medium text-slate-700">
+              {content}
+            </h6>
+          );
+        }
+
+        if (block.type === 'list' && block.items) {
+          return (
+            <ul key={i} className="my-2 list-disc space-y-1 pl-5 text-xs text-slate-600">
+              {block.items.map((item, j) => (
+                <li key={j} className="leading-relaxed">
+                  {renderInline(item)}
+                </li>
               ))}
             </ul>
           );
         }
-        return (
-          <p key={i} className="my-2 whitespace-pre-wrap">
-            {block}
-          </p>
-        );
+
+        if (block.type === 'paragraph' && block.text) {
+          return (
+            <p key={i} className="my-1.5 text-xs leading-relaxed text-slate-600">
+              {renderInline(block.text)}
+            </p>
+          );
+        }
+
+        return null;
       })}
-    </>
+    </div>
   );
 }
 
