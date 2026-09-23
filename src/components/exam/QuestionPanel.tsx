@@ -29,7 +29,7 @@ function renderInline(str: string): React.ReactNode[] {
       return (
         <code
           key={idx}
-          className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px] font-medium text-blue-600 border border-slate-200/60"
+          className="rounded border border-slate-200/60 bg-slate-100 px-1 py-0.5 font-mono text-[11px] font-medium text-blue-600"
         >
           {part.slice(1, -1)}
         </code>
@@ -156,13 +156,13 @@ function RichText({ text }: { text: string }) {
           return (
             <div
               key={i}
-              className="my-3 overflow-hidden rounded-md border border-slate-200 bg-slate-50 p-2 shadow-xs"
+              className="shadow-xs my-3 overflow-hidden rounded-md border border-slate-200 bg-slate-50 p-2"
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={block.url}
                 alt={block.alt || 'Question diagram'}
-                className="max-h-96 w-auto max-w-full rounded object-contain mx-auto"
+                className="mx-auto max-h-96 w-auto max-w-full rounded object-contain"
                 loading="lazy"
               />
             </div>
@@ -175,7 +175,7 @@ function RichText({ text }: { text: string }) {
             return (
               <h3
                 key={i}
-                className="mt-4 mb-1.5 border-b border-slate-100 pb-1 text-xs font-bold uppercase tracking-wider text-slate-900"
+                className="mb-1.5 mt-4 border-b border-slate-100 pb-1 text-xs font-bold uppercase tracking-wider text-slate-900"
               >
                 {content}
               </h3>
@@ -183,20 +183,20 @@ function RichText({ text }: { text: string }) {
           }
           if (block.level === 4) {
             return (
-              <h4 key={i} className="mt-3 mb-1 text-xs font-semibold text-slate-800">
+              <h4 key={i} className="mb-1 mt-3 text-xs font-semibold text-slate-800">
                 {content}
               </h4>
             );
           }
           if (block.level === 5) {
             return (
-              <h5 key={i} className="mt-2.5 mb-1 text-xs font-semibold text-slate-700">
+              <h5 key={i} className="mb-1 mt-2.5 text-xs font-semibold text-slate-700">
                 {content}
               </h5>
             );
           }
           return (
-            <h6 key={i} className="mt-2 mb-1 text-xs font-medium text-slate-700">
+            <h6 key={i} className="mb-1 mt-2 text-xs font-medium text-slate-700">
               {content}
             </h6>
           );

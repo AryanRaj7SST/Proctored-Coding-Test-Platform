@@ -97,7 +97,8 @@ export async function runOnRunner(
       if (!res.ok) throw new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}.`);
 
       const json = (await res.json()) as RunnerRunResult;
-      if (!json || !Array.isArray(json.results)) throw new RunnerError('INVALID', 'Malformed runner response.');
+      if (!json || !Array.isArray(json.results))
+        throw new RunnerError('INVALID', 'Malformed runner response.');
       return json;
     } catch (err) {
       if (err instanceof RunnerError) {
@@ -114,7 +115,8 @@ export async function runOnRunner(
   }
 
   clearTimeout(timer);
-  const errorDetails = lastError instanceof Error ? `${lastError.name}: ${lastError.message}` : String(lastError);
+  const errorDetails =
+    lastError instanceof Error ? `${lastError.name}: ${lastError.message}` : String(lastError);
   logger.error('runner.unreachable', { error: sanitizeError(lastError), detail: errorDetails });
   throw new RunnerError('UNAVAILABLE', `Runner is unreachable (${errorDetails}).`);
 }
