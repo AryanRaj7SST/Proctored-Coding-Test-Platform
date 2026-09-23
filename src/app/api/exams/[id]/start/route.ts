@@ -67,6 +67,10 @@ export const POST = handler(async (req: Request, ctx: Ctx): Promise<NextResponse
   });
 
   return ok({
+    user: {
+      id: user.id,
+      email: user.email,
+    },
     exam: {
       id: exam.id,
       title: exam.title,

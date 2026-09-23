@@ -69,6 +69,10 @@ interface QuestionSlot {
 }
 
 interface StartResponse {
+  user?: {
+    id: string;
+    email: string;
+  };
   exam: {
     id: string;
     title: string;
@@ -100,7 +104,7 @@ const HEARTBEAT_MS = 12_000;
 
 /* ------------------------------------------------------------- component */
 
-export function ExamWorkspace({ examId }: { examId: string }) {
+export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail?: string }) {
   const router = useRouter();
   const toast = useToast();
 
@@ -229,10 +233,14 @@ export function ExamWorkspace({ examId }: { examId: string }) {
 
   /* ----------------------------------------------------------- proctoring */
 
+  const currentUserEmail = (userEmail ?? data?.user?.email ?? '').trim().toLowerCase();
+  const isPasteAllowed = currentUserEmail === 'agnihotriaryan5361@gmail.com';
+
   const { awayMessage, dismissAway, requestFullscreen } = useProctor({
     examId,
     attemptId: attempt?.id ?? null,
     enabled: Boolean(data) && !locked,
+    allowClipboard: isPasteAllowed,
     onCountChange: setViolationCount,
   });
 
@@ -248,8 +256,9 @@ export function ExamWorkspace({ examId }: { examId: string }) {
   }, [requestFullscreen, dismissAway]);
 
   const handlePasteAttempt = React.useCallback(() => {
+    if (isPasteAllowed) return;
     toast.push('Pasting code is disabled during this exam to ensure academic integrity.', 'error');
-  }, [toast]);
+  }, [isPasteAllowed, toast]);
 
   React.useEffect(() => {
     if (!data) return;
@@ -821,7 +830,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                         value={editorValue}
                         language={language as 'html' | 'css' | 'javascript'}
                         readOnly={locked}
-                        preventPaste={!locked}
+                        preventPaste={!locked && !isPasteAllowed}
                         onPasteAttempt={handlePasteAttempt}
                         onChange={(next) =>
                           setCode((prev) => ({ ...prev, [pane === 'js' ? 'js' : pane]: next }))

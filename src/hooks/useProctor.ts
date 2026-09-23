@@ -8,6 +8,7 @@ interface ProctorOptions {
   examId: string;
   attemptId?: string | null;
   enabled: boolean;
+  allowClipboard?: boolean;
   /** Called when the student returns and a violation was recorded. */
   onViolation?: (info: { type: ProctorEventType; message: string | null; count: number }) => void;
   onCountChange?: (count: number) => void;
@@ -34,7 +35,14 @@ interface EventResponse {
  *  2. in the API, because the client is untrusted and the database is the only
  *     source of truth for the count (product requirement #22).
  */
-export function useProctor({ examId, attemptId, enabled, onViolation, onCountChange }: ProctorOptions) {
+export function useProctor({
+  examId,
+  attemptId,
+  enabled,
+  allowClipboard = false,
+  onViolation,
+  onCountChange,
+}: ProctorOptions) {
   const [violationCount, setViolationCount] = React.useState(0);
   const [awayMessage, setAwayMessage] = React.useState<string | null>(null);
 
@@ -154,9 +162,15 @@ export function useProctor({ examId, attemptId, enabled, onViolation, onCountCha
       }
     };
 
-    const onCopy = () => void send('COPY');
-    const onCut = () => void send('CUT');
-    const onPaste = () => void send('PASTE');
+    const onCopy = () => {
+      if (!allowClipboard) void send('COPY');
+    };
+    const onCut = () => {
+      if (!allowClipboard) void send('CUT');
+    };
+    const onPaste = () => {
+      if (!allowClipboard) void send('PASTE');
+    };
     const onContextMenu = () => void send('CONTEXT_MENU');
     const onUnload = () => {
       // `sendBeacon` survives the page teardown that would abort a fetch.
@@ -176,9 +190,11 @@ export function useProctor({ examId, attemptId, enabled, onViolation, onCountCha
     window.addEventListener('blur', onBlur);
     window.addEventListener('focus', onFocus);
     document.addEventListener('fullscreenchange', onFullscreen);
-    document.addEventListener('copy', onCopy);
-    document.addEventListener('cut', onCut);
-    document.addEventListener('paste', onPaste);
+    if (!allowClipboard) {
+      document.addEventListener('copy', onCopy);
+      document.addEventListener('cut', onCut);
+      document.addEventListener('paste', onPaste);
+    }
     document.addEventListener('contextmenu', onContextMenu);
     window.addEventListener('pagehide', onUnload);
 
@@ -189,13 +205,15 @@ export function useProctor({ examId, attemptId, enabled, onViolation, onCountCha
       window.removeEventListener('blur', onBlur);
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('fullscreenchange', onFullscreen);
-      document.removeEventListener('copy', onCopy);
-      document.removeEventListener('cut', onCut);
-      document.removeEventListener('paste', onPaste);
+      if (!allowClipboard) {
+        document.removeEventListener('copy', onCopy);
+        document.removeEventListener('cut', onCut);
+        document.removeEventListener('paste', onPaste);
+      }
       document.removeEventListener('contextmenu', onContextMenu);
       window.removeEventListener('pagehide', onUnload);
     };
-  }, [enabled, examId, attemptId, send, sendLeave]);
+  }, [enabled, allowClipboard, examId, attemptId, send, sendLeave]);
 
   const requestFullscreen = React.useCallback(async () => {
     try {

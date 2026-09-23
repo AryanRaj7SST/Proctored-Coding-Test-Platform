@@ -81,10 +81,12 @@ export function CodeEditor({
   const saveRef = React.useRef(onSaveShortcut);
   const runRef = React.useRef(onRunShortcut);
   const pasteAttemptRef = React.useRef(onPasteAttempt);
+  const preventPasteRef = React.useRef(preventPaste);
   onChangeRef.current = onChange;
   saveRef.current = onSaveShortcut;
   runRef.current = onRunShortcut;
   pasteAttemptRef.current = onPasteAttempt;
+  preventPasteRef.current = preventPaste;
 
   // Mount once per (language, readOnly) pair. In practice each tab (HTML/CSS/
   // JS) already gets its own <CodeEditor> instance keyed by the caller, and
@@ -129,7 +131,7 @@ export function CodeEditor({
         }),
         EditorView.domEventHandlers({
           paste(event) {
-            if (preventPaste) {
+            if (preventPasteRef.current) {
               event.preventDefault();
               pasteAttemptRef.current?.();
               return true;

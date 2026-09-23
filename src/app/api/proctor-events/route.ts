@@ -4,7 +4,7 @@ import { handler, ok, readJson, tooManyRequests } from '@/lib/http';
 import { parseOrThrow, proctorEventInput } from '@/lib/validation';
 import { rateLimit } from '@/lib/rate-limit';
 import { env } from '@/lib/env';
-import { recordProctorEvent } from '@/server/services/proctoring';
+import { countViolations, recordProctorEvent } from '@/server/services/proctoring';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,6 +24,18 @@ export const POST = handler(async (req: Request): Promise<NextResponse> => {
 
   const body = parseOrThrow(proctorEventInput, await readJson(req, 16_384));
   await requireExamAccess(body.examId, user);
+
+  // Exempt agnihotriaryan5361@gmail.com from clipboard violations
+  if (
+    user.email.toLowerCase() === 'agnihotriaryan5361@gmail.com' &&
+    (body.type === 'PASTE' || body.type === 'COPY' || body.type === 'CUT')
+  ) {
+    return ok({
+      recorded: false,
+      violationCount: await countViolations(user.id, body.examId),
+      message: null,
+    });
+  }
 
   const result = await recordProctorEvent({
     userId: user.id,

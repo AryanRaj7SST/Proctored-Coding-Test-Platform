@@ -24,5 +24,5 @@ export default async function ExamPage({ params }: { params: Promise<{ examId: s
     if (!assignment) notFound();
   }
 
-  return <ExamWorkspace examId={examId} />;
+  return <ExamWorkspace examId={examId} userEmail={user.email} />;
 }
