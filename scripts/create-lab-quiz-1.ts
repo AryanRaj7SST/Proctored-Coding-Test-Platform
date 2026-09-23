@@ -1427,7 +1427,7 @@ Each plan must contain, in this exact order:
 ];
 
 async function main() {
-  console.log('Seeding "Lab Quize 1" and 5 questions...');
+  console.log('Seeding "Lab Quiz 1" and 5 questions...');
 
   const questionIds: string[] = [];
 
@@ -1491,7 +1491,7 @@ async function main() {
     console.log(`  ✓ Question "${q.title}" saved (${totalPoints} points, ${q.tests.length} tests)`);
   }
 
-  // Set up the exam "Lab Quize 1"
+  // Set up the exam "Lab Quiz 1"
   // Window: 3:30 PM - 5:30 PM today (2026-09-23)
   // Window start: 15:30 IST, Window end: 17:30 IST.
   // Allowed duration: 90 minutes.
@@ -1508,10 +1508,10 @@ async function main() {
   const endTime = new Date(Date.UTC(year, month, date, 13, 30, 0)); // 19:00 IST (allows 90m for join at 17:30)
 
   const exam = await prisma.exam.upsert({
-    where: { id: 'lab-quize-1' },
+    where: { id: 'lab-quiz-1' },
     create: {
-      id: 'lab-quize-1',
-      title: 'Lab Quize 1',
+      id: 'lab-quiz-1',
+      title: 'Lab Quiz 1',
       description:
         'HTML & CSS Practical Assessment. Join window: 3:30 PM – 5:30 PM. Duration: 90 minutes from join time.',
       durationMinutes: 90,
@@ -1522,7 +1522,7 @@ async function main() {
       endTime,
     },
     update: {
-      title: 'Lab Quize 1',
+      title: 'Lab Quiz 1',
       description:
         'HTML & CSS Practical Assessment. Join window: 3:30 PM – 5:30 PM. Duration: 90 minutes from join time.',
       durationMinutes: 90,
@@ -1559,7 +1559,7 @@ async function main() {
   });
   console.log(`  ✓ Assigned exam to all ${students.length} students.`);
 
-  console.log('\nAll done! "Lab Quize 1" is ready to go.');
+  console.log('\nAll done! "Lab Quiz 1" is ready to go.');
 }
 
 main()

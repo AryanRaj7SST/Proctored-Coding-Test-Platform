@@ -445,7 +445,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
               <img
                 src="https://s3-ap-southeast-1.amazonaws.com/ghost-production-blog/2022/12/Scaler_Logo_Transparent.png"
                 alt="Scaler"
-                className="h-6 w-auto object-contain"
+                className="h-8 sm:h-9 w-auto object-contain"
               />
             </div>
             <span className="text-slate-300">|</span>
