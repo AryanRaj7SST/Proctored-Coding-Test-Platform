@@ -189,11 +189,27 @@ export async function executeTests(params: {
         // Replace any earlier final results so a re-grade stays consistent.
         await tx.testResult.deleteMany({ where: { attemptId: params.attempt.id, final: true } });
       }
+
+      // Ensure testId references an existing questionTest row to avoid foreign key violations
+      // if tests were re-seeded or updated after the attempt snapshot was created.
+      const candidateIds = Array.from(pointsById.keys());
+      const validTestRows = await tx.questionTest.findMany({
+        where: { id: { in: candidateIds } },
+        select: { id: true },
+      });
+      const validTestIds = new Set(validTestRows.map((t) => t.id));
+
+      const currentTests = await tx.questionTest.findMany({
+        where: { questionId: params.attempt.questionId },
+        select: { id: true, name: true },
+      });
+      const idByName = new Map(currentTests.map((t) => [t.name, t.id]));
+
       await tx.testResult.createMany({
         data: scored.map((s) => ({
           attemptId: params.attempt.id,
           testRunId: testRun.id,
-          testId: s.testId ?? null,
+          testId: s.testId && validTestIds.has(s.testId) ? s.testId : (idByName.get(s.testName) ?? null),
           testName: s.testName,
           passed: s.passed,
           hidden: s.hidden ?? true,

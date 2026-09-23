@@ -682,10 +682,10 @@ h1 {
     referenceJs: '',
     tests: [
       {
-        name: '.profile-card width, background, border, radius, and text alignment',
-        description: 'Checks dimensions, border, radius, and text centering of .profile-card.',
+        name: '.profile-card width is 300px',
+        description: 'Checks that .profile-card width is 300px.',
         hidden: false,
-        points: 5,
+        points: 2,
         order: 0,
         body: {
           assertions: [
@@ -696,6 +696,17 @@ h1 {
               equals: '300px',
               message: 'Expected .profile-card to have width: 300px',
             },
+          ],
+        },
+      },
+      {
+        name: '.profile-card background is #f4f4f4',
+        description: 'Checks background color of .profile-card.',
+        hidden: true,
+        points: 2,
+        order: 1,
+        body: {
+          assertions: [
             {
               type: 'css',
               selector: '.profile-card',
@@ -704,6 +715,50 @@ h1 {
               color: true,
               message: 'Expected .profile-card background to be #f4f4f4',
             },
+          ],
+        },
+      },
+      {
+        name: '.profile-card border is 1px groove #ccc',
+        description: 'Checks border width, style, and color of .profile-card.',
+        hidden: true,
+        points: 2,
+        order: 2,
+        body: {
+          assertions: [
+            {
+              type: 'css',
+              selector: '.profile-card',
+              property: 'border-width',
+              equals: '1px',
+              message: 'Expected .profile-card border-width to be 1px',
+            },
+            {
+              type: 'css',
+              selector: '.profile-card',
+              property: 'border-style',
+              equals: 'groove',
+              message: 'Expected .profile-card border-style to be groove',
+            },
+            {
+              type: 'css',
+              selector: '.profile-card',
+              property: 'border-color',
+              equals: '#cccccc',
+              color: true,
+              message: 'Expected .profile-card border-color to be #ccc',
+            },
+          ],
+        },
+      },
+      {
+        name: '.profile-card border-radius is 10px',
+        description: 'Checks border-radius of .profile-card.',
+        hidden: true,
+        points: 2,
+        order: 3,
+        body: {
+          assertions: [
             {
               type: 'css',
               selector: '.profile-card',
@@ -711,6 +766,49 @@ h1 {
               equals: '10px',
               message: 'Expected .profile-card border-radius to be 10px',
             },
+          ],
+        },
+      },
+      {
+        name: '.profile-card margin and padding',
+        description: 'Checks margin centering and padding of .profile-card.',
+        hidden: true,
+        points: 2,
+        order: 4,
+        body: {
+          assertions: [
+            {
+              type: 'css',
+              selector: '.profile-card',
+              property: 'margin-top',
+              equals: '20px',
+              message: 'Expected .profile-card margin-top to be 20px',
+            },
+            {
+              type: 'css',
+              selector: '.profile-card',
+              property: 'margin-bottom',
+              equals: '20px',
+              message: 'Expected .profile-card margin-bottom to be 20px',
+            },
+            {
+              type: 'css',
+              selector: '.profile-card',
+              property: 'padding-top',
+              equals: '15px',
+              message: 'Expected .profile-card padding to be 15px',
+            },
+          ],
+        },
+      },
+      {
+        name: '.profile-card text-align is center',
+        description: 'Checks horizontal text centering of .profile-card.',
+        hidden: true,
+        points: 2,
+        order: 5,
+        body: {
+          assertions: [
             {
               type: 'css',
               selector: '.profile-card',
@@ -722,11 +820,11 @@ h1 {
         },
       },
       {
-        name: '.profile-image has 100px width, circular shape, and 2px outset border',
-        description: 'Checks .profile-image dimensions, border radius, and outset border style.',
+        name: '.profile-image width is 100px',
+        description: 'Checks width of .profile-image.',
         hidden: true,
-        points: 5,
-        order: 1,
+        points: 2,
+        order: 6,
         body: {
           assertions: [
             {
@@ -738,12 +836,41 @@ h1 {
               tolerance: 10,
               message: 'Expected .profile-image width to be approximately 100px',
             },
+          ],
+        },
+      },
+      {
+        name: '.profile-image circular shape (border-radius 50%)',
+        description: 'Checks circular border-radius of .profile-image.',
+        hidden: true,
+        points: 2,
+        order: 7,
+        body: {
+          assertions: [
             {
               type: 'css',
               selector: '.profile-image',
               property: 'border-radius',
               equals: '50%',
               message: 'Expected .profile-image border-radius to be 50%',
+            },
+          ],
+        },
+      },
+      {
+        name: '.profile-image border: 2px outset #555',
+        description: 'Checks .profile-image 2px outset #555 border.',
+        hidden: true,
+        points: 1,
+        order: 8,
+        body: {
+          assertions: [
+            {
+              type: 'css',
+              selector: '.profile-image',
+              property: 'border-width',
+              equals: '2px',
+              message: 'Expected .profile-image border-width to be 2px',
             },
             {
               type: 'css',
@@ -752,15 +879,23 @@ h1 {
               equals: 'outset',
               message: 'Expected .profile-image border-style to be outset',
             },
+            {
+              type: 'css',
+              selector: '.profile-image',
+              property: 'border-color',
+              equals: '#555555',
+              color: true,
+              message: 'Expected .profile-image border-color to be #555',
+            },
           ],
         },
       },
       {
-        name: '.profile-name and .profile-bio styling',
-        description: 'Checks typography, font weight 600, colors, and margins.',
+        name: '.profile-name font styling',
+        description: 'Checks typography, font weight 600, and color for .profile-name.',
         hidden: true,
-        points: 5,
-        order: 2,
+        points: 1,
+        order: 9,
         body: {
           assertions: [
             {
@@ -778,6 +913,17 @@ h1 {
               color: true,
               message: 'Expected .profile-name color to be #333',
             },
+          ],
+        },
+      },
+      {
+        name: '.profile-bio styling',
+        description: 'Checks typography, color #666, and vertical margin for .profile-bio.',
+        hidden: true,
+        points: 1,
+        order: 10,
+        body: {
+          assertions: [
             {
               type: 'css',
               selector: '.profile-bio',
@@ -797,11 +943,11 @@ h1 {
         },
       },
       {
-        name: '.social-icons Flexbox and circular 30x30 icons',
-        description: 'Checks Flexbox centering, icon sizes, circular shape, and #ddd background.',
+        name: '.social-icons layout and icon styling',
+        description: 'Checks Flexbox centering and social icon size, shape, and background.',
         hidden: true,
-        points: 5,
-        order: 3,
+        points: 1,
+        order: 11,
         body: {
           assertions: [
             {
@@ -1562,9 +1708,15 @@ async function main() {
   console.log('\nAll done! "Lab Quiz 1" is ready to go.');
 }
 
-main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(() => prisma.$disconnect());
+if (
+  typeof process !== 'undefined' &&
+  process.argv[1] &&
+  process.argv[1].replace(/\\/g, '/').endsWith('create-lab-quiz-1.ts')
+) {
+  main()
+    .catch((e) => {
+      console.error(e);
+      process.exit(1);
+    })
+    .finally(() => prisma.$disconnect());
+}
