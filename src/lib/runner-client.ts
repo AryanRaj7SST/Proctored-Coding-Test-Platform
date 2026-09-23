@@ -55,7 +55,16 @@ export async function runOnRunner(
   request: RunnerRequest,
   timeoutMs = env.runnerTimeoutMs,
 ): Promise<RunnerRunResult> {
-  const url = `${requireEnv('runnerUrl').replace(/\/$/, '')}/run`;
+  const baseUrl = requireEnv('runnerUrl').replace(/\/$/, '');
+  const candidateUrls = [
+    `${baseUrl}/run`,
+    baseUrl.includes('127.0.0.1')
+      ? `${baseUrl.replace('127.0.0.1', 'localhost')}/run`
+      : baseUrl.includes('localhost')
+        ? `${baseUrl.replace('localhost', '127.0.0.1')}/run`
+        : null,
+  ].filter(Boolean) as string[];
+
   const secret = requireEnv('runnerSecret');
   const body = JSON.stringify(request);
   const timestamp = String(Date.now());
@@ -64,48 +73,75 @@ export async function runOnRunner(
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  try {
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${secret}`,
-        'x-runner-timestamp': timestamp,
-        'x-runner-signature': signature,
-      },
-      body,
-      signal: controller.signal,
-      cache: 'no-store',
-    });
+  let lastError: unknown = null;
 
-    if (res.status === 429) throw new RunnerError('BUSY', 'Runner queue is full.');
-    if (res.status === 401 || res.status === 403)
-      throw new RunnerError('REJECTED', 'Runner rejected the request.');
-    if (res.status === 400) throw new RunnerError('INVALID', 'Runner rejected the payload.');
-    if (!res.ok) throw new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}.`);
+  for (const url of candidateUrls) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${secret}`,
+          'x-runner-timestamp': timestamp,
+          'x-runner-signature': signature,
+        },
+        body,
+        signal: controller.signal,
+        cache: 'no-store',
+      });
 
-    const json = (await res.json()) as RunnerRunResult;
-    if (!json || !Array.isArray(json.results)) throw new RunnerError('INVALID', 'Malformed runner response.');
-    return json;
-  } catch (err) {
-    if (err instanceof RunnerError) throw err;
-    if (err instanceof Error && err.name === 'AbortError') {
-      throw new RunnerError('TIMEOUT', 'Runner request timed out.');
+      if (res.status === 429) throw new RunnerError('BUSY', 'Runner queue is full.');
+      if (res.status === 401 || res.status === 403)
+        throw new RunnerError('REJECTED', 'Runner rejected the request.');
+      if (res.status === 400) throw new RunnerError('INVALID', 'Runner rejected the payload.');
+      if (!res.ok) throw new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}.`);
+
+      const json = (await res.json()) as RunnerRunResult;
+      if (!json || !Array.isArray(json.results)) throw new RunnerError('INVALID', 'Malformed runner response.');
+      return json;
+    } catch (err) {
+      if (err instanceof RunnerError) {
+        clearTimeout(timer);
+        throw err;
+      }
+      if (err instanceof Error && err.name === 'AbortError') {
+        clearTimeout(timer);
+        throw new RunnerError('TIMEOUT', 'Runner request timed out.');
+      }
+      lastError = err;
+      // Network failure on this URL candidate, try next if available
     }
-    logger.error('runner.unreachable', { error: sanitizeError(err) });
-    throw new RunnerError('UNAVAILABLE', 'Runner is unreachable.');
-  } finally {
-    clearTimeout(timer);
   }
+
+  clearTimeout(timer);
+  const errorDetails = lastError instanceof Error ? `${lastError.name}: ${lastError.message}` : String(lastError);
+  logger.error('runner.unreachable', { error: sanitizeError(lastError), detail: errorDetails });
+  throw new RunnerError('UNAVAILABLE', `Runner is unreachable (${errorDetails}).`);
 }
 
 export async function runnerHealth(): Promise<{ ok: boolean; detail?: string }> {
-  try {
-    const url = `${requireEnv('runnerUrl').replace(/\/$/, '')}/health`;
-    const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
-    if (!res.ok) return { ok: false, detail: `status ${res.status}` };
-    return { ok: true };
-  } catch (err) {
-    return { ok: false, detail: sanitizeError(err, 120) };
+  const baseUrl = requireEnv('runnerUrl').replace(/\/$/, '');
+  const candidateUrls = [
+    `${baseUrl}/health`,
+    baseUrl.includes('127.0.0.1')
+      ? `${baseUrl.replace('127.0.0.1', 'localhost')}/health`
+      : baseUrl.includes('localhost')
+        ? `${baseUrl.replace('localhost', '127.0.0.1')}/health`
+        : null,
+  ].filter(Boolean) as string[];
+
+  let lastDetail = 'unreachable';
+  for (const url of candidateUrls) {
+    try {
+      const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+      if (!res.ok) {
+        lastDetail = `status ${res.status}`;
+        continue;
+      }
+      return { ok: true };
+    } catch (err) {
+      lastDetail = sanitizeError(err, 120);
+    }
   }
+  return { ok: false, detail: lastDetail };
 }
