@@ -107,7 +107,9 @@ export async function listResults(filter: ResultFilter = {}): Promise<ResultRow[
   }
 
   const filtered =
-    filter.minPercentage !== undefined ? rows.filter((r) => r.percentage >= (filter.minPercentage as number)) : rows;
+    filter.minPercentage !== undefined
+      ? rows.filter((r) => r.percentage >= (filter.minPercentage as number))
+      : rows;
 
   return filtered.sort((a, b) => b.percentage - a.percentage);
 }

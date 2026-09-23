@@ -77,10 +77,14 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
                     <Badge tone={t.hidden ? 'neutral' : 'info'}>{t.hidden ? 'hidden' : 'visible'}</Badge>
                     <span className="text-xs text-slate-500">{t.points} pts</span>
                   </summary>
-                  <pre className="mt-2 max-h-64 overflow-auto font-mono text-[11px] text-slate-400">{t.testCode}</pre>
+                  <pre className="mt-2 max-h-64 overflow-auto font-mono text-[11px] text-slate-400">
+                    {t.testCode}
+                  </pre>
                 </details>
               ))}
-              {question.tests.length === 0 ? <p className="text-xs text-slate-500">No tests defined.</p> : null}
+              {question.tests.length === 0 ? (
+                <p className="text-xs text-slate-500">No tests defined.</p>
+              ) : null}
             </CardBody>
           </Card>
 

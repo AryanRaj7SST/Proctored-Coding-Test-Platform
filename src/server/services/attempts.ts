@@ -17,7 +17,11 @@ export { toStudentOutcome };
 export type { ExecutionOutcome };
 
 /** Get the student's attempt for a question, creating it (with a frozen snapshot) on first open. */
-export async function getOrCreateAttempt(examId: string, questionId: string, userId: string): Promise<Attempt> {
+export async function getOrCreateAttempt(
+  examId: string,
+  questionId: string,
+  userId: string,
+): Promise<Attempt> {
   const existing = await prisma.attempt.findUnique({
     where: { userId_examId_questionId: { userId, examId, questionId } },
   });
@@ -94,7 +98,10 @@ export async function saveAttemptCode(
     data: { html: code.html, css: code.css, js: code.js },
   });
   if (result.count === 0) throw conflict('This attempt can no longer be edited.');
-  const fresh = await prisma.attempt.findUniqueOrThrow({ where: { id: attemptId }, select: { updatedAt: true } });
+  const fresh = await prisma.attempt.findUniqueOrThrow({
+    where: { id: attemptId },
+    select: { updatedAt: true },
+  });
   return { updatedAt: fresh.updatedAt, saved: true };
 }
 
@@ -226,7 +233,11 @@ export async function executeTests(params: {
         error: sanitizeError(err),
       },
     });
-    logger.error('run.failed', { runId: testRun.id, attemptId: params.attempt.id, error: sanitizeError(err) });
+    logger.error('run.failed', {
+      runId: testRun.id,
+      attemptId: params.attempt.id,
+      error: sanitizeError(err),
+    });
     throw badRequest(message);
   }
 }
@@ -242,7 +253,10 @@ export async function submitAttempt(params: {
   code?: { html: string; css: string; js: string };
   auto?: boolean;
 }): Promise<ExecutionOutcome & { alreadySubmitted: boolean }> {
-  const attempt = await prisma.attempt.findUnique({ where: { id: params.attemptId }, include: { exam: true } });
+  const attempt = await prisma.attempt.findUnique({
+    where: { id: params.attemptId },
+    include: { exam: true },
+  });
   if (!attempt || attempt.userId !== params.userId) throw notFound('Attempt not found.');
 
   if (attempt.status !== 'IN_PROGRESS') {
@@ -277,7 +291,8 @@ export async function submitAttempt(params: {
 
   const state = await getExamTimeState(attempt.examId, params.userId, attempt.exam);
   if (!params.auto) {
-    if (state.availability === 'ENDED') throw forbidden('This exam has closed. Submissions are no longer accepted.');
+    if (state.availability === 'ENDED')
+      throw forbidden('This exam has closed. Submissions are no longer accepted.');
     if (state.expiresAt && !withinSubmitDeadline(state.expiresAt)) {
       throw forbidden('Your time for this exam has expired.');
     }
@@ -410,4 +425,3 @@ export async function endExam(examId: string, userId: string): Promise<{ submitt
 
   return { submittedCount };
 }
-

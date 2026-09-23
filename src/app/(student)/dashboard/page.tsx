@@ -7,15 +7,16 @@ import { StartExamButton } from './StartExamButton';
 
 export const dynamic = 'force-dynamic';
 
-const AVAILABILITY_COPY: Record<string, { label: string; tone: 'ok' | 'warn' | 'bad' | 'neutral' | 'info' }> = {
-  AVAILABLE: { label: 'Ready to start', tone: 'ok' },
-  IN_PROGRESS: { label: 'In progress', tone: 'warn' },
-  NOT_STARTED: { label: 'Not open yet', tone: 'neutral' },
-  ENDED: { label: 'Closed', tone: 'bad' },
-  EXPIRED: { label: 'Time expired', tone: 'bad' },
-  SUBMITTED: { label: 'Submitted', tone: 'info' },
-  UNPUBLISHED: { label: 'Unavailable', tone: 'neutral' },
-};
+const AVAILABILITY_COPY: Record<string, { label: string; tone: 'ok' | 'warn' | 'bad' | 'neutral' | 'info' }> =
+  {
+    AVAILABLE: { label: 'Ready to start', tone: 'ok' },
+    IN_PROGRESS: { label: 'In progress', tone: 'warn' },
+    NOT_STARTED: { label: 'Not open yet', tone: 'neutral' },
+    ENDED: { label: 'Closed', tone: 'bad' },
+    EXPIRED: { label: 'Time expired', tone: 'bad' },
+    SUBMITTED: { label: 'Submitted', tone: 'info' },
+    UNPUBLISHED: { label: 'Unavailable', tone: 'neutral' },
+  };
 
 export default async function DashboardPage() {
   const user = await requireUser();

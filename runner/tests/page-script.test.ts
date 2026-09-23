@@ -35,11 +35,14 @@ test('handles every assertion type the shared schema declares', () => {
 test('declares no case for an assertion type the schema does not have', () => {
   const cases = [...EVALUATOR_SOURCE.matchAll(/case '([a-zA-Z]+)':/g)].map((m) => m[1]);
   for (const c of cases) {
-    assert.ok((ASSERTION_TYPES as readonly string[]).includes(c as string), `evaluator has an unknown case "${c}"`);
+    assert.ok(
+      (ASSERTION_TYPES as readonly string[]).includes(c as string),
+      `evaluator has an unknown case "${c}"`,
+    );
   }
 });
 
-test('reads only rendered state -- never the student\'s source text', () => {
+test("reads only rendered state -- never the student's source text", () => {
   // The whole point of behaviour-based grading: no outerHTML/innerHTML read
   // back for comparison, no fetching the original file, no eval of student code.
   assert.doesNotMatch(EVALUATOR_SOURCE, /\.outerHTML/);
@@ -48,10 +51,16 @@ test('reads only rendered state -- never the student\'s source text', () => {
 });
 
 test('every branch that could throw is inside the top-level try/catch', () => {
-  const body = EVALUATOR_SOURCE.slice(EVALUATOR_SOURCE.indexOf('try {'), EVALUATOR_SOURCE.lastIndexOf('} catch'));
+  const body = EVALUATOR_SOURCE.slice(
+    EVALUATOR_SOURCE.indexOf('try {'),
+    EVALUATOR_SOURCE.lastIndexOf('} catch'),
+  );
   assert.match(body, /switch \(a\.type\)/);
 });
 
 test('a failing DOM read produces a result object, not a thrown error', () => {
-  assert.match(EVALUATOR_SOURCE, /result\.passed = false;\s*\n\s*result\.actual = 'error while checking the page';/);
+  assert.match(
+    EVALUATOR_SOURCE,
+    /result\.passed = false;\s*\n\s*result\.actual = 'error while checking the page';/,
+  );
 });

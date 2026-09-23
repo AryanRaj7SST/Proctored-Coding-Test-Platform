@@ -44,10 +44,12 @@ export default async function AttemptsPage({
   ]);
 
   const attempts: AttemptRow[] = rawAttempts.map((a) => {
-    const snapshot = (a.snapshot && typeof a.snapshot === 'object') ? (a.snapshot as Record<string, unknown>) : {};
-    const manualReview = (snapshot.manualReview && typeof snapshot.manualReview === 'object')
-      ? (snapshot.manualReview as Record<string, unknown>)
-      : null;
+    const snapshot =
+      a.snapshot && typeof a.snapshot === 'object' ? (a.snapshot as Record<string, unknown>) : {};
+    const manualReview =
+      snapshot.manualReview && typeof snapshot.manualReview === 'object'
+        ? (snapshot.manualReview as Record<string, unknown>)
+        : null;
 
     return {
       id: a.id,
@@ -74,7 +76,8 @@ export default async function AttemptsPage({
       <div>
         <h1 className="text-xl font-semibold text-slate-50">Submissions & Code Review</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Inspect student submitted code, compare with starter code, review test run timelines, and manually adjust scores or give feedback.
+          Inspect student submitted code, compare with starter code, review test run timelines, and manually
+          adjust scores or give feedback.
         </p>
       </div>
 
@@ -89,4 +92,3 @@ export default async function AttemptsPage({
     </div>
   );
 }
-

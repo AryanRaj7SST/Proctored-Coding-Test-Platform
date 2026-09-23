@@ -51,8 +51,20 @@ interface QuestionSlot {
 }
 
 interface StartResponse {
-  exam: { id: string; title: string; description: string | null; durationMinutes: number; maxViolations: number };
-  session: { startedAt: string; expiresAt: string; msRemaining: number; serverTime: string; availability: string };
+  exam: {
+    id: string;
+    title: string;
+    description: string | null;
+    durationMinutes: number;
+    maxViolations: number;
+  };
+  session: {
+    startedAt: string;
+    expiresAt: string;
+    msRemaining: number;
+    serverTime: string;
+    availability: string;
+  };
   violationCount: number;
   questions: QuestionSlot[];
 }
@@ -102,23 +114,10 @@ export function ExamWorkspace({ examId }: { examId: string }) {
   const [bottomTab, setBottomTab] = React.useState<'tests' | 'output'>('tests');
   const [section1Expanded, setSection1Expanded] = React.useState(true);
 
-  // Adjustable section dimensions (with localStorage persistence)
+  // Adjustable section dimensions
   const [leftWidth, setLeftWidth] = React.useState(510);
   const [previewWidth, setPreviewWidth] = React.useState(380);
   const [bottomHeight, setBottomHeight] = React.useState(240);
-
-  React.useEffect(() => {
-    try {
-      const savedLeft = localStorage.getItem('pcp_left_panel_w');
-      if (savedLeft) setLeftWidth(Math.max(450, Math.min(750, Number(savedLeft))));
-      const savedPreview = localStorage.getItem('pcp_preview_w');
-      if (savedPreview) setPreviewWidth(Math.max(240, Math.min(800, Number(savedPreview))));
-      const savedBottom = localStorage.getItem('pcp_bottom_panel_h');
-      if (savedBottom) setBottomHeight(Math.max(140, Math.min(550, Number(savedBottom))));
-    } catch {
-      // ignore
-    }
-  }, []);
 
   // Auto-refresh preview on code changes (debounced 400ms)
   React.useEffect(() => {
@@ -284,7 +283,9 @@ export function ExamWorkspace({ examId }: { examId: string }) {
       setOutcome(res);
       setBottomTab('tests');
       toast.push(
-        res.failedCount === 0 ? 'All test cases passed.' : `${res.passedCount}/${res.totalCount} test cases passed.`,
+        res.failedCount === 0
+          ? 'All test cases passed.'
+          : `${res.passedCount}/${res.totalCount} test cases passed.`,
         res.failedCount === 0 ? 'success' : 'info',
       );
     } catch (err) {
@@ -386,22 +387,34 @@ export function ExamWorkspace({ examId }: { examId: string }) {
   const attemptedCount = data.questions.filter((q) => q.attempt.status !== 'IN_PROGRESS').length;
 
   return (
-    <div className="flex h-screen flex-col bg-white text-slate-800 font-sans">
+    <div className="flex h-screen flex-col bg-white font-sans text-slate-800">
       {/* ------------------------------------------------------------ top white header */}
-      <header className="flex h-14 flex-shrink-0 items-center justify-between border-b border-slate-200 bg-white px-5 select-none">
-        <div className="flex items-center gap-3 min-w-0">
+      <header className="flex h-14 flex-shrink-0 select-none items-center justify-between border-b border-slate-200 bg-white px-5">
+        <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
             {/* SCALER Logo */}
-            <div className="flex items-center gap-1.5 cursor-pointer">
+            <div className="flex cursor-pointer items-center gap-1.5">
               <span className="text-base font-black tracking-wider text-slate-900">SCALER</span>
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
                 <path d="M4 4H16L20 8V20H4V4Z" fill="#0066d6" />
-                <path d="M10 8H16V14" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M8 16L16 8" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                <path
+                  d="M10 8H16V14"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M8 16L16 8"
+                  stroke="white"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
               </svg>
             </div>
             <span className="text-slate-300">|</span>
-            <h1 className="text-xs sm:text-[13px] font-semibold text-slate-800 truncate max-w-xs md:max-w-md">
+            <h1 className="max-w-xs truncate text-xs font-semibold text-slate-800 sm:text-[13px] md:max-w-md">
               {data.exam.title || 'Web Dev 101 Mid Term Exam 2029 Batch'}
             </h1>
           </div>
@@ -409,8 +422,8 @@ export function ExamWorkspace({ examId }: { examId: string }) {
 
         <div className="flex items-center gap-6">
           {/* Circular Attempted Progress */}
-          <div className="flex items-center gap-2 text-xs text-slate-700 font-medium select-none">
-            <span className="w-3.5 h-3.5 rounded-full border border-blue-600 inline-block flex-shrink-0" />
+          <div className="flex select-none items-center gap-2 text-xs font-medium text-slate-700">
+            <span className="inline-block h-3.5 w-3.5 flex-shrink-0 rounded-full border border-blue-600" />
             <span>
               {attemptedCount} / {data.questions.length} Attempted
             </span>
@@ -422,7 +435,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
           </div>
 
           {violationCount > 0 ? (
-            <span className="text-[11px] text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200 flex items-center gap-1">
+            <span className="flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700">
               <AlertTriangle className="h-3 w-3 text-amber-600" />
               <span>{violationCount}</span>
             </span>
@@ -433,7 +446,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
             type="button"
             onClick={() => setConfirmEndExam(true)}
             disabled={expired || endingExam}
-            className="rounded-[4px] bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 shadow-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+            className="shadow-xs flex cursor-pointer items-center gap-1.5 rounded-[4px] bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:opacity-50"
             title="End and submit entire test"
           >
             {endingExam ? 'Ending…' : 'End Test'}
@@ -442,7 +455,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
           {/* User Profile Avatar */}
           <button
             type="button"
-            className="h-7 w-7 rounded-full border border-slate-300 flex items-center justify-center text-slate-600 hover:text-slate-900 bg-white shadow-xs transition"
+            className="shadow-xs flex h-7 w-7 items-center justify-center rounded-full border border-slate-300 bg-white text-slate-600 transition hover:text-slate-900"
           >
             <User className="h-4 w-4 stroke-[1.5]" />
           </button>
@@ -450,14 +463,14 @@ export function ExamWorkspace({ examId }: { examId: string }) {
       </header>
 
       {/* ------------------------------------------------------------ main body */}
-      <div className="flex flex-1 min-h-0 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Leftmost Vertical Navigation Bar (Width: 68px) */}
-        <aside className="w-[68px] flex-shrink-0 flex flex-col items-center py-2.5 bg-white border-r border-slate-200 select-none">
+        <aside className="flex w-[68px] flex-shrink-0 select-none flex-col items-center border-r border-slate-200 bg-white py-2.5">
           {/* Info button */}
           <button
             type="button"
             title="Exam Info"
-            className="h-7 w-7 flex items-center justify-center rounded-full border border-slate-200 text-slate-500 hover:text-slate-800 hover:border-slate-300 mb-2 transition"
+            className="mb-2 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-800"
           >
             <Info className="h-3.5 w-3.5 stroke-[1.75]" />
           </button>
@@ -467,27 +480,25 @@ export function ExamWorkspace({ examId }: { examId: string }) {
             type="button"
             onClick={() => setCurrentView('all')}
             className={cn(
-              'w-full py-1.5 flex items-center justify-center text-[11px] font-bold tracking-wider relative transition',
+              'relative flex w-full items-center justify-center py-1.5 text-[11px] font-bold tracking-wider transition',
               currentView === 'all'
-                ? 'text-blue-600 bg-blue-50/70'
-                : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50',
+                ? 'bg-blue-50/70 text-blue-600'
+                : 'text-slate-500 hover:bg-slate-50 hover:text-slate-800',
             )}
             title="All Questions"
           >
-            {currentView === 'all' && (
-              <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-600" />
-            )}
+            {currentView === 'all' && <span className="absolute bottom-0 left-0 top-0 w-0.5 bg-blue-600" />}
             ALL
           </button>
 
           {/* Section 1 Header */}
-          <div className="w-full mt-2.5 mb-1 px-2 flex items-center justify-center gap-1 text-[11px] font-bold text-blue-600">
+          <div className="mb-1 mt-2.5 flex w-full items-center justify-center gap-1 px-2 text-[11px] font-bold text-blue-600">
             <span>S1</span>
             <ChevronUp className="h-3 w-3 stroke-[2.5]" />
           </div>
 
           {/* Question Buttons Q1, Q2... */}
-          <div className="w-full flex flex-col items-center">
+          <div className="flex w-full flex-col items-center">
             {data.questions.map((q, i) => {
               const isCurrent = currentView === 'workspace' && i === index;
               const isCompleted = q.attempt.status !== 'IN_PROGRESS';
@@ -500,19 +511,20 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                     setCurrentView('workspace');
                   }}
                   className={cn(
-                    'w-full h-8 px-2 flex items-center justify-between relative text-xs transition border-b border-slate-50',
+                    'relative flex h-8 w-full items-center justify-between border-b border-slate-50 px-2 text-xs transition',
                     isCurrent
-                      ? 'text-blue-600 bg-blue-50/60 font-semibold'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
+                      ? 'bg-blue-50/60 font-semibold text-blue-600'
+                      : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
                   )}
                   title={`Question ${i + 1}: ${q.question.title}`}
                 >
-                  {isCurrent && (
-                    <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-blue-600" />
-                  )}
+                  {isCurrent && <span className="absolute bottom-0 left-0 top-0 w-0.5 bg-blue-600" />}
                   <span className="text-[11px] font-medium">Q {i + 1}</span>
                   {isCompleted ? (
-                    <span className="h-3.5 w-3.5 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-xs" title="Answered">
+                    <span
+                      className="shadow-xs flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white"
+                      title="Answered"
+                    >
                       <Check className="h-2.5 w-2.5 stroke-[3]" />
                     </span>
                   ) : (
@@ -526,36 +538,36 @@ export function ExamWorkspace({ examId }: { examId: string }) {
 
         {/* View 1: All Questions Overview (Screenshot 2) */}
         {currentView === 'all' ? (
-          <div className="flex-1 flex flex-col overflow-auto bg-slate-50 p-4 sm:p-6 relative">
+          <div className="relative flex flex-1 flex-col overflow-auto bg-slate-50 p-4 sm:p-6">
             {/* Info alert banner */}
-            <div className="mb-4 rounded-md bg-blue-50 border border-blue-200 px-4 py-2.5 text-xs font-medium text-blue-700">
+            <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-2.5 text-xs font-medium text-blue-700">
               This test is running in Proctored Mode. Submissions are saved and evaluated against test cases.
             </div>
 
             {/* Title & Section */}
-            <div className="flex items-center justify-between mb-3">
+            <div className="mb-3 flex items-center justify-between">
               <h2 className="text-base font-bold text-slate-900">All Questions</h2>
               <span className="text-xs italic text-slate-500">* Mandatory sections</span>
             </div>
 
             {/* Collapsible Section Card */}
-            <div className="rounded-lg border border-slate-200 bg-white overflow-hidden shadow-sm">
+            <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
               <div
                 onClick={() => setSection1Expanded((v) => !v)}
-                className="flex items-center justify-between px-4 py-3 bg-slate-50/80 border-b border-slate-200 cursor-pointer select-none"
+                className="flex cursor-pointer select-none items-center justify-between border-b border-slate-200 bg-slate-50/80 px-4 py-3"
               >
                 <div>
                   <div className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
                     SECTION 1 <span className="text-rose-500">*</span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5">
+                  <div className="mt-0.5 flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-800">Default Section</span>
-                    <span className="rounded bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600 border border-blue-100">
+                    <span className="rounded border border-blue-100 bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-600">
                       {data.questions.length} questions
                     </span>
                   </div>
                 </div>
-                <button type="button" className="text-slate-400 hover:text-slate-600 transition">
+                <button type="button" className="text-slate-400 transition hover:text-slate-600">
                   {section1Expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                 </button>
               </div>
@@ -565,32 +577,32 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                   <table className="w-full text-left text-xs">
                     <thead>
                       <tr className="border-b border-slate-200 bg-slate-50/50 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
-                        <th className="py-2.5 px-4 w-12">#</th>
-                        <th className="py-2.5 px-4">QUESTION</th>
-                        <th className="py-2.5 px-4 w-32">TYPE</th>
-                        <th className="py-2.5 px-4 w-24">SCORE</th>
-                        <th className="py-2.5 px-4 w-44">STATUS</th>
-                        <th className="py-2.5 px-4 w-32 text-right">ACTION</th>
+                        <th className="w-12 px-4 py-2.5">#</th>
+                        <th className="px-4 py-2.5">QUESTION</th>
+                        <th className="w-32 px-4 py-2.5">TYPE</th>
+                        <th className="w-24 px-4 py-2.5">SCORE</th>
+                        <th className="w-44 px-4 py-2.5">STATUS</th>
+                        <th className="w-32 px-4 py-2.5 text-right">ACTION</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {data.questions.map((q, i) => {
                         const isCompleted = q.attempt.status !== 'IN_PROGRESS';
                         return (
-                          <tr key={q.question.id} className="hover:bg-slate-50/80 transition">
-                            <td className="py-3 px-4 font-mono text-slate-500">{i + 1}</td>
-                            <td className="py-3 px-4 font-medium text-slate-900">{q.question.title}</td>
-                            <td className="py-3 px-4 text-slate-600">
+                          <tr key={q.question.id} className="transition hover:bg-slate-50/80">
+                            <td className="px-4 py-3 font-mono text-slate-500">{i + 1}</td>
+                            <td className="px-4 py-3 font-medium text-slate-900">{q.question.title}</td>
+                            <td className="px-4 py-3 text-slate-600">
                               <span className="inline-flex items-center gap-1.5 text-xs text-slate-600">
                                 <span className="text-[10px] font-bold text-orange-500">HTML</span>
                                 Frontend
                               </span>
                             </td>
-                            <td className="py-3 px-4 font-mono text-slate-700">{q.points}</td>
-                            <td className="py-3 px-4">
+                            <td className="px-4 py-3 font-mono text-slate-700">{q.points}</td>
+                            <td className="px-4 py-3">
                               {isCompleted ? (
                                 <span className="inline-flex items-center gap-1.5 font-medium text-emerald-600">
-                                  <span className="h-4 w-4 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+                                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
                                     <Check className="h-2.5 w-2.5 stroke-[3]" />
                                   </span>
                                   Answered Successfully
@@ -599,14 +611,14 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                                 <span className="text-slate-400">Not Attempted</span>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-right">
+                            <td className="px-4 py-3 text-right">
                               <button
                                 type="button"
                                 onClick={() => {
                                   void selectQuestion(i);
                                   setCurrentView('workspace');
                                 }}
-                                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 shadow-sm transition"
+                                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700"
                               >
                                 Solve now
                               </button>
@@ -624,7 +636,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
             <button
               type="button"
               onClick={() => setCurrentView('workspace')}
-              className="fixed right-0 top-1/2 -translate-y-1/2 bg-blue-600 text-white rounded-l-md px-1 py-3 shadow-md hover:bg-blue-700 transition"
+              className="fixed right-0 top-1/2 -translate-y-1/2 rounded-l-md bg-blue-600 px-1 py-3 text-white shadow-md transition hover:bg-blue-700"
               title="Back to question workspace"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -632,11 +644,11 @@ export function ExamWorkspace({ examId }: { examId: string }) {
           </div>
         ) : (
           /* View 2: Question Workspace (Screenshot 1) */
-          <div className="flex-1 flex min-h-0 overflow-hidden">
+          <div className="flex min-h-0 flex-1 overflow-hidden">
             {/* Left: Question Panel (Adjustable Width) */}
             <div
               style={{ width: `${leftWidth}px` }}
-              className="flex-shrink-0 flex flex-col border-r border-slate-200 bg-white min-w-0"
+              className="flex min-w-0 flex-shrink-0 flex-col border-r border-slate-200 bg-white"
             >
               <QuestionPanel
                 question={slot.question}
@@ -656,24 +668,18 @@ export function ExamWorkspace({ examId }: { examId: string }) {
             <ResizeHandle
               direction="horizontal"
               onResize={(delta) => {
-                setLeftWidth((w) => {
-                  const nw = Math.max(260, Math.min(750, w + delta));
-                  try {
-                    localStorage.setItem('pcp_left_panel_w', String(nw));
-                  } catch {}
-                  return nw;
-                });
+                setLeftWidth((w) => Math.max(260, Math.min(750, w + delta)));
               }}
             />
 
             {/* Right: Frontend Environment (Top) + Test Cases & Output (Bottom) */}
-            <div className="flex-1 flex flex-col min-w-0 bg-[#10233d]">
+            <div className="flex min-w-0 flex-1 flex-col bg-[#10233d]">
               {/* Upper Section: Frontend Environment */}
-              <div className="flex-1 flex flex-col min-h-0 bg-[#10233d]">
+              <div className="flex min-h-0 flex-1 flex-col bg-[#10233d]">
                 {/* Top Environment Header (White bar) */}
-                <div className="flex h-9 items-center justify-between border-b border-slate-200 bg-white px-3 text-xs select-none">
-                  <span className="font-semibold text-slate-800 flex items-center gap-1.5 text-xs">
-                    <span className="text-blue-600 font-mono text-[12px] font-bold">&lt;/&gt;</span>
+                <div className="flex h-9 select-none items-center justify-between border-b border-slate-200 bg-white px-3 text-xs">
+                  <span className="flex items-center gap-1.5 text-xs font-semibold text-slate-800">
+                    <span className="font-mono text-[12px] font-bold text-blue-600">&lt;/&gt;</span>
                     Frontend Environment
                   </span>
                   <div className="flex items-center gap-4 text-slate-500">
@@ -681,14 +687,14 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                       type="button"
                       onClick={resetStarter}
                       disabled={locked}
-                      className="hover:text-slate-900 transition flex items-center gap-1 text-xs"
+                      className="flex items-center gap-1 text-xs transition hover:text-slate-900"
                       title="Reset to starter code"
                     >
                       <RotateCcw className="h-3.5 w-3.5" />
                     </button>
                     <button
                       type="button"
-                      className="hover:text-slate-900 transition flex items-center gap-1 text-xs"
+                      className="flex items-center gap-1 text-xs transition hover:text-slate-900"
                       title="Settings"
                     >
                       <Settings className="h-3.5 w-3.5" />
@@ -696,7 +702,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                     <button
                       type="button"
                       onClick={() => setFullscreenPreview((v) => !v)}
-                      className="hover:text-slate-900 transition flex items-center gap-1 text-[11px]"
+                      className="flex items-center gap-1 text-[11px] transition hover:text-slate-900"
                       title="Maximize Preview"
                     >
                       <Maximize2 className="h-3.5 w-3.5" />
@@ -706,33 +712,37 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                 </div>
 
                 {/* Horizontal File Tabs Bar (Navy #142943) */}
-                <div className="flex h-8 items-center justify-between bg-[#142943] border-b border-[#1b3456] px-2 text-xs select-none">
+                <div className="flex h-8 select-none items-center justify-between border-b border-[#1b3456] bg-[#142943] px-2 text-xs">
                   {/* File tabs */}
-                  <div className="flex items-center h-full">
+                  <div className="flex h-full items-center">
                     <button
                       type="button"
                       onClick={() => setPane('html')}
                       className={cn(
-                        'h-full flex items-center gap-1.5 px-3 text-xs font-medium border-t-2 transition',
+                        'flex h-full items-center gap-1.5 border-t-2 px-3 text-xs font-medium transition',
                         pane === 'html'
-                          ? 'bg-[#1b3456] text-white border-blue-500'
-                          : 'text-slate-400 hover:text-slate-200 border-transparent',
+                          ? 'border-blue-500 bg-[#1b3456] text-white'
+                          : 'border-transparent text-slate-400 hover:text-slate-200',
                       )}
                     >
-                      <span className="h-3.5 w-3.5 rounded bg-orange-600 text-white text-[9px] font-bold flex items-center justify-center">5</span>
+                      <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-orange-600 text-[9px] font-bold text-white">
+                        5
+                      </span>
                       <span>index.html</span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setPane('css')}
                       className={cn(
-                        'h-full flex items-center gap-1.5 px-3 text-xs font-medium border-t-2 transition',
+                        'flex h-full items-center gap-1.5 border-t-2 px-3 text-xs font-medium transition',
                         pane === 'css'
-                          ? 'bg-[#1b3456] text-white border-blue-500'
-                          : 'text-slate-400 hover:text-slate-200 border-transparent',
+                          ? 'border-blue-500 bg-[#1b3456] text-white'
+                          : 'border-transparent text-slate-400 hover:text-slate-200',
                       )}
                     >
-                      <span className="h-3.5 w-3.5 rounded bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center">3</span>
+                      <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-blue-600 text-[9px] font-bold text-white">
+                        3
+                      </span>
                       <span>style.css</span>
                     </button>
                     {slot.question.starterJs ? (
@@ -740,13 +750,15 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                         type="button"
                         onClick={() => setPane('js')}
                         className={cn(
-                          'h-full flex items-center gap-1.5 px-3 text-xs font-medium border-t-2 transition',
+                          'flex h-full items-center gap-1.5 border-t-2 px-3 text-xs font-medium transition',
                           pane === 'js'
-                            ? 'bg-[#1b3456] text-white border-blue-500'
-                            : 'text-slate-400 hover:text-slate-200 border-transparent',
+                            ? 'border-blue-500 bg-[#1b3456] text-white'
+                            : 'border-transparent text-slate-400 hover:text-slate-200',
                         )}
                       >
-                        <span className="h-3.5 w-3.5 rounded bg-amber-500 text-black text-[9px] font-bold flex items-center justify-center">JS</span>
+                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-amber-500 text-[9px] font-bold text-black">
+                          JS
+                        </span>
                         <span>script.js</span>
                       </button>
                     ) : null}
@@ -756,7 +768,7 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                   <button
                     type="button"
                     onClick={() => setShowPreview((v) => !v)}
-                    className="text-slate-300 hover:text-white transition flex items-center gap-1 text-[11px] px-2 py-0.5"
+                    className="flex items-center gap-1 px-2 py-0.5 text-[11px] text-slate-300 transition hover:text-white"
                     title={showPreview ? 'Hide live preview' : 'Show live preview'}
                   >
                     {showPreview ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
@@ -765,10 +777,10 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                 </div>
 
                 {/* Editor & Preview Split */}
-                <div className="flex-1 flex min-h-0">
+                <div className="flex min-h-0 flex-1">
                   {/* Project Sidebar (~210px, Navy #10233d) */}
-                  <div className="w-52 flex-shrink-0 bg-[#10233d] border-r border-[#1a3150] flex flex-col select-none">
-                    <div className="px-3 py-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-[#1a3150]/60">
+                  <div className="flex w-52 flex-shrink-0 select-none flex-col border-r border-[#1a3150] bg-[#10233d]">
+                    <div className="border-b border-[#1a3150]/60 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       PROJECT
                     </div>
                     <div className="space-y-0.5 p-1.5">
@@ -776,26 +788,30 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                         type="button"
                         onClick={() => setPane('html')}
                         className={cn(
-                          'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[4px] text-xs text-left transition',
+                          'flex w-full items-center gap-2 rounded-[4px] px-2.5 py-1.5 text-left text-xs transition',
                           pane === 'html'
-                            ? 'bg-[#172b46] text-white font-medium ring-1 ring-[#203a5f]'
+                            ? 'bg-[#172b46] font-medium text-white ring-1 ring-[#203a5f]'
                             : 'text-slate-300 hover:bg-[#15273f] hover:text-white',
                         )}
                       >
-                        <span className="h-3.5 w-3.5 rounded bg-orange-600 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">5</span>
+                        <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded bg-orange-600 text-[9px] font-bold text-white">
+                          5
+                        </span>
                         <span className="truncate">index.html</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setPane('css')}
                         className={cn(
-                          'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[4px] text-xs text-left transition',
+                          'flex w-full items-center gap-2 rounded-[4px] px-2.5 py-1.5 text-left text-xs transition',
                           pane === 'css'
-                            ? 'bg-[#172b46] text-white font-medium ring-1 ring-[#203a5f]'
+                            ? 'bg-[#172b46] font-medium text-white ring-1 ring-[#203a5f]'
                             : 'text-slate-300 hover:bg-[#15273f] hover:text-white',
                         )}
                       >
-                        <span className="h-3.5 w-3.5 rounded bg-blue-600 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">3</span>
+                        <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded bg-blue-600 text-[9px] font-bold text-white">
+                          3
+                        </span>
                         <span className="truncate">style.css</span>
                       </button>
                       {slot.question.starterJs ? (
@@ -803,13 +819,15 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                           type="button"
                           onClick={() => setPane('js')}
                           className={cn(
-                            'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[4px] text-xs text-left transition',
+                            'flex w-full items-center gap-2 rounded-[4px] px-2.5 py-1.5 text-left text-xs transition',
                             pane === 'js'
-                              ? 'bg-[#172b46] text-white font-medium ring-1 ring-[#203a5f]'
+                              ? 'bg-[#172b46] font-medium text-white ring-1 ring-[#203a5f]'
                               : 'text-slate-300 hover:bg-[#15273f] hover:text-white',
                           )}
                         >
-                          <span className="h-3.5 w-3.5 rounded bg-amber-500 text-black text-[9px] font-bold flex items-center justify-center flex-shrink-0">JS</span>
+                          <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded bg-amber-500 text-[9px] font-bold text-black">
+                            JS
+                          </span>
                           <span className="truncate">script.js</span>
                         </button>
                       ) : null}
@@ -817,20 +835,22 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                   </div>
 
                   {/* Code Area */}
-                  <div className="flex-1 flex flex-col min-w-0 bg-[#131f30]">
-                    <div className="flex-1 min-h-0">
+                  <div className="flex min-w-0 flex-1 flex-col bg-[#131f30]">
+                    <div className="min-h-0 flex-1">
                       <CodeEditor
                         key={`${attempt.id}-${pane}`}
                         value={editorValue}
                         language={language as 'html' | 'css' | 'javascript'}
                         readOnly={locked}
-                        onChange={(next) => setCode((prev) => ({ ...prev, [pane === 'js' ? 'js' : pane]: next }))}
+                        onChange={(next) =>
+                          setCode((prev) => ({ ...prev, [pane === 'js' ? 'js' : pane]: next }))
+                        }
                         onSaveShortcut={() => void flush()}
                         onRunShortcut={() => void runTests()}
                       />
                     </div>
                     {/* Status footer */}
-                    <div className="h-6 border-t border-[#1a2d46] px-3 flex items-center text-[11px] text-slate-400 bg-[#0d1724]">
+                    <div className="flex h-6 items-center border-t border-[#1a2d46] bg-[#0d1724] px-3 text-[11px] text-slate-400">
                       <span>
                         {saveState === 'saving'
                           ? 'Saving…'
@@ -849,20 +869,14 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                         direction="horizontal"
                         className="bg-[#10233d]"
                         onResize={(delta) => {
-                          setPreviewWidth((w) => {
-                            const nw = Math.max(240, Math.min(800, w - delta));
-                            try {
-                              localStorage.setItem('pcp_preview_w', String(nw));
-                            } catch {}
-                            return nw;
-                          });
+                          setPreviewWidth((w) => Math.max(240, Math.min(800, w - delta)));
                         }}
                       />
                       <div
                         style={{ width: `${previewWidth}px` }}
-                        className="flex-shrink-0 bg-[#fff] border-l border-slate-200 flex flex-col p-3"
+                        className="flex flex-shrink-0 flex-col border-l border-slate-200 bg-[#fff] p-3"
                       >
-                        <div className="w-full h-full border border-dashed border-[#b7b7b7] rounded-[4px] bg-[#fafafa] overflow-hidden">
+                        <div className="h-full w-full overflow-hidden rounded-[4px] border border-dashed border-[#b7b7b7] bg-[#fafafa]">
                           <PreviewFrame
                             html={code.html}
                             css={code.css}
@@ -881,44 +895,44 @@ export function ExamWorkspace({ examId }: { examId: string }) {
               <ResizeHandle
                 direction="vertical"
                 onResize={(delta) => {
-                  setBottomHeight((h) => {
-                    const nh = Math.max(140, Math.min(550, h - delta));
-                    try {
-                      localStorage.setItem('pcp_bottom_panel_h', String(nh));
-                    } catch {}
-                    return nh;
-                  });
+                  setBottomHeight((h) => Math.max(140, Math.min(550, h - delta)));
                 }}
               />
 
               {/* Bottom Section: Test Cases & Output */}
               <div
                 style={{ height: `${bottomHeight}px` }}
-                className="flex-shrink-0 flex flex-col border-t border-slate-200 bg-white"
+                className="flex flex-shrink-0 flex-col border-t border-slate-200 bg-white"
               >
                 {/* Tabs Header */}
-                <div className="flex h-9 items-center justify-between border-b border-slate-200 px-4 bg-white select-none">
+                <div className="flex h-9 select-none items-center justify-between border-b border-slate-200 bg-white px-4">
                   <div className="flex items-center gap-6">
                     <button
                       type="button"
                       onClick={() => setBottomTab('tests')}
                       className={cn(
-                        'h-9 border-b-2 text-xs font-semibold flex items-center gap-1.5 transition',
+                        'flex h-9 items-center gap-1.5 border-b-2 text-xs font-semibold transition',
                         bottomTab === 'tests'
                           ? 'border-blue-600 text-blue-600'
                           : 'border-transparent text-slate-500 hover:text-slate-700',
                       )}
                     >
                       <span>Test Cases</span>
-                      <span className="text-[11px] text-slate-400 font-normal">
-                        ({outcome ? `${outcome.passedCount}/${outcome.totalCount}` : slot.question.publicTests.length > 0 ? `0/${slot.question.publicTests.length}` : '1/1'})
+                      <span className="text-[11px] font-normal text-slate-400">
+                        (
+                        {outcome
+                          ? `${outcome.passedCount}/${outcome.totalCount}`
+                          : slot.question.publicTests.length > 0
+                            ? `0/${slot.question.publicTests.length}`
+                            : '1/1'}
+                        )
                       </span>
                     </button>
                     <button
                       type="button"
                       onClick={() => setBottomTab('output')}
                       className={cn(
-                        'h-9 border-b-2 text-xs font-semibold flex items-center gap-1.5 transition',
+                        'flex h-9 items-center gap-1.5 border-b-2 text-xs font-semibold transition',
                         bottomTab === 'output'
                           ? 'border-blue-600 text-blue-600'
                           : 'border-transparent text-slate-500 hover:text-slate-700',
@@ -939,21 +953,25 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                       type="button"
                       onClick={() => void runTests()}
                       disabled={locked || running}
-                      className="text-xs text-slate-500 hover:text-blue-600 transition"
+                      className="text-xs text-slate-500 transition hover:text-blue-600"
                       title="Run test cases"
                     >
                       {running ? 'Running…' : 'Run Tests'}
                     </button>
-                    <button type="button" className="text-slate-400 hover:text-slate-600" title="Expand panel">
+                    <button
+                      type="button"
+                      className="text-slate-400 hover:text-slate-600"
+                      title="Expand panel"
+                    >
                       <Maximize2 className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
 
                 {/* Tabs Content */}
-                <div className="flex-1 overflow-auto relative">
+                <div className="relative flex-1 overflow-auto">
                   {bottomTab === 'tests' ? (
-                    <div className="p-4 bg-white h-full overflow-auto">
+                    <div className="h-full overflow-auto bg-white p-4">
                       <TestResults
                         outcome={outcome}
                         running={running}
@@ -970,12 +988,12 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                 </div>
 
                 {/* Bottom Submit Bar (Fixed Submit Code in bottom-right) */}
-                <div className="h-11 border-t border-slate-200 bg-white px-4 flex items-center justify-end">
+                <div className="flex h-11 items-center justify-end border-t border-slate-200 bg-white px-4">
                   <button
                     type="button"
                     onClick={() => setConfirmSubmit(true)}
                     disabled={locked || submitting}
-                    className="rounded-[4px] bg-[#0066d6] px-5 py-2 text-xs font-semibold text-white hover:bg-[#0052b3] shadow-sm transition disabled:opacity-50"
+                    className="rounded-[4px] bg-[#0066d6] px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0052b3] disabled:opacity-50"
                   >
                     {submitting ? 'Submitting…' : 'Submit Code'}
                   </button>
@@ -996,7 +1014,13 @@ export function ExamWorkspace({ examId }: { examId: string }) {
             </Button>
           </div>
           <div className="flex-1 overflow-hidden rounded-lg bg-white ring-1 ring-ink-700">
-            <PreviewFrame html={code.html} css={code.css} js={code.js} refreshKey={previewKey} onConsole={pushConsole} />
+            <PreviewFrame
+              html={code.html}
+              css={code.css}
+              js={code.js}
+              refreshKey={previewKey}
+              onConsole={pushConsole}
+            />
           </div>
         </div>
       ) : null}

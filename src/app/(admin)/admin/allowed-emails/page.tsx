@@ -20,7 +20,8 @@ export default async function AllowedEmailsPage() {
       <div>
         <h1 className="text-xl font-semibold text-slate-50">Allowlist</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Only these exact Google addresses can sign in. Revoking an entry deactivates the account immediately.
+          Only these exact Google addresses can sign in. Revoking an entry deactivates the account
+          immediately.
         </p>
       </div>
       <AllowedEmailsManager

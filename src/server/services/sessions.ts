@@ -37,7 +37,11 @@ export async function getExamTimeState(examId: string, userId: string, exam?: Ex
 }
 
 /** Start (or resume) a sitting. The expiry is fixed server-side at first start. */
-export async function startExamSession(exam: Exam, userId: string, userAgent?: string | null): Promise<ExamSession> {
+export async function startExamSession(
+  exam: Exam,
+  userId: string,
+  userAgent?: string | null,
+): Promise<ExamSession> {
   const state = await getExamTimeState(exam.id, userId, exam);
 
   if (state.availability === 'NOT_STARTED') throw forbidden('This exam has not opened yet.');
@@ -73,7 +77,10 @@ export async function startExamSession(exam: Exam, userId: string, userAgent?: s
   });
 }
 
-export async function heartbeat(examId: string, userId: string): Promise<{ status: string; msRemaining: number }> {
+export async function heartbeat(
+  examId: string,
+  userId: string,
+): Promise<{ status: string; msRemaining: number }> {
   const now = new Date();
   const session = await prisma.examSession.findUnique({ where: { userId_examId: { userId, examId } } });
   if (!session) return { status: 'NONE', msRemaining: 0 };
@@ -90,7 +97,11 @@ export async function heartbeat(examId: string, userId: string): Promise<{ statu
   return { status: updated.status, msRemaining: Math.max(0, updated.expiresAt.getTime() - now.getTime()) };
 }
 
-export async function endSession(examId: string, userId: string, status: 'SUBMITTED' | 'EXPIRED'): Promise<void> {
+export async function endSession(
+  examId: string,
+  userId: string,
+  status: 'SUBMITTED' | 'EXPIRED',
+): Promise<void> {
   await prisma.examSession.updateMany({
     where: { examId, userId, endedAt: null },
     data: { endedAt: new Date(), status },

@@ -17,10 +17,7 @@ export default async function SettingsPage() {
 
   const [runner, dbOk, audits] = await Promise.all([
     runnerHealth().catch(() => ({ ok: false, detail: 'unreachable' })),
-    prisma
-      .$queryRaw`SELECT 1`
-      .then(() => true)
-      .catch(() => false),
+    prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
     prisma.auditLog.findMany({
       orderBy: { createdAt: 'desc' },
       take: 25,

@@ -247,7 +247,8 @@ Write **CSS only**, using **CSS Grid and media queries**.
 
 **Mobile (max-width: 479px)**
 - \`.container\`: a single column with a 25px gap`,
-  instructions: 'Tests measure the rendered layout at each viewport size, so any CSS that produces the required result passes.',
+  instructions:
+    'Tests measure the rendered layout at each viewport size, so any CSS that produces the required result passes.',
   starterHtml: gridHtml,
   starterCss: `/* Write your code here */
 .container {
@@ -294,8 +295,19 @@ Write **CSS only**, using **CSS Grid and media queries**.
       body: {
         viewport: { width: 1280, height: 720 },
         assertions: [
-          { type: 'gridColumns', selector: '.container', equals: 3, equalWidths: true, message: 'On desktop the container should render 3 equal columns.' },
-          { type: 'gap', selector: '.container', equals: 20, message: 'On desktop the grid gap should be 20px.' },
+          {
+            type: 'gridColumns',
+            selector: '.container',
+            equals: 3,
+            equalWidths: true,
+            message: 'On desktop the container should render 3 equal columns.',
+          },
+          {
+            type: 'gap',
+            selector: '.container',
+            equals: 20,
+            message: 'On desktop the grid gap should be 20px.',
+          },
         ],
       } satisfies TestCaseBody,
     },
@@ -325,7 +337,12 @@ Write **CSS only**, using **CSS Grid and media queries**.
       body: {
         viewport: { width: 768, height: 1024 },
         assertions: [
-          { type: 'boxesPerRow', selector: '.item', equals: 2, message: 'At 768px wide, two items should sit in the first row.' },
+          {
+            type: 'boxesPerRow',
+            selector: '.item',
+            equals: 2,
+            message: 'At 768px wide, two items should sit in the first row.',
+          },
         ],
       } satisfies TestCaseBody,
     },
@@ -338,7 +355,12 @@ Write **CSS only**, using **CSS Grid and media queries**.
       body: {
         viewport: { width: 400, height: 800 },
         assertions: [
-          { type: 'boxesPerRow', selector: '.item', equals: 1, message: 'At 400px wide, each item should be on its own row.' },
+          {
+            type: 'boxesPerRow',
+            selector: '.item',
+            equals: 1,
+            message: 'At 400px wide, each item should be on its own row.',
+          },
         ],
       } satisfies TestCaseBody,
     },
@@ -350,11 +372,17 @@ Write **CSS only**, using **CSS Grid and media queries**.
       order: 4,
       body: {
         viewport: { width: 400, height: 800 },
-        assertions: [{ type: 'gap', selector: '.container', equals: 25, message: 'On small screens the gap should be 25px.' }],
+        assertions: [
+          {
+            type: 'gap',
+            selector: '.container',
+            equals: 25,
+            message: 'On small screens the gap should be 25px.',
+          },
+        ],
       } satisfies TestCaseBody,
     },
   ],
 };
-
 
 export const seedQuestions: SeedQuestion[] = [boxQuestion, gridQuestion];

@@ -32,7 +32,9 @@ export function Sidebar() {
                 aria-current={active ? 'page' : undefined}
                 className={cn(
                   'block whitespace-nowrap rounded-md px-3 py-2 text-sm transition',
-                  active ? 'bg-ink-800 font-medium text-white' : 'text-slate-400 hover:bg-ink-850 hover:text-slate-200',
+                  active
+                    ? 'bg-ink-800 font-medium text-white'
+                    : 'text-slate-400 hover:bg-ink-850 hover:text-slate-200',
                 )}
               >
                 {link.label}

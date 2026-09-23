@@ -78,7 +78,10 @@ export async function importAllowedEmails(csv: string): Promise<ImportSummary> {
   }
   // Count precisely after the fact (upsert does not report which branch ran).
   const emails = report.valid.map((r) => r.email);
-  const rows = await prisma.allowedEmail.findMany({ where: { email: { in: emails } }, select: { email: true, createdAt: true, updatedAt: true } });
+  const rows = await prisma.allowedEmail.findMany({
+    where: { email: { in: emails } },
+    select: { email: true, createdAt: true, updatedAt: true },
+  });
   for (const row of rows) {
     if (Math.abs(row.createdAt.getTime() - row.updatedAt.getTime()) < 1000) created += 1;
     else updated += 1;

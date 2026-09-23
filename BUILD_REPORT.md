@@ -27,14 +27,14 @@ report status honestly rather than assuming success.
 
 ## Status lines
 
-| Check | Status | Evidence / exact command to complete it |
-|---|---|---|
-| **BUILD** (`npm install`, `tsc --noEmit`, `next lint`) | **BLOCKED** — no network egress, `npm install` cannot run here | `npm install && npm run typecheck && npm run lint` |
-| **TEST** (`npm test` via Vitest) | **BLOCKED** in its official form (Vitest itself needs `npm install`) — **but see "What was actually run" below: 185 of these assertions were independently re-executed and passed** | `npm install && npm test` |
-| **PRODUCTION BUILD** (`prisma generate && next build`) | **BLOCKED** — needs `npm install` (Next.js, Prisma CLI) | `npm install && npm run build` |
-| **SEED** (`prisma db seed`) | **BLOCKED** — needs a running PostgreSQL and a generated Prisma client | `docker compose up -d db && npx prisma migrate deploy && npm run db:seed` |
-| **RUNNER** (container build + health + a real graded run) | **BLOCKED** — needs Docker and a Playwright Chromium download | `docker compose up -d --build runner && node scripts/smoke-runner.mjs` |
-| **E2E** (Playwright, both tiers) | **BLOCKED** — needs the running stack above, a Playwright browser install, and (for the authenticated tier) a real Google sign-in, which cannot be scripted headlessly | `npx playwright install --with-deps chromium && npm run dev` (separate shell) `&& npx playwright test tests/e2e/public.spec.ts`; see `tests/e2e/README.md` for the authenticated tier |
+| Check                                                     | Status                                                                                                                                                                              | Evidence / exact command to complete it                                                                                                                                               |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **BUILD** (`npm install`, `tsc --noEmit`, `next lint`)    | **BLOCKED** — no network egress, `npm install` cannot run here                                                                                                                      | `npm install && npm run typecheck && npm run lint`                                                                                                                                    |
+| **TEST** (`npm test` via Vitest)                          | **BLOCKED** in its official form (Vitest itself needs `npm install`) — **but see "What was actually run" below: 185 of these assertions were independently re-executed and passed** | `npm install && npm test`                                                                                                                                                             |
+| **PRODUCTION BUILD** (`prisma generate && next build`)    | **BLOCKED** — needs `npm install` (Next.js, Prisma CLI)                                                                                                                             | `npm install && npm run build`                                                                                                                                                        |
+| **SEED** (`prisma db seed`)                               | **BLOCKED** — needs a running PostgreSQL and a generated Prisma client                                                                                                              | `docker compose up -d db && npx prisma migrate deploy && npm run db:seed`                                                                                                             |
+| **RUNNER** (container build + health + a real graded run) | **BLOCKED** — needs Docker and a Playwright Chromium download                                                                                                                       | `docker compose up -d --build runner && node scripts/smoke-runner.mjs`                                                                                                                |
+| **E2E** (Playwright, both tiers)                          | **BLOCKED** — needs the running stack above, a Playwright browser install, and (for the authenticated tier) a real Google sign-in, which cannot be scripted headlessly              | `npx playwright install --with-deps chromium && npm run dev` (separate shell) `&& npx playwright test tests/e2e/public.spec.ts`; see `tests/e2e/README.md` for the authenticated tier |
 
 **One command runs all of the above in order and stops at the first
 failure:** `bash scripts/validate-stack.sh` (needs `.env` filled in first).
@@ -78,7 +78,7 @@ derivation, 17 assertions), CSV parsing/formula-injection guarding (12
 assertions), email normalisation/validation (7 assertions), the
 student-visible projection of a graded run (5 assertions — this is the one
 that proves hidden test internals never reach the response the browser
-sees), the seed data validated against the *real* runner parser (18
+sees), the seed data validated against the _real_ runner parser (18
 assertions), the runner's bounded concurrency queue (6 assertions — capacity
 really is capped, excess work queues rather than drops, a full queue rejects
 with `QUEUE_FULL`, a throwing task still frees its slot), and the runner's
@@ -90,7 +90,7 @@ right reason code).
 **What this does not cover**, and why those gaps are exactly the BLOCKED
 lines above: anything requiring a real browser (the runner's DOM evaluator's
 actual `getComputedStyle`/grid-geometry logic — covered structurally here,
-but its *behaviour* only runs inside Playwright), anything requiring
+but its _behaviour_ only runs inside Playwright), anything requiring
 PostgreSQL (`tests/integration/*` — written, and auto-skip without
 `DATABASE_URL` rather than pretending to pass), and anything requiring a
 signed-in browser session (the authenticated e2e tier).
@@ -171,5 +171,5 @@ box" question, look at the network tab while acting as a student, and
 confirm the response to `/api/exams/[id]/start` and `/api/attempts/[id]/run`
 never contains a test's `testCode`. That's the check this whole product's
 integrity rests on, and it's the one the offline structural check can prove
-about the *code* but only a live run can prove about the *actual wire
-traffic*.
+about the _code_ but only a live run can prove about the _actual wire
+traffic_.

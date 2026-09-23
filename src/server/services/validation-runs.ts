@@ -32,7 +32,8 @@ export async function validateQuestion(
   if (question.tests.length === 0) throw badRequest('Add at least one test case before validating.');
 
   const useReference = override?.useReference !== false;
-  const html = (useReference ? question.referenceHtml : override?.html) ?? override?.html ?? question.starterHtml;
+  const html =
+    (useReference ? question.referenceHtml : override?.html) ?? override?.html ?? question.starterHtml;
   const css = (useReference ? question.referenceCss : override?.css) ?? override?.css ?? question.starterCss;
   const js = (useReference ? question.referenceJs : override?.js) ?? override?.js ?? question.starterJs;
 

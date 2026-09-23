@@ -33,7 +33,8 @@ export function AttemptCodeViewer({
   const [copied, setCopied] = React.useState(false);
 
   const submittedCode = tab === 'html' ? html : tab === 'css' ? css : js;
-  const starterCode = tab === 'html' ? starter.html ?? '' : tab === 'css' ? starter.css ?? '' : starter.js ?? '';
+  const starterCode =
+    tab === 'html' ? (starter.html ?? '') : tab === 'css' ? (starter.css ?? '') : (starter.js ?? '');
 
   const language: CodeLanguage = tab === 'html' ? 'html' : tab === 'css' ? 'css' : 'javascript';
 
@@ -141,7 +142,7 @@ export function AttemptCodeViewer({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="rounded px-2.5 py-1 text-xs font-medium text-slate-300 ring-1 ring-ink-700 hover:bg-ink-800 hover:text-white transition"
+                  className="rounded px-2.5 py-1 text-xs font-medium text-slate-300 ring-1 ring-ink-700 transition hover:bg-ink-800 hover:text-white"
                 >
                   {copied ? '✓ Copied' : 'Copy Code'}
                 </button>
@@ -163,7 +164,7 @@ export function AttemptCodeViewer({
         />
 
         {tab === 'preview' ? (
-          <div className="flex justify-center rounded-md bg-ink-950 p-3 ring-1 ring-ink-700 overflow-auto">
+          <div className="flex justify-center overflow-auto rounded-md bg-ink-950 p-3 ring-1 ring-ink-700">
             <div
               style={{
                 width: viewport === 'mobile' ? '375px' : viewport === 'tablet' ? '768px' : '100%',

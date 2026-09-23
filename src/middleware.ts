@@ -19,10 +19,10 @@ function hasSessionCookie(req: NextRequest): boolean {
   // `__Secure-authjs.session-token` when the deployment is HTTPS.
   return Boolean(
     req.cookies.get('authjs.session-token')?.value ||
-      req.cookies.get('__Secure-authjs.session-token')?.value ||
-      // Chunked cookies are used when the JWT exceeds the 4 KB cookie limit.
-      req.cookies.get('authjs.session-token.0')?.value ||
-      req.cookies.get('__Secure-authjs.session-token.0')?.value,
+    req.cookies.get('__Secure-authjs.session-token')?.value ||
+    // Chunked cookies are used when the JWT exceeds the 4 KB cookie limit.
+    req.cookies.get('authjs.session-token.0')?.value ||
+    req.cookies.get('__Secure-authjs.session-token.0')?.value,
   );
 }
 

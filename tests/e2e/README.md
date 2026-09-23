@@ -10,10 +10,10 @@ scripting a real Google login would be both fragile and against Google's terms.
 
 There are therefore two tiers:
 
-| File | Needs auth? | Runs with `npm run test:e2e` |
-|---|---|---|
-| `public.spec.ts` | no | yes |
-| `exam-flow.spec.ts` | yes | only when `E2E_STORAGE_STATE` is set |
+| File                | Needs auth? | Runs with `npm run test:e2e`         |
+| ------------------- | ----------- | ------------------------------------ |
+| `public.spec.ts`    | no          | yes                                  |
+| `exam-flow.spec.ts` | yes         | only when `E2E_STORAGE_STATE` is set |
 
 ## Running the authenticated tier
 

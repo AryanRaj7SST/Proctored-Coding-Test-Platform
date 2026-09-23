@@ -85,7 +85,9 @@ export async function updateExam(id: string, input: Partial<ExamCreateInput> & {
 export async function assertExamPublishable(examId: string, questionIds?: string[]): Promise<void> {
   const ids =
     questionIds ??
-    (await prisma.examQuestion.findMany({ where: { examId }, select: { questionId: true } })).map((q) => q.questionId);
+    (await prisma.examQuestion.findMany({ where: { examId }, select: { questionId: true } })).map(
+      (q) => q.questionId,
+    );
   if (ids.length === 0) throw badRequest('Add at least one question before publishing this exam.');
 
   const questions = await prisma.question.findMany({
@@ -96,7 +98,12 @@ export async function assertExamPublishable(examId: string, questionIds?: string
   for (const q of questions) {
     const blockers = publishBlockers({
       validation: q.validation,
-      tests: q.tests.map((t) => ({ name: t.name, points: t.points, testCode: t.testCode, testType: t.testType })),
+      tests: q.tests.map((t) => ({
+        name: t.name,
+        points: t.points,
+        testCode: t.testCode,
+        testType: t.testType,
+      })),
     });
     if (blockers.length > 0) problems.push(`${q.title}: ${blockers[0]}`);
   }
@@ -166,7 +173,9 @@ export async function listStudentExams(userId: string) {
         endTime: a.exam.endTime,
         durationMinutes: a.exam.durationMinutes,
       },
-      session ? { startedAt: session.startedAt, expiresAt: session.expiresAt, endedAt: session.endedAt } : null,
+      session
+        ? { startedAt: session.startedAt, expiresAt: session.expiresAt, endedAt: session.endedAt }
+        : null,
       { submitted: allDone, now },
     );
     return {

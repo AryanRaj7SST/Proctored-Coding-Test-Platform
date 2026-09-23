@@ -117,7 +117,7 @@ describeDb('attempt lifecycle (requires DATABASE_URL)', () => {
     expect(second.saved).toBe(false);
   });
 
-  it('refuses to autosave another student\'s attempt', async () => {
+  it("refuses to autosave another student's attempt", async () => {
     const attempt = await attempts.getOrCreateAttempt(ids.exam, ids.question, ids.user);
     await expect(
       attempts.saveAttemptCode(attempt.id, 'someone-else', { html: 'x', css: '', js: '' }),

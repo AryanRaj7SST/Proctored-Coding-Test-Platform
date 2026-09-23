@@ -2,11 +2,11 @@
 
 ## Files
 
-| File | Purpose |
-|---|---|
-| `../docker-compose.yml` | Local development: PostgreSQL + runner |
-| `../Dockerfile` | Application image for self-hosted deployment |
-| `../runner/Dockerfile` | Runner image (Playwright + Chromium) |
+| File                    | Purpose                                      |
+| ----------------------- | -------------------------------------------- |
+| `../docker-compose.yml` | Local development: PostgreSQL + runner       |
+| `../Dockerfile`         | Application image for self-hosted deployment |
+| `../runner/Dockerfile`  | Runner image (Playwright + Chromium)         |
 
 ## Network posture
 

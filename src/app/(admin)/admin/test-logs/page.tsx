@@ -39,9 +39,14 @@ export default async function TestLogsPage({
     },
   });
 
-  const questionIds = [...new Set(runs.filter((r) => !r.attempt && r.questionId).map((r) => r.questionId as string))];
+  const questionIds = [
+    ...new Set(runs.filter((r) => !r.attempt && r.questionId).map((r) => r.questionId as string)),
+  ];
   const questions = questionIds.length
-    ? await prisma.question.findMany({ where: { id: { in: questionIds } }, select: { id: true, title: true } })
+    ? await prisma.question.findMany({
+        where: { id: { in: questionIds } },
+        select: { id: true, title: true },
+      })
     : [];
 
   return (
@@ -76,7 +81,10 @@ export default async function TestLogsPage({
         <CardHeader title="Runner executions" subtitle="Newest first" />
         <CardBody className="space-y-2">
           {runs.length === 0 ? (
-            <EmptyState title="No runs recorded" description="Runs appear here as soon as tests are executed." />
+            <EmptyState
+              title="No runs recorded"
+              description="Runs appear here as soon as tests are executed."
+            />
           ) : (
             runs.map((r) => (
               <details key={r.id} className="rounded-md bg-ink-900 p-3 ring-1 ring-ink-700">
@@ -89,15 +97,20 @@ export default async function TestLogsPage({
                       'Unknown question'}
                   </span>
                   <span className="text-xs text-slate-500">
-                    {r.attempt ? `${r.attempt.user.name ?? r.attempt.user.email} · ${r.attempt.exam.title}` : 'admin validation'}
+                    {r.attempt
+                      ? `${r.attempt.user.name ?? r.attempt.user.email} · ${r.attempt.exam.title}`
+                      : 'admin validation'}
                   </span>
                   <span className="ml-auto text-xs text-slate-500">
-                    {r.passedCount}/{r.totalCount} · {formatDuration(r.durationMs)} · {formatDateTime(r.startedAt)}
+                    {r.passedCount}/{r.totalCount} · {formatDuration(r.durationMs)} ·{' '}
+                    {formatDateTime(r.startedAt)}
                   </span>
                 </summary>
 
                 {r.error ? (
-                  <p className="mt-2 rounded bg-bad/10 p-2 text-xs text-rose-200 ring-1 ring-bad/30">{r.error}</p>
+                  <p className="mt-2 rounded bg-bad/10 p-2 text-xs text-rose-200 ring-1 ring-bad/30">
+                    {r.error}
+                  </p>
                 ) : null}
                 <pre className="mt-2 max-h-64 overflow-auto font-mono text-[11px] leading-5 text-slate-400">
                   {r.logs || '(no console output captured)'}

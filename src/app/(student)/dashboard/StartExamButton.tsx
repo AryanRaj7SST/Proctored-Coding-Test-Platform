@@ -66,14 +66,17 @@ export function StartExamButton({
             {questionCount === 1 ? '' : 's'}.
           </li>
           <li>
-            The countdown is kept on the server. It keeps running if you close the tab, lose your connection or reload
-            the page{resuming ? ' — resuming does not give you more time' : ''}.
+            The countdown is kept on the server. It keeps running if you close the tab, lose your connection
+            or reload the page{resuming ? ' — resuming does not give you more time' : ''}.
           </li>
           <li>
-            Leaving the exam window is recorded. Tab switches, focus loss, fullscreen exits and clipboard use are all
-            logged with timestamps and shown to your mentor.
+            Leaving the exam window is recorded. Tab switches, focus loss, fullscreen exits and clipboard use
+            are all logged with timestamps and shown to your mentor.
           </li>
-          <li>Your work is saved automatically as you type, and graded against hidden test cases when you submit.</li>
+          <li>
+            Your work is saved automatically as you type, and graded against hidden test cases when you
+            submit.
+          </li>
           <li>When the time runs out, whatever you have written is submitted and graded automatically.</li>
         </ul>
       </Modal>

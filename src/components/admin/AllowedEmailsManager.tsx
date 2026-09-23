@@ -48,13 +48,7 @@ interface ImportSummary {
  * match on a normalised address. There is deliberately no domain-wildcard
  * option here, because "@gmail.com" would let the entire internet in.
  */
-export function AllowedEmailsManager({
-  rows,
-  batches,
-}: {
-  rows: AllowedEmailRowDto[];
-  batches: string[];
-}) {
+export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowDto[]; batches: string[] }) {
   const router = useRouter();
   const toast = useToast();
 
@@ -62,7 +56,12 @@ export function AllowedEmailsManager({
   const [batchFilter, setBatchFilter] = React.useState('');
   const [adding, setAdding] = React.useState(false);
   const [addOpen, setAddOpen] = React.useState(false);
-  const [draft, setDraft] = React.useState({ email: '', role: 'STUDENT' as 'STUDENT' | 'ADMIN', batch: '', note: '' });
+  const [draft, setDraft] = React.useState({
+    email: '',
+    role: 'STUDENT' as 'STUDENT' | 'ADMIN',
+    batch: '',
+    note: '',
+  });
   const [importOpen, setImportOpen] = React.useState(false);
   const [importing, setImporting] = React.useState(false);
   const [importSummary, setImportSummary] = React.useState<ImportSummary | null>(null);
@@ -70,8 +69,7 @@ export function AllowedEmailsManager({
   const [deleting, setDeleting] = React.useState(false);
 
   const filtered = rows.filter(
-    (r) =>
-      (!query || r.email.includes(query.toLowerCase())) && (!batchFilter || r.batch === batchFilter),
+    (r) => (!query || r.email.includes(query.toLowerCase())) && (!batchFilter || r.batch === batchFilter),
   );
 
   const add = async () => {
@@ -142,7 +140,10 @@ export function AllowedEmailsManager({
       form.append('file', file);
       const summary = await api_importCsv(form);
       setImportSummary(summary);
-      toast.push(`Imported: ${summary.created} added, ${summary.updated} updated, ${summary.skipped} skipped.`, 'success');
+      toast.push(
+        `Imported: ${summary.created} added, ${summary.updated} updated, ${summary.skipped} skipped.`,
+        'success',
+      );
       router.refresh();
     } catch (err) {
       toast.push(err instanceof ApiError ? err.message : 'Import failed.', 'error');
@@ -160,7 +161,8 @@ export function AllowedEmailsManager({
           action={
             <div className="flex gap-2">
               <a
-                href="/api/allowed-emails?format=csv" download
+                href="/api/allowed-emails?format=csv"
+                download
                 className="rounded-md px-3 py-1.5 text-xs text-slate-300 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
               >
                 Export CSV
@@ -182,7 +184,11 @@ export function AllowedEmailsManager({
               onChange={(e) => setQuery(e.target.value)}
               aria-label="Search allowlist"
             />
-            <Select value={batchFilter} onChange={(e) => setBatchFilter(e.target.value)} aria-label="Filter by batch">
+            <Select
+              value={batchFilter}
+              onChange={(e) => setBatchFilter(e.target.value)}
+              aria-label="Filter by batch"
+            >
               <option value="">All batches</option>
               {batches.map((b) => (
                 <option key={b} value={b}>
@@ -306,7 +312,11 @@ export function AllowedEmailsManager({
             </Field>
           </div>
           <Field label="Note" htmlFor="ae-note">
-            <Input id="ae-note" value={draft.note} onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))} />
+            <Input
+              id="ae-note"
+              value={draft.note}
+              onChange={(e) => setDraft((d) => ({ ...d, note: e.target.value }))}
+            />
           </Field>
           <p className="text-xs text-slate-500">
             The address must match exactly what Google reports, lowercased. Aliases such as
@@ -334,7 +344,8 @@ export function AllowedEmailsManager({
           {importSummary ? (
             <div className="rounded-md bg-ink-900 p-3 text-xs ring-1 ring-ink-700">
               <p className="text-slate-200">
-                {importSummary.created} added · {importSummary.updated} updated · {importSummary.skipped} skipped
+                {importSummary.created} added · {importSummary.updated} updated · {importSummary.skipped}{' '}
+                skipped
               </p>
               {importSummary.errors.length > 0 ? (
                 <ul className="mt-2 list-disc space-y-0.5 pl-5 text-rose-300">

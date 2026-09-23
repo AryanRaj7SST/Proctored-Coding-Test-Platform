@@ -32,7 +32,10 @@ const config: Config = {
         mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Consolas', 'monospace'],
       },
       keyframes: {
-        'fade-in': { from: { opacity: '0', transform: 'translateY(4px)' }, to: { opacity: '1', transform: 'none' } },
+        'fade-in': {
+          from: { opacity: '0', transform: 'translateY(4px)' },
+          to: { opacity: '1', transform: 'none' },
+        },
         shimmer: { '100%': { transform: 'translateX(100%)' } },
       },
       animation: { 'fade-in': 'fade-in .18s ease-out', shimmer: 'shimmer 1.4s infinite' },

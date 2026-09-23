@@ -37,8 +37,9 @@ export default async function AdminOverviewPage() {
 
       {!runner.ok ? (
         <div className="rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30" role="alert">
-          The test runner is not reachable. Students can still write and save code, but “Run Test Cases”, submissions
-          and question validation will fail until it is back. Check <code>RUNNER_URL</code> and the runner container.
+          The test runner is not reachable. Students can still write and save code, but “Run Test Cases”,
+          submissions and question validation will fail until it is back. Check <code>RUNNER_URL</code> and
+          the runner container.
         </div>
       ) : null}
 
@@ -59,7 +60,10 @@ export default async function AdminOverviewPage() {
           <CardBody className="p-0">
             {activity.length === 0 ? (
               <div className="p-4">
-                <EmptyState title="Nothing has happened yet" description="Activity appears once students sign in." />
+                <EmptyState
+                  title="Nothing has happened yet"
+                  description="Activity appears once students sign in."
+                />
               </div>
             ) : (
               <ul className="divide-y divide-ink-800">
@@ -67,7 +71,9 @@ export default async function AdminOverviewPage() {
                   <li key={i} className="flex items-start gap-3 px-4 py-2.5">
                     <Badge tone={ACTIVITY_TONE[item.kind] ?? 'info'}>{item.kind}</Badge>
                     <p className="min-w-0 flex-1 text-sm text-slate-300">{item.text}</p>
-                    <span className="whitespace-nowrap text-xs text-slate-500">{formatDateTime(item.at)}</span>
+                    <span className="whitespace-nowrap text-xs text-slate-500">
+                      {formatDateTime(item.at)}
+                    </span>
                   </li>
                 ))}
               </ul>

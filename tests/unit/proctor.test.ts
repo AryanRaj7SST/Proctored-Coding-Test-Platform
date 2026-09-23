@@ -40,7 +40,10 @@ describe('shouldRecordEvent', () => {
   });
 
   it('collapses repeats of the same type inside the window', () => {
-    const decision = shouldRecordEvent({ type: 'COPY', occurredAt: at(200) }, { type: 'COPY', occurredAt: at(0) });
+    const decision = shouldRecordEvent(
+      { type: 'COPY', occurredAt: at(200) },
+      { type: 'COPY', occurredAt: at(0) },
+    );
     expect(decision.accept).toBe(false);
     expect(decision.reason).toBe('duplicate-same-type');
   });
@@ -63,8 +66,10 @@ describe('shouldRecordEvent', () => {
     // Client timestamps are advisory; the server stamps its own time, but the
     // guard must not swallow events if the delta is ever negative.
     expect(
-      shouldRecordEvent({ type: 'TAB_HIDDEN', occurredAt: at(-500) }, { type: 'TAB_HIDDEN', occurredAt: at(0) })
-        .accept,
+      shouldRecordEvent(
+        { type: 'TAB_HIDDEN', occurredAt: at(-500) },
+        { type: 'TAB_HIDDEN', occurredAt: at(0) },
+      ).accept,
     ).toBe(true);
   });
 });

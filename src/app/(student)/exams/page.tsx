@@ -69,7 +69,9 @@ export default async function StudentExamsPage() {
                       {e.submittedCount}/{e.questionCount}
                     </Td>
                     <Td className="text-slate-300">
-                      {e.score !== null ? `${e.score}/${e.maxScore} (${percentage(e.score, e.maxScore ?? 0)}%)` : '—'}
+                      {e.score !== null
+                        ? `${e.score}/${e.maxScore} (${percentage(e.score, e.maxScore ?? 0)}%)`
+                        : '—'}
                     </Td>
                     <Td className="text-slate-500">{e.endTime ? formatDateTime(e.endTime) : '—'}</Td>
                   </tr>
@@ -85,7 +87,10 @@ export default async function StudentExamsPage() {
         <CardBody className="p-0">
           {attempts.length === 0 ? (
             <div className="p-4">
-              <EmptyState title="No submissions yet" description="Questions you submit will be listed here." />
+              <EmptyState
+                title="No submissions yet"
+                description="Questions you submit will be listed here."
+              />
             </div>
           ) : (
             <Table>

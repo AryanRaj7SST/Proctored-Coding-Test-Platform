@@ -98,7 +98,9 @@ describe('isColorProperty', () => {
 
 describe('validateTestCaseBody', () => {
   it('accepts a minimal valid body', () => {
-    const result = validateTestCaseBody(JSON.stringify({ assertions: [{ type: 'exists', selector: '#box' }] }));
+    const result = validateTestCaseBody(
+      JSON.stringify({ assertions: [{ type: 'exists', selector: '#box' }] }),
+    );
     expect(result.ok).toBe(true);
     expect(result.value?.assertions).toHaveLength(1);
   });
@@ -120,13 +122,17 @@ describe('validateTestCaseBody', () => {
   });
 
   it('rejects unknown assertion types', () => {
-    const result = validateTestCaseBody({ assertions: [{ type: 'sourceContains', value: 'addEventListener' }] });
+    const result = validateTestCaseBody({
+      assertions: [{ type: 'sourceContains', value: 'addEventListener' }],
+    });
     expect(result.ok).toBe(false);
     expect(result.errors.join(' ')).toMatch(/sourceContains|unknown/i);
   });
 
   it('rejects an unsafe selector', () => {
-    expect(validateTestCaseBody({ assertions: [{ type: 'exists', selector: 'javascript:x' }] }).ok).toBe(false);
+    expect(validateTestCaseBody({ assertions: [{ type: 'exists', selector: 'javascript:x' }] }).ok).toBe(
+      false,
+    );
   });
 
   it('enforces the assertion count limit', () => {

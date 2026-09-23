@@ -21,7 +21,8 @@ export default async function QuestionsPage() {
         <div>
           <h1 className="text-xl font-semibold text-slate-50">Questions</h1>
           <p className="mt-1 text-sm text-slate-400">
-            A question must pass validation against its reference solution before it can go into a published exam.
+            A question must pass validation against its reference solution before it can go into a published
+            exam.
           </p>
         </div>
         <Link
@@ -60,7 +61,10 @@ export default async function QuestionsPage() {
                 {questions.map((q) => (
                   <tr key={q.id}>
                     <Td>
-                      <Link href={`/admin/questions/${q.id}/edit`} className="font-medium text-slate-100 hover:underline">
+                      <Link
+                        href={`/admin/questions/${q.id}/edit`}
+                        className="font-medium text-slate-100 hover:underline"
+                      >
                         {q.title}
                       </Link>
                       <p className="text-xs text-slate-500">
@@ -77,16 +81,22 @@ export default async function QuestionsPage() {
                       </Badge>
                     </Td>
                     <Td className="text-slate-400">
-                      {q._count.examQuestions} exam{q._count.examQuestions === 1 ? '' : 's'} · {q._count.attempts}{' '}
-                      attempt{q._count.attempts === 1 ? '' : 's'}
+                      {q._count.examQuestions} exam{q._count.examQuestions === 1 ? '' : 's'} ·{' '}
+                      {q._count.attempts} attempt{q._count.attempts === 1 ? '' : 's'}
                     </Td>
                     <Td className="text-slate-500">{formatDateTime(q.updatedAt)}</Td>
                     <Td>
                       <div className="flex gap-2 text-xs">
-                        <Link href={`/admin/questions/${q.id}/preview`} className="text-brand-300 hover:underline">
+                        <Link
+                          href={`/admin/questions/${q.id}/preview`}
+                          className="text-brand-300 hover:underline"
+                        >
                           Preview
                         </Link>
-                        <Link href={`/admin/questions/${q.id}/edit`} className="text-brand-300 hover:underline">
+                        <Link
+                          href={`/admin/questions/${q.id}/edit`}
+                          className="text-brand-300 hover:underline"
+                        >
                           Edit
                         </Link>
                       </div>

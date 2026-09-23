@@ -78,7 +78,8 @@ Your task is to style the layout using CSS Grid to ensure the following:
     },
     {
       name: 'Styles the grid items correctly',
-      description: 'Sets background-color to rgb(173, 216, 230), border to 2px solid rgb(0, 0, 0), centered text, line-height: 50px.',
+      description:
+        'Sets background-color to rgb(173, 216, 230), border to 2px solid rgb(0, 0, 0), centered text, line-height: 50px.',
       points: 10,
       order: 1,
       hidden: false,
@@ -254,7 +255,9 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
       points: 5,
       order: 3,
       hidden: false,
-      body: { assertions: [{ type: 'css', selector: '.grid-container', property: 'display', equals: 'grid' }] },
+      body: {
+        assertions: [{ type: 'css', selector: '.grid-container', property: 'display', equals: 'grid' }],
+      },
     },
     {
       name: 'Verify Grid Columns Count',
@@ -399,7 +402,9 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
     skipDuplicates: true,
   });
 
-  console.log(`Assigned contest to ${students.length} student(s) (${assignmentCount.count} new assignments created).`);
+  console.log(
+    `Assigned contest to ${students.length} student(s) (${assignmentCount.count} new assignments created).`,
+  );
   console.log('--- Setup Complete ---');
 }
 

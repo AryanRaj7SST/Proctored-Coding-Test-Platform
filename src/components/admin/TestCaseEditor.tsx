@@ -37,7 +37,9 @@ export function newDraftTest(order: number): DraftTest {
 const SNIPPETS: { label: string; body: TestCaseBody }[] = [
   {
     label: 'Element exists',
-    body: { assertions: [{ type: 'exists', selector: '#box', message: 'The element should be on the page.' }] },
+    body: {
+      assertions: [{ type: 'exists', selector: '#box', message: 'The element should be on the page.' }],
+    },
   },
   {
     label: 'Click changes a colour',
@@ -130,8 +132,8 @@ export function TestCaseEditor({
 
       {tests.length === 0 ? (
         <p className="rounded-md border border-dashed border-ink-600 p-4 text-center text-xs text-slate-500">
-          No test cases yet. A question cannot be published until it has at least one test that passes against the
-          reference solution.
+          No test cases yet. A question cannot be published until it has at least one test that passes against
+          the reference solution.
         </p>
       ) : null}
 
@@ -265,11 +267,7 @@ export function TestCaseEditor({
                   <Field
                     label="Behaviour specification (JSON)"
                     error={parsed.ok ? undefined : parsed.errors.join(' · ')}
-                    hint={
-                      parsed.ok
-                        ? 'Validated with the same parser the runner uses.'
-                        : undefined
-                    }
+                    hint={parsed.ok ? 'Validated with the same parser the runner uses.' : undefined}
                     htmlFor={`code-${test._key}`}
                   >
                     <Textarea
@@ -296,7 +294,9 @@ export function TestCaseEditor({
                         {parsed.value.viewport
                           ? `${parsed.value.viewport.width}×${parsed.value.viewport.height}`
                           : `default (${VIEWPORT_PRESETS.desktop?.width}×${VIEWPORT_PRESETS.desktop?.height})`}
-                        {parsed.value.steps?.length ? ` · ${parsed.value.steps.length} interaction step(s)` : ''}
+                        {parsed.value.steps?.length
+                          ? ` · ${parsed.value.steps.length} interaction step(s)`
+                          : ''}
                       </p>
                     </div>
                   ) : null}

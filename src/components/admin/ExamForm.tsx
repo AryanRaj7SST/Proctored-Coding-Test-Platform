@@ -50,7 +50,9 @@ export function ExamForm({
   const toggleQuestion = (id: string) =>
     set(
       'questionIds',
-      values.questionIds.includes(id) ? values.questionIds.filter((q) => q !== id) : [...values.questionIds, id],
+      values.questionIds.includes(id)
+        ? values.questionIds.filter((q) => q !== id)
+        : [...values.questionIds, id],
     );
 
   const moveQuestion = (id: string, delta: number) => {
@@ -147,8 +149,8 @@ export function ExamForm({
 
       {values.status !== 'DRAFT' && unvalidated.length > 0 ? (
         <div className="rounded-md bg-warn/10 p-3 text-xs text-amber-200 ring-1 ring-warn/30">
-          {unvalidated.length} selected question{unvalidated.length === 1 ? ' has' : 's have'} not passed validation.
-          Saving with a status other than Draft will be rejected until each one does.
+          {unvalidated.length} selected question{unvalidated.length === 1 ? ' has' : 's have'} not passed
+          validation. Saving with a status other than Draft will be rejected until each one does.
         </div>
       ) : null}
 
@@ -160,7 +162,12 @@ export function ExamForm({
               <Input id="e-title" value={values.title} onChange={(e) => set('title', e.target.value)} />
             </Field>
             <Field label="Description" htmlFor="e-desc">
-              <Textarea id="e-desc" rows={3} value={values.description} onChange={(e) => set('description', e.target.value)} />
+              <Textarea
+                id="e-desc"
+                rows={3}
+                value={values.description}
+                onChange={(e) => set('description', e.target.value)}
+              />
             </Field>
             <div className="grid gap-4 sm:grid-cols-2">
               <Field label="Duration (minutes)" required error={errors.durationMinutes} htmlFor="e-dur">
@@ -228,10 +235,7 @@ export function ExamForm({
         </Card>
 
         <Card>
-          <CardHeader
-            title="Questions"
-            subtitle={`${chosen.length} selected · ${totalPoints} points`}
-          />
+          <CardHeader title="Questions" subtitle={`${chosen.length} selected · ${totalPoints} points`} />
           <CardBody className="space-y-3">
             {chosen.length > 0 ? (
               <ol className="space-y-1.5">
@@ -274,7 +278,7 @@ export function ExamForm({
               <p className="text-xs text-slate-500">No questions selected yet.</p>
             )}
 
-            <div className="max-h-64 space-y-1 overflow-auto rounded-md ring-1 ring-ink-700 p-2">
+            <div className="max-h-64 space-y-1 overflow-auto rounded-md p-2 ring-1 ring-ink-700">
               {questions
                 .filter((q) => !values.questionIds.includes(q.id))
                 .map((q) => (
@@ -311,7 +315,12 @@ export function ExamForm({
                 >
                   Assign batch {values.batch ? `“${values.batch}”` : ''}
                 </Button>
-                <Button size="sm" disabled={selected.length === 0} loading={assigning} onClick={() => void assign('selected')}>
+                <Button
+                  size="sm"
+                  disabled={selected.length === 0}
+                  loading={assigning}
+                  onClick={() => void assign('selected')}
+                >
                   Assign selected ({selected.length})
                 </Button>
               </div>
@@ -331,7 +340,9 @@ export function ExamForm({
                     checked={selected.includes(s.id)}
                     disabled={isAssigned}
                     onChange={(e) =>
-                      setSelected((prev) => (e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id)))
+                      setSelected((prev) =>
+                        e.target.checked ? [...prev, s.id] : prev.filter((id) => id !== s.id),
+                      )
                     }
                     className="h-4 w-4 rounded border-ink-600 bg-ink-900"
                   />

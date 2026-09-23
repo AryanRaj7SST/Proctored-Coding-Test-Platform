@@ -2,7 +2,19 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Badge, Card, CardBody, CardHeader, EmptyState, Input, Select, Table, Td, Th, StatCard } from '@/components/ui';
+import {
+  Badge,
+  Card,
+  CardBody,
+  CardHeader,
+  EmptyState,
+  Input,
+  Select,
+  Table,
+  Td,
+  Th,
+  StatCard,
+} from '@/components/ui';
 import { formatDateTime, percentage, statusTone } from '@/lib/utils';
 
 export interface AttemptRow {
@@ -75,12 +87,15 @@ export function AttemptsTable({
     });
   }, [attempts, initialUserId, examId, questionId, batch, status, reviewFilter, search]);
 
-  const submittedCount = filtered.filter((a) => a.status === 'SUBMITTED' || a.status === 'AUTO_SUBMITTED').length;
+  const submittedCount = filtered.filter(
+    (a) => a.status === 'SUBMITTED' || a.status === 'AUTO_SUBMITTED',
+  ).length;
   const gradedWithMax = filtered.filter((a) => a.maxScore > 0 && a.status !== 'IN_PROGRESS');
   const avgScore =
     gradedWithMax.length > 0
       ? Math.round(
-          (gradedWithMax.reduce((acc, a) => acc + (a.score / a.maxScore) * 100, 0) / gradedWithMax.length) * 10,
+          (gradedWithMax.reduce((acc, a) => acc + (a.score / a.maxScore) * 100, 0) / gradedWithMax.length) *
+            10,
         ) / 10
       : 0;
   const manualCount = filtered.filter((a) => a.manuallyGraded).length;
@@ -89,12 +104,18 @@ export function AttemptsTable({
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-4">
         <StatCard label="Total attempts" value={filtered.length} hint={`of ${attempts.length} total`} />
-        <StatCard label="Submitted" value={submittedCount} hint={`${percentage(submittedCount, filtered.length || 1)}%`} />
+        <StatCard
+          label="Submitted"
+          value={submittedCount}
+          hint={`${percentage(submittedCount, filtered.length || 1)}%`}
+        />
         <StatCard label="Average score" value={`${avgScore}%`} hint="for completed attempts" />
         <StatCard
           label="Manually checked"
           value={manualCount}
-          hint={manualCount > 0 ? `${percentage(manualCount, submittedCount || 1)}% of submissions` : 'None yet'}
+          hint={
+            manualCount > 0 ? `${percentage(manualCount, submittedCount || 1)}% of submissions` : 'None yet'
+          }
         />
       </div>
 
@@ -106,7 +127,7 @@ export function AttemptsTable({
             initialUserId || initialExamId ? (
               <Link
                 href="/admin/attempts"
-                className="text-xs text-brand-300 hover:text-brand-200 hover:underline"
+                className="hover:text-brand-200 text-xs text-brand-300 hover:underline"
               >
                 Clear URL filters
               </Link>
@@ -168,7 +189,9 @@ export function AttemptsTable({
                 type="button"
                 onClick={() => setBatch('')}
                 className={`rounded px-2 py-0.5 text-xs transition ${
-                  batch === '' ? 'bg-brand-600 font-medium text-white' : 'bg-ink-800 text-slate-400 hover:text-white'
+                  batch === ''
+                    ? 'bg-brand-600 font-medium text-white'
+                    : 'bg-ink-800 text-slate-400 hover:text-white'
                 }`}
               >
                 All
@@ -179,7 +202,9 @@ export function AttemptsTable({
                   type="button"
                   onClick={() => setBatch(b)}
                   className={`rounded px-2 py-0.5 text-xs transition ${
-                    batch === b ? 'bg-brand-600 font-medium text-white' : 'bg-ink-800 text-slate-400 hover:text-white'
+                    batch === b
+                      ? 'bg-brand-600 font-medium text-white'
+                      : 'bg-ink-800 text-slate-400 hover:text-white'
                   }`}
                 >
                   {b}
@@ -210,7 +235,7 @@ export function AttemptsTable({
                 {filtered.map((a) => {
                   const pct = a.maxScore > 0 ? percentage(a.score, a.maxScore) : 0;
                   return (
-                    <tr key={a.id} className="hover:bg-ink-850/50 transition-colors">
+                    <tr key={a.id} className="transition-colors hover:bg-ink-850/50">
                       <Td>
                         <p className="font-medium text-slate-100">{a.userName ?? a.userEmail}</p>
                         <p className="text-xs text-slate-500">
@@ -218,13 +243,15 @@ export function AttemptsTable({
                           {a.userBatch ? ` · ${a.userBatch}` : ''}
                         </p>
                       </Td>
-                      <Td className="text-slate-300 font-medium">{a.questionTitle}</Td>
+                      <Td className="font-medium text-slate-300">{a.questionTitle}</Td>
                       <Td className="text-slate-400">{a.examTitle}</Td>
                       <Td>
-                        <div className="flex flex-col gap-1 items-start">
-                          <Badge tone={statusTone(a.status)}>{a.status.replace('_', ' ').toLowerCase()}</Badge>
+                        <div className="flex flex-col items-start gap-1">
+                          <Badge tone={statusTone(a.status)}>
+                            {a.status.replace('_', ' ').toLowerCase()}
+                          </Badge>
                           {a.manuallyGraded ? (
-                            <Badge tone="info" className="text-[10px] py-0">
+                            <Badge tone="info" className="py-0 text-[10px]">
                               manually graded
                             </Badge>
                           ) : null}
@@ -248,7 +275,7 @@ export function AttemptsTable({
                       <Td className="text-right">
                         <Link
                           href={`/admin/attempts/${a.id}`}
-                          className="inline-flex items-center gap-1 rounded-md bg-ink-800 px-2.5 py-1.5 text-xs font-medium text-brand-300 ring-1 ring-inset ring-ink-600 hover:bg-brand-600 hover:text-white transition"
+                          className="inline-flex items-center gap-1 rounded-md bg-ink-800 px-2.5 py-1.5 text-xs font-medium text-brand-300 ring-1 ring-inset ring-ink-600 transition hover:bg-brand-600 hover:text-white"
                         >
                           Review Code &rarr;
                         </Link>

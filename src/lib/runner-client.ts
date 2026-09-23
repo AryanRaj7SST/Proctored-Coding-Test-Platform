@@ -51,7 +51,10 @@ export function runnerErrorMessage(code: RunnerError['code']): string {
   }
 }
 
-export async function runOnRunner(request: RunnerRequest, timeoutMs = env.runnerTimeoutMs): Promise<RunnerRunResult> {
+export async function runOnRunner(
+  request: RunnerRequest,
+  timeoutMs = env.runnerTimeoutMs,
+): Promise<RunnerRunResult> {
   const url = `${requireEnv('runnerUrl').replace(/\/$/, '')}/run`;
   const secret = requireEnv('runnerSecret');
   const body = JSON.stringify(request);
@@ -76,7 +79,8 @@ export async function runOnRunner(request: RunnerRequest, timeoutMs = env.runner
     });
 
     if (res.status === 429) throw new RunnerError('BUSY', 'Runner queue is full.');
-    if (res.status === 401 || res.status === 403) throw new RunnerError('REJECTED', 'Runner rejected the request.');
+    if (res.status === 401 || res.status === 403)
+      throw new RunnerError('REJECTED', 'Runner rejected the request.');
     if (res.status === 400) throw new RunnerError('INVALID', 'Runner rejected the payload.');
     if (!res.ok) throw new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}.`);
 

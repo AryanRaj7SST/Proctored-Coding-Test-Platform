@@ -17,9 +17,11 @@ export class HttpError extends Error {
 
 export const badRequest = (m = 'Invalid request.', d?: unknown) => new HttpError(400, m, 'bad_request', d);
 export const unauthorized = (m = 'You must sign in to continue.') => new HttpError(401, m, 'unauthorized');
-export const forbidden = (m = 'You do not have access to this resource.') => new HttpError(403, m, 'forbidden');
+export const forbidden = (m = 'You do not have access to this resource.') =>
+  new HttpError(403, m, 'forbidden');
 export const notFound = (m = 'Not found.') => new HttpError(404, m, 'not_found');
-export const conflict = (m = 'This action conflicts with the current state.') => new HttpError(409, m, 'conflict');
+export const conflict = (m = 'This action conflicts with the current state.') =>
+  new HttpError(409, m, 'conflict');
 export const tooLarge = (m = 'Payload too large.') => new HttpError(413, m, 'payload_too_large');
 export const tooManyRequests = (m = 'Too many requests. Please slow down.') =>
   new HttpError(429, m, 'rate_limited');
@@ -70,7 +72,10 @@ export function errorResponse(err: unknown, context?: Record<string, unknown>): 
   }
 
   logger.error('Unhandled API error', { ...context, error: sanitizeError(err) });
-  return NextResponse.json({ error: 'Something went wrong. Please try again.', code: 'internal_error' }, { status: 500 });
+  return NextResponse.json(
+    { error: 'Something went wrong. Please try again.', code: 'internal_error' },
+    { status: 500 },
+  );
 }
 
 /** Wrap a route handler so every thrown error becomes a safe response. */

@@ -37,7 +37,14 @@ async function main(): Promise<void> {
 main()
   .catch(() => {
     process.stdout.write(
-      JSON.stringify({ runId: 'unknown', status: 'FAILED', results: [], durationMs: 0, consoleLogs: [], error: 'Sandbox failure.' }),
+      JSON.stringify({
+        runId: 'unknown',
+        status: 'FAILED',
+        results: [],
+        durationMs: 0,
+        consoleLogs: [],
+        error: 'Sandbox failure.',
+      }),
     );
   })
   .finally(async () => {

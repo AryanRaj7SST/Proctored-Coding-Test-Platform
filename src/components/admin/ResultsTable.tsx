@@ -74,7 +74,10 @@ export function ResultsTable({
       />
       <CardBody className="space-y-3">
         <div className="grid gap-2 sm:grid-cols-4">
-          <Select value={filters.examId} onChange={(e) => setFilters((f) => ({ ...f, examId: e.target.value }))}>
+          <Select
+            value={filters.examId}
+            onChange={(e) => setFilters((f) => ({ ...f, examId: e.target.value }))}
+          >
             <option value="">All exams</option>
             {exams.map((e) => (
               <option key={e.id} value={e.id}>
@@ -82,7 +85,10 @@ export function ResultsTable({
               </option>
             ))}
           </Select>
-          <Select value={filters.batch} onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))}>
+          <Select
+            value={filters.batch}
+            onChange={(e) => setFilters((f) => ({ ...f, batch: e.target.value }))}
+          >
             <option value="">All batches</option>
             {batches.map((b) => (
               <option key={b} value={b}>
@@ -150,7 +156,9 @@ export function ResultsTable({
                     <Badge tone={r.violationCount > 0 ? 'bad' : 'neutral'}>{r.violationCount}</Badge>
                   </Td>
                   <Td className="text-xs text-slate-400">{r.status.replace('_', ' ').toLowerCase()}</Td>
-                  <Td className="text-xs text-slate-500">{r.submittedAt ? formatDateTime(r.submittedAt) : '—'}</Td>
+                  <Td className="text-xs text-slate-500">
+                    {r.submittedAt ? formatDateTime(r.submittedAt) : '—'}
+                  </Td>
                   <Td>
                     <Link
                       href={`/admin/attempts?examId=${r.examId}&userId=${r.userId}`}

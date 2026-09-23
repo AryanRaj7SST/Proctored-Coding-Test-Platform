@@ -94,7 +94,10 @@ async function applyStep(page: Page, step: Step, timeout: number): Promise<void>
       await page.waitForTimeout(60);
       return;
     case 'click':
-      await page.locator(step.selector).nth(step.nth ?? 0).click({ timeout });
+      await page
+        .locator(step.selector)
+        .nth(step.nth ?? 0)
+        .click({ timeout });
       return;
     case 'clickText': {
       const locator = step.role
@@ -117,7 +120,10 @@ async function applyStep(page: Page, step: Step, timeout: number): Promise<void>
       await page.waitForTimeout(Math.min(step.ms, 5000));
       return;
     case 'waitFor':
-      await page.locator(step.selector).first().waitFor({ state: step.state ?? 'visible', timeout });
+      await page
+        .locator(step.selector)
+        .first()
+        .waitFor({ state: step.state ?? 'visible', timeout });
       return;
     case 'scrollTo':
       await page.locator(step.selector).first().scrollIntoViewIfNeeded({ timeout });
@@ -242,8 +248,8 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
         passed = false;
         const raw = safeError(err, 200);
         message = /timed out/i.test(raw)
-          ? test.failureMessage ?? 'The page did not reach the expected state in time.'
-          : test.failureMessage ?? 'The expected interaction could not be completed on your page.';
+          ? (test.failureMessage ?? 'The page did not reach the expected state in time.')
+          : (test.failureMessage ?? 'The expected interaction could not be completed on your page.');
         log.debug('test.error', { runId: input.runId, testId: test.id, detail: raw });
       }
 

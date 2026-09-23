@@ -12,12 +12,14 @@ import {
 } from '@shared/test-spec';
 
 export function slugify(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-    .slice(0, 70) || 'question';
+  return (
+    input
+      .toLowerCase()
+      .normalize('NFKD')
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .slice(0, 70) || 'question'
+  );
 }
 
 export async function uniqueSlug(base: string, excludeId?: string): Promise<string> {
@@ -66,7 +68,14 @@ export function toStudentQuestion(question: {
   starterHtml: string;
   starterCss: string;
   starterJs: string;
-  tests?: { id: string; name: string; description: string | null; hidden: boolean; points: number; order: number }[];
+  tests?: {
+    id: string;
+    name: string;
+    description: string | null;
+    hidden: boolean;
+    points: number;
+    order: number;
+  }[];
 }) {
   return {
     id: question.id,
@@ -236,7 +245,9 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
   return prisma.$transaction(async (tx) => {
     if (input.tests) {
       const keepIds = input.tests.map((t) => t.id).filter((v): v is string => Boolean(v));
-      await tx.questionTest.deleteMany({ where: { questionId: id, id: { notIn: keepIds.length ? keepIds : ['__none__'] } } });
+      await tx.questionTest.deleteMany({
+        where: { questionId: id, id: { notIn: keepIds.length ? keepIds : ['__none__'] } },
+      });
       for (const [i, t] of input.tests.entries()) {
         const data = {
           name: t.name,
@@ -284,7 +295,12 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
       // Any content/test change invalidates a previous validation pass and
       // bumps the version so future attempts snapshot the new content.
       ...(contentChanged
-        ? { version: { increment: 1 }, validation: 'NOT_VALIDATED' as const, validatedAt: null, validationMessage: null }
+        ? {
+            version: { increment: 1 },
+            validation: 'NOT_VALIDATED' as const,
+            validatedAt: null,
+            validationMessage: null,
+          }
         : {}),
     };
 
@@ -295,11 +311,15 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
 export async function deleteQuestion(id: string): Promise<void> {
   const usage = await prisma.examQuestion.count({ where: { questionId: id } });
   if (usage > 0) {
-    throw conflict('This question is used by an exam. Deactivate it instead, or remove it from the exam first.');
+    throw conflict(
+      'This question is used by an exam. Deactivate it instead, or remove it from the exam first.',
+    );
   }
   const attempts = await prisma.attempt.count({ where: { questionId: id } });
   if (attempts > 0) {
-    throw conflict('Students have attempted this question. Deactivate it instead so past results stay intact.');
+    throw conflict(
+      'Students have attempted this question. Deactivate it instead so past results stay intact.',
+    );
   }
   await prisma.question.delete({ where: { id } });
 }

@@ -9,7 +9,7 @@ solution, and a suite of tests. This guide is the practical version of
 **A test asserts what the page does, not how the code is written.** There is
 no assertion type that reads the student's source text — not a substring
 check, not a regex, nothing. If you find yourself wanting to check "did they
-use `addEventListener`", stop: assert on the *effect* instead (the button,
+use `addEventListener`", stop: assert on the _effect_ instead (the button,
 when clicked, produces the expected DOM/style change). This is enforced by
 `scripts/verify-offline.mjs` and cannot be worked around by, say, hiding a
 source check inside a custom assertion — that assertion type doesn't exist.
@@ -18,12 +18,12 @@ source check inside a custom assertion — that assertion type doesn't exist.
 
 `/admin/questions/new` → the **Tests** tab. Each test case has:
 
-| Field | Meaning |
-|---|---|
-| Name | Shown to students if the test is Visible |
-| Points | Contributes to the question's total; 0-point tests are allowed but pointless |
-| Hidden / Visible | Hidden tests are never described to the student, not even their name |
-| Behaviour specification | JSON matching `TestCaseBody` — see below |
+| Field                   | Meaning                                                                      |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| Name                    | Shown to students if the test is Visible                                     |
+| Points                  | Contributes to the question's total; 0-point tests are allowed but pointless |
+| Hidden / Visible        | Hidden tests are never described to the student, not even their name         |
+| Behaviour specification | JSON matching `TestCaseBody` — see below                                     |
 
 The editor validates the JSON with the **exact parser the runner uses**
 (`validateTestCaseBody`) and shows a plain-English readout ("This test will
@@ -34,9 +34,7 @@ check that…") so you can catch a typo before running anything.
 ```json
 {
   "viewport": { "width": 1280, "height": 720 },
-  "steps": [
-    { "action": "click", "selector": "#add" }
-  ],
+  "steps": [{ "action": "click", "selector": "#add" }],
   "assertions": [
     { "type": "css", "selector": "#box", "property": "background-color", "equals": "tomato", "color": true }
   ]
@@ -53,20 +51,20 @@ check that…") so you can catch a typo before running anything.
 
 ### Assertion types
 
-| Type | Checks |
-|---|---|
-| `exists` / `notExists` | An element matching the selector is (not) present |
-| `visible` / `hidden` | Computed display/visibility/opacity and non-zero size |
-| `count` | Exact number of matching elements |
-| `text` | `textContent`, via `equals` (exact) or `contains` |
-| `css` | A computed style property, via `equals` or `oneOf`; set `"color": true` for colour properties so `tomato`/`#ff6347`/`rgb(255,99,71)` are all treated as equal |
-| `cssNumber` | A numeric style property compared with `op` (`eq`/`lt`/`lte`/`gt`/`gte`) and a `tolerance` |
-| `attribute` | An HTML attribute, via `equals` or `contains` |
-| `size` | Rendered width/height compared with `op` |
-| `gridColumns` | Number of grid columns (and optionally that they're equal width) |
-| `gap` | `row-gap`/`column-gap`, via `axis: 'row' \| 'column' \| 'both'` |
-| `boxesPerRow` | How many elements land in the first visually-rendered row (works for flex-wrap layouts too, not just grid) |
-| `noConsoleErrors` | No `console.error` or uncaught exception during the run |
+| Type                   | Checks                                                                                                                                                        |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `exists` / `notExists` | An element matching the selector is (not) present                                                                                                             |
+| `visible` / `hidden`   | Computed display/visibility/opacity and non-zero size                                                                                                         |
+| `count`                | Exact number of matching elements                                                                                                                             |
+| `text`                 | `textContent`, via `equals` (exact) or `contains`                                                                                                             |
+| `css`                  | A computed style property, via `equals` or `oneOf`; set `"color": true` for colour properties so `tomato`/`#ff6347`/`rgb(255,99,71)` are all treated as equal |
+| `cssNumber`            | A numeric style property compared with `op` (`eq`/`lt`/`lte`/`gt`/`gte`) and a `tolerance`                                                                    |
+| `attribute`            | An HTML attribute, via `equals` or `contains`                                                                                                                 |
+| `size`                 | Rendered width/height compared with `op`                                                                                                                      |
+| `gridColumns`          | Number of grid columns (and optionally that they're equal width)                                                                                              |
+| `gap`                  | `row-gap`/`column-gap`, via `axis: 'row' \| 'column' \| 'both'`                                                                                               |
+| `boxesPerRow`          | How many elements land in the first visually-rendered row (works for flex-wrap layouts too, not just grid)                                                    |
+| `noConsoleErrors`      | No `console.error` or uncaught exception during the run                                                                                                       |
 
 Every assertion accepts an optional `message` shown to the student **only if
 the test is Visible and fails** — write it as a hint, not an answer.
@@ -75,7 +73,7 @@ the test is Visible and fails** — write it as a hint, not an answer.
 
 `equals: "tomato"` and `equals: "#ff6347"` and `equals: "rgb(255, 99, 71)"`
 are all the same expectation once `"color": true` is set — the runner
-resolves the *student's* computed value the same way inside the real browser,
+resolves the _student's_ computed value the same way inside the real browser,
 so this works for CSS variables, `currentColor`, and anything else a naive
 string compare would miss.
 
@@ -97,7 +95,7 @@ points total:
 
 None of these care whether the student used `style.backgroundColor`,
 `classList.toggle`, or `setProperty` — the instructions say so explicitly,
-and the tests only ever look at the *rendered* colour.
+and the tests only ever look at the _rendered_ colour.
 
 ## Worked example 2: "Responsive product showcase"
 

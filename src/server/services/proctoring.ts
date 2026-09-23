@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
-import { dedupeFamily, isViolation, shouldRecordEvent, violationMessage, type ProctorEventType } from '@/lib/proctor';
+import {
+  dedupeFamily,
+  isViolation,
+  shouldRecordEvent,
+  violationMessage,
+  type ProctorEventType,
+} from '@/lib/proctor';
 import { logger } from '@/lib/logger';
 
 export interface RecordEventResult {

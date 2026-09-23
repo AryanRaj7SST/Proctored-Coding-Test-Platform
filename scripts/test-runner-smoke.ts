@@ -1,7 +1,8 @@
 import { runOnRunner } from '../src/lib/runner-client';
 
 async function main() {
-  const html = '<body><div id="grid-container"><div class="grid-item" id="item1">Item 1</div><div class="grid-item" id="item2">Item 2</div><div class="grid-item" id="item3">Item 3</div><div class="grid-item" id="item4">Item 4</div></div></body>';
+  const html =
+    '<body><div id="grid-container"><div class="grid-item" id="item1">Item 1</div><div class="grid-item" id="item2">Item 2</div><div class="grid-item" id="item3">Item 3</div><div class="grid-item" id="item4">Item 4</div></div></body>';
   const css = `#grid-container { display: grid; grid-template-columns: repeat(2, 50px); grid-template-rows: repeat(2, 50px); gap: 10px; }
 .grid-item { background-color: rgb(173, 216, 230); border: 2px solid rgb(0, 0, 0); text-align: center; line-height: 50px; }
 #item1 { grid-row: span 2; }`;
@@ -17,9 +18,24 @@ async function main() {
         hidden: false,
         assertions: [
           { type: 'css' as const, selector: '#grid-container', property: 'display', equals: 'grid' },
-          { type: 'css' as const, selector: '#grid-container', property: 'grid-template-columns', oneOf: ['50px 50px', 'repeat(2, 50px)'] },
-          { type: 'css' as const, selector: '#grid-container', property: 'grid-template-rows', oneOf: ['50px 50px', 'repeat(2, 50px)'] },
-          { type: 'css' as const, selector: '#grid-container', property: 'gap', oneOf: ['10px', '10px 10px'] },
+          {
+            type: 'css' as const,
+            selector: '#grid-container',
+            property: 'grid-template-columns',
+            oneOf: ['50px 50px', 'repeat(2, 50px)'],
+          },
+          {
+            type: 'css' as const,
+            selector: '#grid-container',
+            property: 'grid-template-rows',
+            oneOf: ['50px 50px', 'repeat(2, 50px)'],
+          },
+          {
+            type: 'css' as const,
+            selector: '#grid-container',
+            property: 'gap',
+            oneOf: ['10px', '10px 10px'],
+          },
         ],
       },
       {
@@ -28,8 +44,19 @@ async function main() {
         points: 10,
         hidden: false,
         assertions: [
-          { type: 'css' as const, selector: '.grid-item', property: 'background-color', color: true, equals: 'rgb(173, 216, 230)' },
-          { type: 'css' as const, selector: '.grid-item', property: 'border', equals: '2px solid rgb(0, 0, 0)' },
+          {
+            type: 'css' as const,
+            selector: '.grid-item',
+            property: 'background-color',
+            color: true,
+            equals: 'rgb(173, 216, 230)',
+          },
+          {
+            type: 'css' as const,
+            selector: '.grid-item',
+            property: 'border',
+            equals: '2px solid rgb(0, 0, 0)',
+          },
           { type: 'css' as const, selector: '.grid-item', property: 'text-align', equals: 'center' },
           { type: 'css' as const, selector: '.grid-item', property: 'line-height', equals: '50px' },
         ],
@@ -39,9 +66,7 @@ async function main() {
         name: 'Applies grid-row to item1 correctly',
         points: 10,
         hidden: false,
-        assertions: [
-          { type: 'css' as const, selector: '#item1', property: 'grid-row', equals: 'span 2' },
-        ],
+        assertions: [{ type: 'css' as const, selector: '#item1', property: 'grid-row', equals: 'span 2' }],
       },
     ],
   };
@@ -120,7 +145,9 @@ async function main() {
         name: 'Verify Grid Display Property',
         points: 5,
         hidden: false,
-        assertions: [{ type: 'css' as const, selector: '.grid-container', property: 'display', equals: 'grid' }],
+        assertions: [
+          { type: 'css' as const, selector: '.grid-container', property: 'display', equals: 'grid' },
+        ],
       },
       {
         id: 'q2-t5',
@@ -142,8 +169,22 @@ async function main() {
         points: 5,
         hidden: false,
         assertions: [
-          { type: 'size' as const, selector: '.box', dimension: 'width' as const, op: 'eq' as const, value: 100, tolerance: 2 },
-          { type: 'size' as const, selector: '.box', dimension: 'height' as const, op: 'eq' as const, value: 100, tolerance: 2 },
+          {
+            type: 'size' as const,
+            selector: '.box',
+            dimension: 'width' as const,
+            op: 'eq' as const,
+            value: 100,
+            tolerance: 2,
+          },
+          {
+            type: 'size' as const,
+            selector: '.box',
+            dimension: 'height' as const,
+            op: 'eq' as const,
+            value: 100,
+            tolerance: 2,
+          },
         ],
       },
     ],

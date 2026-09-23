@@ -9,8 +9,8 @@ app's `npm run verify:offline`.
 `runner/package.json` declares `"type": "commonjs"` because `tsc` compiles
 `runner/src` to CommonJS for the production Docker image (see
 `runner/Dockerfile`). That's the right choice for the compiled output, but it
-means Node's *ambient* CommonJS-vs-ESM detection — based on the nearest
-`package.json` — treats the TypeScript *source* files the same way, and plain
+means Node's _ambient_ CommonJS-vs-ESM detection — based on the nearest
+`package.json` — treats the TypeScript _source_ files the same way, and plain
 `import`/`export` syntax in a CommonJS-typed `.ts` file doesn't parse.
 
 `tests/register.mjs` + `tests/esm-loader.mjs` fix exactly this, using Node's

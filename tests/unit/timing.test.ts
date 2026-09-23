@@ -57,18 +57,26 @@ describe('examAvailability', () => {
 
   it('respects the scheduled window', () => {
     const now = D('2026-01-01T09:00:00Z');
-    expect(examAvailability({ ...exam, startTime: D('2026-01-01T10:00:00Z') }, null, { now })).toBe('NOT_STARTED');
+    expect(examAvailability({ ...exam, startTime: D('2026-01-01T10:00:00Z') }, null, { now })).toBe(
+      'NOT_STARTED',
+    );
     expect(examAvailability({ ...exam, endTime: D('2026-01-01T08:00:00Z') }, null, { now })).toBe('ENDED');
   });
 
   it('is IN_PROGRESS for a live sitting and EXPIRED once its clock runs out', () => {
-    const session = { startedAt: D('2026-01-01T10:00:00Z'), expiresAt: D('2026-01-01T11:00:00Z'), endedAt: null };
+    const session = {
+      startedAt: D('2026-01-01T10:00:00Z'),
+      expiresAt: D('2026-01-01T11:00:00Z'),
+      endedAt: null,
+    };
     expect(examAvailability(exam, session, { now: D('2026-01-01T10:30:00Z') })).toBe('IN_PROGRESS');
     expect(examAvailability(exam, session, { now: D('2026-01-01T11:30:00Z') })).toBe('EXPIRED');
   });
 
   it('reports SUBMITTED once everything is handed in, whatever the clock says', () => {
-    expect(examAvailability(exam, null, { submitted: true, now: D('2026-01-01T10:00:00Z') })).toBe('SUBMITTED');
+    expect(examAvailability(exam, null, { submitted: true, now: D('2026-01-01T10:00:00Z') })).toBe(
+      'SUBMITTED',
+    );
   });
 });
 

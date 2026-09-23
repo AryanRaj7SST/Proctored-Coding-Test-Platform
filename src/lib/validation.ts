@@ -5,7 +5,11 @@ const MAX_CODE = Number(process.env.MAX_CODE_BYTES ?? 200_000);
 
 export const codeField = z.string().max(MAX_CODE, 'Code is too large.').default('');
 
-export const idSchema = z.string().min(1).max(64).regex(/^[A-Za-z0-9_-]+$/, 'Invalid identifier.');
+export const idSchema = z
+  .string()
+  .min(1)
+  .max(64)
+  .regex(/^[A-Za-z0-9_-]+$/, 'Invalid identifier.');
 
 export const slugSchema = z
   .string()
@@ -119,7 +123,12 @@ export const proctorEventInput = z.object({
     'HEARTBEAT_LOST',
   ]),
   // Client timestamps are advisory only; the server stamps occurredAt itself.
-  durationMs: z.number().int().min(0).max(24 * 3600 * 1000).optional(),
+  durationMs: z
+    .number()
+    .int()
+    .min(0)
+    .max(24 * 3600 * 1000)
+    .optional(),
   metadata: z.record(z.union([z.string().max(200), z.number(), z.boolean()])).optional(),
 });
 

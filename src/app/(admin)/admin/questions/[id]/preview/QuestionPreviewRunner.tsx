@@ -41,9 +41,14 @@ export function QuestionPreviewRunner({
   const run = async () => {
     setRunning(true);
     try {
-      const res = await apiPost<ValidationRunResult>(`/api/questions/${questionId}/validate`, { useReference: true });
+      const res = await apiPost<ValidationRunResult>(`/api/questions/${questionId}/validate`, {
+        useReference: true,
+      });
       setResult(res);
-      toast.push(res.ok ? 'Reference solution passes every test.' : 'Validation failed.', res.ok ? 'success' : 'error');
+      toast.push(
+        res.ok ? 'Reference solution passes every test.' : 'Validation failed.',
+        res.ok ? 'success' : 'error',
+      );
     } catch (err) {
       toast.push(err instanceof ApiError ? err.message : 'Validation could not run.', 'error');
     } finally {

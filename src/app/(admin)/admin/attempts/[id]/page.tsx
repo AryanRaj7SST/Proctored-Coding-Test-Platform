@@ -27,23 +27,27 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
   if (!attempt) notFound();
 
   const [session, timeline] = await Promise.all([
-    prisma.examSession.findUnique({ where: { userId_examId: { userId: attempt.userId, examId: attempt.examId } } }),
+    prisma.examSession.findUnique({
+      where: { userId_examId: { userId: attempt.userId, examId: attempt.examId } },
+    }),
     eventTimeline(attempt.userId, attempt.examId, 100),
   ]);
 
-  const snapshot = (attempt.snapshot && typeof attempt.snapshot === 'object')
-    ? (attempt.snapshot as Record<string, unknown>)
-    : {};
+  const snapshot =
+    attempt.snapshot && typeof attempt.snapshot === 'object'
+      ? (attempt.snapshot as Record<string, unknown>)
+      : {};
 
-  const manualReview = (snapshot.manualReview && typeof snapshot.manualReview === 'object')
-    ? (snapshot.manualReview as {
-        feedback?: string;
-        reviewedAt?: string;
-        reviewerName?: string;
-        reviewerEmail?: string;
-        previousScore?: number;
-      })
-    : null;
+  const manualReview =
+    snapshot.manualReview && typeof snapshot.manualReview === 'object'
+      ? (snapshot.manualReview as {
+          feedback?: string;
+          reviewedAt?: string;
+          reviewerName?: string;
+          reviewerEmail?: string;
+          previousScore?: number;
+        })
+      : null;
 
   const starter = {
     html: (snapshot.starterHtml as string) ?? attempt.question.starterHtml,
@@ -54,15 +58,15 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 text-xs text-slate-400">
-        <Link href="/admin/attempts" className="hover:text-white transition">
+        <Link href="/admin/attempts" className="transition hover:text-white">
           &larr; Back to Submissions
         </Link>
         <span>&middot;</span>
-        <Link href={`/admin/attempts?examId=${attempt.exam.id}`} className="hover:text-white transition">
+        <Link href={`/admin/attempts?examId=${attempt.exam.id}`} className="transition hover:text-white">
           {attempt.exam.title} attempts
         </Link>
         <span>&middot;</span>
-        <Link href={`/admin/attempts?userId=${attempt.user.id}`} className="hover:text-white transition">
+        <Link href={`/admin/attempts?userId=${attempt.user.id}`} className="transition hover:text-white">
           {attempt.user.name ?? attempt.user.email}&apos;s work
         </Link>
       </div>
@@ -102,11 +106,15 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
           value={`${attempt.testResults.filter((r) => r.passed).length}/${attempt.testResults.length}`}
         />
         <StatCard label="Violations" value={session?.violationCount ?? 0} />
-        <StatCard label="Question version" value={attempt.questionVersion} hint="graded against a frozen snapshot" />
+        <StatCard
+          label="Question version"
+          value={attempt.questionVersion}
+          hint="graded against a frozen snapshot"
+        />
       </div>
 
       {manualReview?.feedback ? (
-        <Card className="border-brand-500/40 bg-brand-950/20">
+        <Card className="bg-brand-950/20 border-brand-500/40">
           <CardBody className="space-y-1">
             <div className="flex items-center justify-between">
               <span className="text-xs font-semibold text-brand-300">Instructor Review Feedback</span>
@@ -121,12 +129,7 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
       ) : null}
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <AttemptCodeViewer
-          html={attempt.html}
-          css={attempt.css}
-          js={attempt.js}
-          starter={starter}
-        />
+        <AttemptCodeViewer html={attempt.html} css={attempt.css} js={attempt.js} starter={starter} />
 
         <div className="space-y-4">
           <ManualGradingCard
@@ -162,13 +165,13 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
                   {attempt.testResults.map((r) => (
                     <tr key={r.id}>
                       <Td>
-                        <p className="text-slate-200 font-medium">{r.testName}</p>
-                        {r.message ? <p className="text-xs text-slate-400 mt-0.5">{r.message}</p> : null}
+                        <p className="font-medium text-slate-200">{r.testName}</p>
+                        {r.message ? <p className="mt-0.5 text-xs text-slate-400">{r.message}</p> : null}
                       </Td>
                       <Td>
                         <Badge tone={r.passed ? 'ok' : 'bad'}>{r.passed ? 'passed' : 'failed'}</Badge>
                       </Td>
-                      <Td className="text-slate-300 font-mono text-xs">
+                      <Td className="font-mono text-xs text-slate-300">
                         {r.pointsAwarded}/{r.points}
                       </Td>
                     </tr>
@@ -223,12 +226,18 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
               <ul className="divide-y divide-ink-800">
                 {timeline.map((e) => (
                   <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs">
-                    <Badge tone={e.violation ? 'bad' : 'neutral'}>{e.type.replace(/_/g, ' ').toLowerCase()}</Badge>
-                    {e.durationMs ? <span className="text-slate-500">away {formatDuration(e.durationMs)}</span> : null}
+                    <Badge tone={e.violation ? 'bad' : 'neutral'}>
+                      {e.type.replace(/_/g, ' ').toLowerCase()}
+                    </Badge>
+                    {e.durationMs ? (
+                      <span className="text-slate-500">away {formatDuration(e.durationMs)}</span>
+                    ) : null}
                     <span className="ml-auto text-slate-500">{formatDateTime(e.occurredAt)}</span>
                   </li>
                 ))}
-                {timeline.length === 0 ? <li className="px-4 py-3 text-xs text-slate-500">No events recorded.</li> : null}
+                {timeline.length === 0 ? (
+                  <li className="px-4 py-3 text-xs text-slate-500">No events recorded.</li>
+                ) : null}
               </ul>
             </CardBody>
           </Card>
@@ -237,4 +246,3 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
     </div>
   );
 }
-

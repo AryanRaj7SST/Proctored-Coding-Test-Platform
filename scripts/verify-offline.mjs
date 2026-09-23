@@ -321,7 +321,7 @@ section('5. Executing the runner\'s pure unit tests (node --test, no npm install
   );
 
   const out = `${result.stdout ?? ''}${result.stderr ?? ''}`;
-  const summary = /# pass (\d+)[\s\S]*?# fail (\d+)/.exec(out);
+  const summary = /(?:#|ℹ)\s*pass\s+(\d+)[\s\S]*?(?:#|ℹ)\s*fail\s+(\d+)/i.exec(out);
   if (result.status === 0 && summary) {
     checks += Number(summary[1]) + Number(summary[2]);
     process.stdout.write(`  ok    runner/tests -- ${summary[1]} passed, ${summary[2]} failed\n`);

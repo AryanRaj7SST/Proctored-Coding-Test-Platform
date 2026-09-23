@@ -37,7 +37,19 @@ export const GET = handler(async (_req: Request, ctx: Ctx): Promise<NextResponse
     include: {
       user: { select: { id: true, name: true, email: true, batch: true } },
       exam: { select: { id: true, title: true, durationMinutes: true } },
-      question: { select: { id: true, title: true, slug: true, starterHtml: true, starterCss: true, starterJs: true, referenceHtml: true, referenceCss: true, referenceJs: true } },
+      question: {
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          starterHtml: true,
+          starterCss: true,
+          starterJs: true,
+          referenceHtml: true,
+          referenceCss: true,
+          referenceJs: true,
+        },
+      },
       testResults: { orderBy: [{ final: 'desc' }, { createdAt: 'asc' }] },
       testRuns: { orderBy: { startedAt: 'desc' }, take: 25 },
     },
@@ -45,11 +57,16 @@ export const GET = handler(async (_req: Request, ctx: Ctx): Promise<NextResponse
   if (!attempt) throw notFound('Attempt not found.');
 
   const [session, timeline] = await Promise.all([
-    prisma.examSession.findUnique({ where: { userId_examId: { userId: attempt.userId, examId: attempt.examId } } }),
+    prisma.examSession.findUnique({
+      where: { userId_examId: { userId: attempt.userId, examId: attempt.examId } },
+    }),
     eventTimeline(attempt.userId, attempt.examId),
   ]);
 
-  const snapshot = (attempt.snapshot && typeof attempt.snapshot === 'object') ? (attempt.snapshot as Record<string, unknown>) : {};
+  const snapshot =
+    attempt.snapshot && typeof attempt.snapshot === 'object'
+      ? (attempt.snapshot as Record<string, unknown>)
+      : {};
   const manualReview = snapshot.manualReview ?? null;
 
   return ok({
@@ -126,13 +143,15 @@ export const PATCH = handler(async (req: Request, ctx: Ctx): Promise<NextRespons
     }
   }
 
-  const currentSnapshot = (attempt.snapshot && typeof attempt.snapshot === 'object')
-    ? (attempt.snapshot as Record<string, unknown>)
-    : {};
+  const currentSnapshot =
+    attempt.snapshot && typeof attempt.snapshot === 'object'
+      ? (attempt.snapshot as Record<string, unknown>)
+      : {};
 
-  const existingReview = (currentSnapshot.manualReview && typeof currentSnapshot.manualReview === 'object')
-    ? (currentSnapshot.manualReview as Record<string, unknown>)
-    : null;
+  const existingReview =
+    currentSnapshot.manualReview && typeof currentSnapshot.manualReview === 'object'
+      ? (currentSnapshot.manualReview as Record<string, unknown>)
+      : null;
 
   const manualReview = {
     feedback: feedback ?? '',
@@ -178,4 +197,3 @@ export const PATCH = handler(async (req: Request, ctx: Ctx): Promise<NextRespons
     testResults: updated.testResults,
   });
 });
-

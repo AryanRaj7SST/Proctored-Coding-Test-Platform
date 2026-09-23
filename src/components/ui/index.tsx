@@ -64,8 +64,21 @@ export function Button({
 
 export function Spinner({ className }: { className?: string }) {
   return (
-    <svg className={cn('animate-spin', className ?? 'h-4 w-4')} viewBox="0 0 24 24" role="status" aria-label="Loading">
-      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+    <svg
+      className={cn('animate-spin', className ?? 'h-4 w-4')}
+      viewBox="0 0 24 24"
+      role="status"
+      aria-label="Loading"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+        fill="none"
+      />
       <path className="opacity-90" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
     </svg>
   );
@@ -90,21 +103,22 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
   },
 );
 
-export const Textarea = React.forwardRef<HTMLTextAreaElement, React.TextareaHTMLAttributes<HTMLTextAreaElement>>(
-  function Textarea({ className, ...rest }, ref) {
-    return (
-      <textarea
-        ref={ref}
-        {...rest}
-        className={cn(
-          'w-full rounded-md bg-ink-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500',
-          'ring-1 ring-inset ring-ink-600 focus:outline-none focus:ring-2 focus:ring-brand-500',
-          className,
-        )}
-      />
-    );
-  },
-);
+export const Textarea = React.forwardRef<
+  HTMLTextAreaElement,
+  React.TextareaHTMLAttributes<HTMLTextAreaElement>
+>(function Textarea({ className, ...rest }, ref) {
+  return (
+    <textarea
+      ref={ref}
+      {...rest}
+      className={cn(
+        'w-full rounded-md bg-ink-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500',
+        'ring-1 ring-inset ring-ink-600 focus:outline-none focus:ring-2 focus:ring-brand-500',
+        className,
+      )}
+    />
+  );
+});
 
 export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttributes<HTMLSelectElement>>(
   function Select({ className, children, ...rest }, ref) {
@@ -163,7 +177,15 @@ export function Card({ className, children }: { className?: string; children: Re
   return <div className={cn('rounded-lg bg-ink-850 ring-1 ring-ink-700', className)}>{children}</div>;
 }
 
-export function CardHeader({ title, subtitle, action }: { title: string; subtitle?: string; action?: React.ReactNode }) {
+export function CardHeader({
+  title,
+  subtitle,
+  action,
+}: {
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+}) {
   return (
     <div className="flex items-start justify-between gap-4 border-b border-ink-700 px-4 py-3">
       <div>
@@ -191,7 +213,6 @@ export function StatCard({ label, value, hint }: { label: string; value: string 
 
 /* ------------------------------------------------------------------- Badge */
 
-
 const TONES: Record<Tone, string> = {
   neutral: 'bg-ink-700 text-slate-300',
   ok: 'bg-ok/15 text-ok ring-1 ring-inset ring-ok/30',
@@ -210,7 +231,13 @@ export function Badge({
   children: React.ReactNode;
 }) {
   return (
-    <span className={cn('inline-flex items-center rounded px-2 py-0.5 text-xs font-medium', TONES[tone], className)}>
+    <span
+      className={cn(
+        'inline-flex items-center rounded px-2 py-0.5 text-xs font-medium',
+        TONES[tone],
+        className,
+      )}
+    >
       {children}
     </span>
   );
@@ -273,7 +300,11 @@ export function Th({ children, className }: { children?: React.ReactNode; classN
 }
 
 export function Td({ children, className }: { children?: React.ReactNode; className?: string }) {
-  return <td className={cn('border-b border-ink-800 px-3 py-2 align-middle text-slate-200', className)}>{children}</td>;
+  return (
+    <td className={cn('border-b border-ink-800 px-3 py-2 align-middle text-slate-200', className)}>
+      {children}
+    </td>
+  );
 }
 
 /* ------------------------------------------------------------------- Modal */
@@ -350,7 +381,7 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 w-full max-w-lg animate-fade-in rounded-lg bg-ink-850 ring-1 ring-ink-600 shadow-2xl"
+        className="relative z-10 w-full max-w-lg animate-fade-in rounded-lg bg-ink-850 shadow-2xl ring-1 ring-ink-600"
       >
         <div className="flex items-center justify-between border-b border-ink-700 px-4 py-3">
           <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
@@ -366,7 +397,9 @@ export function Modal({
           ) : null}
         </div>
         <div className="px-4 py-4 text-sm text-slate-300">{children}</div>
-        {footer ? <div className="flex justify-end gap-2 border-t border-ink-700 px-4 py-3">{footer}</div> : null}
+        {footer ? (
+          <div className="flex justify-end gap-2 border-t border-ink-700 px-4 py-3">{footer}</div>
+        ) : null}
       </div>
     </div>
   );

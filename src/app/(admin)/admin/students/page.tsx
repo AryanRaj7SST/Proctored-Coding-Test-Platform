@@ -86,7 +86,9 @@ export default async function StudentsPage() {
                       <Td className="text-slate-400">{u.batch ?? '—'}</Td>
                       <Td className="text-slate-400">{u._count.assignments}</Td>
                       <Td className="text-slate-400">{u._count.attempts}</Td>
-                      <Td className="text-slate-300">{max > 0 ? `${sum}/${max} (${percentage(sum, max)}%)` : '—'}</Td>
+                      <Td className="text-slate-300">
+                        {max > 0 ? `${sum}/${max} (${percentage(sum, max)}%)` : '—'}
+                      </Td>
                       <Td>
                         <Badge tone={v > 0 ? 'bad' : 'neutral'}>{v}</Badge>
                       </Td>

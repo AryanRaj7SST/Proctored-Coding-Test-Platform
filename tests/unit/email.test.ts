@@ -25,7 +25,16 @@ describe('isValidEmail', () => {
   });
 
   it('rejects malformed or injection-shaped values', () => {
-    for (const bad of ['', 'nope', 'a@b', 'a b@c.com', 'a@b..com', '<a@b.com>', 'a@b.com,c@d.com', 'a@b.com;x']) {
+    for (const bad of [
+      '',
+      'nope',
+      'a@b',
+      'a b@c.com',
+      'a@b..com',
+      '<a@b.com>',
+      'a@b.com,c@d.com',
+      'a@b.com;x',
+    ]) {
       expect(isValidEmail(bad)).toBe(false);
     }
   });

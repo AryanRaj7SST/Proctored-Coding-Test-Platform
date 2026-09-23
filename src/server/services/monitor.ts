@@ -138,7 +138,11 @@ export async function recentActivity(limit = 15) {
       orderBy: { startedAt: 'desc' },
       take: 5,
     }),
-    prisma.user.findMany({ orderBy: { createdAt: 'desc' }, take: 5, select: { email: true, createdAt: true } }),
+    prisma.user.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      select: { email: true, createdAt: true },
+    }),
   ]);
 
   type Item = { at: Date; kind: string; text: string };
@@ -153,7 +157,11 @@ export async function recentActivity(limit = 15) {
       kind: 'violation',
       text: `${e.user.name ?? e.user.email} triggered ${e.type} in "${e.exam.title}"`,
     })),
-    ...runs.map((r) => ({ at: r.startedAt, kind: 'runner', text: `Test run ${r.id.slice(0, 8)} ended as ${r.status}` })),
+    ...runs.map((r) => ({
+      at: r.startedAt,
+      kind: 'runner',
+      text: `Test run ${r.id.slice(0, 8)} ended as ${r.status}`,
+    })),
     ...users.map((u) => ({ at: u.createdAt, kind: 'user', text: `${u.email} signed in for the first time` })),
   ];
   return items.sort((a, b) => b.at.getTime() - a.at.getTime()).slice(0, limit);

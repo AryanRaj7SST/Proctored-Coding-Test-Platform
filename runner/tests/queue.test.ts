@@ -47,10 +47,11 @@ test('never runs more than maxConcurrency tasks at the same time', async () => {
 test('queues excess work rather than dropping it, up to maxQueue', async () => {
   const q = new BoundedQueue(1, 2);
   const results: number[] = [];
-  const make = (n: number) => q.run(async () => {
-    await later(null, 5);
-    results.push(n);
-  });
+  const make = (n: number) =>
+    q.run(async () => {
+      await later(null, 5);
+      results.push(n);
+    });
 
   await Promise.all([make(1), make(2), make(3)]);
   // All three eventually ran; order is FIFO because capacity is 1.
@@ -64,7 +65,12 @@ test('rejects with QUEUE_FULL once both capacity and the wait line are exhausted
   // synchronously inside q.run() (active was 0), so `releaseFirst` is already
   // assigned by the time this line returns.
   let releaseFirst: () => void = () => {};
-  const first = q.run(() => new Promise<void>((resolve) => { releaseFirst = resolve; }));
+  const first = q.run(
+    () =>
+      new Promise<void>((resolve) => {
+        releaseFirst = resolve;
+      }),
+  );
 
   // Slot 2: queued behind the first -- its task does not run yet, so it needs
   // no blocker of its own; it will complete as soon as a slot frees up.

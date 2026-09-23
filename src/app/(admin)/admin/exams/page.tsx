@@ -18,7 +18,9 @@ export default async function ExamsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-50">Exams</h1>
-          <p className="mt-1 text-sm text-slate-400">Assemble questions, set the duration, assign students.</p>
+          <p className="mt-1 text-sm text-slate-400">
+            Assemble questions, set the duration, assign students.
+          </p>
         </div>
         <Link
           href="/admin/exams/new"
@@ -33,7 +35,10 @@ export default async function ExamsPage() {
         <CardBody className="p-0">
           {exams.length === 0 ? (
             <div className="p-4">
-              <EmptyState title="No exams yet" description="Create an exam and attach validated questions to it." />
+              <EmptyState
+                title="No exams yet"
+                description="Create an exam and attach validated questions to it."
+              />
             </div>
           ) : (
             <Table>
@@ -52,7 +57,10 @@ export default async function ExamsPage() {
                 {exams.map((e) => (
                   <tr key={e.id}>
                     <Td>
-                      <Link href={`/admin/exams/${e.id}`} className="font-medium text-slate-100 hover:underline">
+                      <Link
+                        href={`/admin/exams/${e.id}`}
+                        className="font-medium text-slate-100 hover:underline"
+                      >
                         {e.title}
                       </Link>
                       {e.batch ? <p className="text-xs text-slate-500">batch {e.batch}</p> : null}

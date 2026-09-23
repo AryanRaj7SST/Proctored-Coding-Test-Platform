@@ -30,10 +30,22 @@ describeDb('Admin Exam Section Integration Tests', () => {
       data: { id: ids.admin, email: `${ids.admin}@example.test`, role: 'ADMIN', name: 'Test Admin' },
     });
     await prisma.user.create({
-      data: { id: ids.student1, email: `${ids.student1}@example.test`, role: 'STUDENT', batch: ids.batch, name: 'Student 1' },
+      data: {
+        id: ids.student1,
+        email: `${ids.student1}@example.test`,
+        role: 'STUDENT',
+        batch: ids.batch,
+        name: 'Student 1',
+      },
     });
     await prisma.user.create({
-      data: { id: ids.student2, email: `${ids.student2}@example.test`, role: 'STUDENT', batch: ids.batch, name: 'Student 2' },
+      data: {
+        id: ids.student2,
+        email: `${ids.student2}@example.test`,
+        role: 'STUDENT',
+        batch: ids.batch,
+        name: 'Student 2',
+      },
     });
 
     // Create 2 test questions
@@ -46,14 +58,16 @@ describeDb('Admin Exam Section Integration Tests', () => {
         validation: 'NOT_VALIDATED',
         points: 10,
         tests: {
-          create: [{
-            name: 'test 1',
-            testType: 'DECLARATIVE',
-            testCode: JSON.stringify({ assertions: [{ type: 'exists', selector: '#box' }] }),
-            points: 10,
-            order: 0,
-            hidden: true,
-          }],
+          create: [
+            {
+              name: 'test 1',
+              testType: 'DECLARATIVE',
+              testCode: JSON.stringify({ assertions: [{ type: 'exists', selector: '#box' }] }),
+              points: 10,
+              order: 0,
+              hidden: true,
+            },
+          ],
         },
       },
     });
@@ -67,14 +81,16 @@ describeDb('Admin Exam Section Integration Tests', () => {
         validation: 'PASSED',
         points: 20,
         tests: {
-          create: [{
-            name: 'test 2',
-            testType: 'DECLARATIVE',
-            testCode: JSON.stringify({ assertions: [{ type: 'exists', selector: '#btn' }] }),
-            points: 20,
-            order: 0,
-            hidden: false,
-          }],
+          create: [
+            {
+              name: 'test 2',
+              testType: 'DECLARATIVE',
+              testCode: JSON.stringify({ assertions: [{ type: 'exists', selector: '#btn' }] }),
+              points: 20,
+              order: 0,
+              hidden: false,
+            },
+          ],
         },
       },
     });
@@ -84,7 +100,9 @@ describeDb('Admin Exam Section Integration Tests', () => {
     // Cleanup
     await prisma.exam.deleteMany({ where: { title: { contains: `${stamp}` } } }).catch(() => {});
     await prisma.question.deleteMany({ where: { id: { in: [ids.q1, ids.q2] } } }).catch(() => {});
-    await prisma.user.deleteMany({ where: { id: { in: [ids.admin, ids.student1, ids.student2] } } }).catch(() => {});
+    await prisma.user
+      .deleteMany({ where: { id: { in: [ids.admin, ids.student1, ids.student2] } } })
+      .catch(() => {});
   });
 
   it('1. Successfully creates an exam in DRAFT status with attached questions', async () => {

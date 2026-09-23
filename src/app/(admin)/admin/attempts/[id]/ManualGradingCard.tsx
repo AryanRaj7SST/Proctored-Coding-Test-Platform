@@ -47,9 +47,7 @@ export function ManualGradingCard({
   const autoScore = originalScore ?? currentScore;
 
   const handleTestChange = (id: string, updates: Partial<TestResultItem>) => {
-    setTestResults((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, ...updates } : t)),
-    );
+    setTestResults((prev) => prev.map((t) => (t.id === id ? { ...t, ...updates } : t)));
   };
 
   const handleSumFromTests = () => {
@@ -92,9 +90,7 @@ export function ManualGradingCard({
         subtitle="Override the automated score, adjust test marks, and write instructor feedback"
         action={
           reviewedAt ? (
-            <Badge tone="ok">
-              Reviewed {reviewerName ? `by ${reviewerName}` : ''}
-            </Badge>
+            <Badge tone="ok">Reviewed {reviewerName ? `by ${reviewerName}` : ''}</Badge>
           ) : (
             <Badge tone="neutral">Auto-Graded</Badge>
           )
@@ -107,7 +103,9 @@ export function ManualGradingCard({
             {formatDateTime(reviewedAt)}
             {reviewerName ? ` by ${reviewerName}` : ''}.
             {originalScore !== undefined && originalScore !== null ? (
-              <span className="ml-1 text-slate-400">(Original auto score: {originalScore}/{maxScore})</span>
+              <span className="ml-1 text-slate-400">
+                (Original auto score: {originalScore}/{maxScore})
+              </span>
             ) : null}
           </div>
         ) : null}
@@ -118,7 +116,10 @@ export function ManualGradingCard({
               Assigned Score (0 - {maxScore})
             </label>
             <span className="text-xs text-slate-400">
-              Percentage: <strong className="text-white">{maxScore > 0 ? Math.round((score / maxScore) * 100) : 0}%</strong>
+              Percentage:{' '}
+              <strong className="text-white">
+                {maxScore > 0 ? Math.round((score / maxScore) * 100) : 0}%
+              </strong>
             </span>
           </div>
 
@@ -139,35 +140,35 @@ export function ManualGradingCard({
               <button
                 type="button"
                 onClick={() => setScore(maxScore)}
-                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 hover:bg-ink-700 hover:text-white transition ring-1 ring-ink-700"
+                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 ring-1 ring-ink-700 transition hover:bg-ink-700 hover:text-white"
               >
                 Full Score ({maxScore})
               </button>
               <button
                 type="button"
                 onClick={() => setScore(Math.round(maxScore / 2))}
-                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 hover:bg-ink-700 hover:text-white transition ring-1 ring-ink-700"
+                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 ring-1 ring-ink-700 transition hover:bg-ink-700 hover:text-white"
               >
                 Half ({Math.round(maxScore / 2)})
               </button>
               <button
                 type="button"
                 onClick={() => setScore(Math.min(maxScore, score + 5))}
-                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 hover:bg-ink-700 hover:text-white transition ring-1 ring-ink-700"
+                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 ring-1 ring-ink-700 transition hover:bg-ink-700 hover:text-white"
               >
                 +5
               </button>
               <button
                 type="button"
                 onClick={() => setScore(Math.max(0, score - 5))}
-                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 hover:bg-ink-700 hover:text-white transition ring-1 ring-ink-700"
+                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-300 ring-1 ring-ink-700 transition hover:bg-ink-700 hover:text-white"
               >
                 -5
               </button>
               <button
                 type="button"
                 onClick={() => setScore(autoScore)}
-                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-400 hover:bg-ink-700 hover:text-slate-200 transition ring-1 ring-ink-700"
+                className="rounded bg-ink-800 px-2 py-1 text-xs text-slate-400 ring-1 ring-ink-700 transition hover:bg-ink-700 hover:text-slate-200"
                 title="Reset to automated test run score"
               >
                 Reset ({autoScore})
@@ -195,15 +196,17 @@ export function ManualGradingCard({
               <button
                 type="button"
                 onClick={() => setShowTests((v) => !v)}
-                className="text-xs font-medium text-brand-300 hover:underline flex items-center gap-1"
+                className="flex items-center gap-1 text-xs font-medium text-brand-300 hover:underline"
               >
-                <span>{showTests ? '▼ Hide' : '▶ Show'} Individual Test Points ({testResults.length})</span>
+                <span>
+                  {showTests ? '▼ Hide' : '▶ Show'} Individual Test Points ({testResults.length})
+                </span>
               </button>
               {showTests ? (
                 <button
                   type="button"
                   onClick={handleSumFromTests}
-                  className="text-xs text-slate-400 hover:text-white underline"
+                  className="text-xs text-slate-400 underline hover:text-white"
                 >
                   Recalculate total score from tests
                 </button>
@@ -261,13 +264,8 @@ export function ManualGradingCard({
           </div>
         ) : null}
 
-        <div className="flex items-center justify-end gap-2 pt-2 border-t border-ink-800">
-          <Button
-            variant="primary"
-            onClick={handleSave}
-            loading={loading}
-            className="w-full sm:w-auto"
-          >
+        <div className="flex items-center justify-end gap-2 border-t border-ink-800 pt-2">
+          <Button variant="primary" onClick={handleSave} loading={loading} className="w-full sm:w-auto">
             Save Manual Grade & Feedback
           </Button>
         </div>

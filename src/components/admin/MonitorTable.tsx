@@ -27,7 +27,9 @@ export function MonitorTable({
   initial: Snapshot;
 }) {
   const [examId, setExamId] = React.useState('');
-  const url = examId ? `/api/admin/monitor/stream?examId=${encodeURIComponent(examId)}` : '/api/admin/monitor/stream';
+  const url = examId
+    ? `/api/admin/monitor/stream?examId=${encodeURIComponent(examId)}`
+    : '/api/admin/monitor/stream';
   const { data, connected, error } = useSSE<Snapshot>(url);
 
   const snapshot = data ?? initial;
@@ -95,7 +97,9 @@ export function MonitorTable({
                   <Td>
                     <Badge tone={statusTone(r.status)}>{r.status.toLowerCase()}</Badge>
                   </Td>
-                  <Td className="font-mono text-xs tabular-nums text-slate-300">{formatClock(r.msRemaining)}</Td>
+                  <Td className="font-mono text-xs tabular-nums text-slate-300">
+                    {formatClock(r.msRemaining)}
+                  </Td>
                   <Td className="text-slate-400">
                     {r.submittedCount}/{r.questionCount}
                   </Td>

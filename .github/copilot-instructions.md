@@ -34,7 +34,7 @@ the short version for a coding session.
 5. **No browser storage for exam state.** `localStorage` / `sessionStorage`
    must never hold code, scores, or session state — autosave writes to the
    server. This is enforced by `scripts/verify-offline.mjs`. (Runtime
-   `localStorage` inside a *published Artifact preview*, if this repo is ever
+   `localStorage` inside a _published Artifact preview_, if this repo is ever
    opened that way, is a different, unrelated concept — not applicable here.)
 
 6. **Authorization is server-side, always, independently.** Every API route

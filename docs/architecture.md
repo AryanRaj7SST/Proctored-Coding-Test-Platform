@@ -21,7 +21,7 @@ receives `DATABASE_URL`, `AUTH_SECRET`, or any OAuth credential — only
 path cannot reach the database or user identities, and the runner can be
 redeployed, scaled, or rebuilt independently of the app.
 
-The two talk over plain HTTP secured by a bearer token *and* an HMAC over
+The two talk over plain HTTP secured by a bearer token _and_ an HMAC over
 `timestamp.body` (`src/lib/runner-client.ts`, `runner/src/auth.ts`), with a
 120-second replay window. The runner re-validates the test spec it receives
 (`validateRunnerSpec`) even though the app already validated it — the runner
@@ -67,7 +67,7 @@ test (including points) — onto the `Attempt` row. All grading
 (`specFromSnapshot`, `executeTests`) reads from that frozen snapshot, never
 from the live `Question`/`QuestionTest` tables. Re-editing a question after
 students have attempted it invalidates its `validation` status and bumps its
-version for *future* attempts; it cannot retroactively change a stored score.
+version for _future_ attempts; it cannot retroactively change a stored score.
 
 Submission is idempotent (`submitAttempt`): a second submit call returns the
 already-stored grading rather than re-scoring, so a retried request or a
@@ -77,7 +77,7 @@ double click can't change a result.
 
 `ExamSession.expiresAt` is computed once, at `startExamSession`, from the
 exam's `durationMinutes` (clamped to the exam's `endTime`, if set), and never
-extended — resuming a session returns the *existing* session, it does not
+extended — resuming a session returns the _existing_ session, it does not
 recompute the deadline. The client's `ExamTimer` is a pure display: it counts
 down locally between heartbeats but is resynced by every
 `POST /api/heartbeat` response, and the actual enforcement — finalizing an
@@ -91,21 +91,21 @@ attempt auto-submitted once the deadline passes and they're next observed
 
 `useProctor` (`src/hooks/useProctor.ts`) observes `visibilitychange`, `blur`/
 `focus`, `fullscreenchange`, `copy`/`cut`/`paste`, `contextmenu`, and
-`pagehide`. That is the *complete* list of what a browser tab can see. It
+`pagehide`. That is the _complete_ list of what a browser tab can see. It
 cannot detect a second device, another monitor, a virtual machine, screen
 recording, or anything outside the tab — and a web page cannot pull itself
 back into focus, so `TabSwitchModal` is deliberately a "welcome back, that was
 recorded" notice, not a block.
 
 Two layers of deduplication exist because a single tab switch produces
-*two* raw browser events (`blur` and `visibilitychange`) that would otherwise
+_two_ raw browser events (`blur` and `visibilitychange`) that would otherwise
 count as two violations:
 
 1. **Client-side** (`useProctor`): a 1.5s window collapses a `blur`/
    `visibilitychange` pair from the same tab switch before it's even sent.
 2. **Server-side** (`shouldRecordEvent` in `src/lib/proctor.ts`, called from
    `recordProctorEvent`): the same dedupe logic runs again against the
-   *database's* last event for that family, because the client cannot be
+   _database's_ last event for that family, because the client cannot be
    trusted. The violation count returned to the browser (and shown on the
    admin monitor) is **always recomputed from the database** — never trusted
    from client state — so refreshing the page or tampering with React state
@@ -161,14 +161,14 @@ resource ceilings, and a `tmpfs` for `/tmp` (see `docker-compose.yml`).
 
 ## Directory-to-concept map
 
-| Concept | Where |
-|---|---|
-| Grading DSL | `shared/test-spec.ts` |
-| Spec compilation, snapshotting | `src/server/services/questions.ts` |
-| Attempt lifecycle, run/submit | `src/server/services/attempts.ts` |
-| Timing rules | `src/lib/timing.ts`, `src/server/services/sessions.ts` |
-| Proctoring dedupe + status | `src/lib/proctor.ts`, `src/server/services/proctoring.ts` |
-| Student-safe projections | `src/lib/outcome.ts`, `toStudentQuestion` |
-| Runner auth (HMAC) | `src/lib/runner-client.ts`, `runner/src/auth.ts` |
-| Runner execution | `runner/src/executor.ts`, `runner/src/page-script.ts` |
-| Sandboxed live preview | `src/lib/preview.ts`, `src/components/editor/PreviewFrame.tsx` |
+| Concept                        | Where                                                          |
+| ------------------------------ | -------------------------------------------------------------- |
+| Grading DSL                    | `shared/test-spec.ts`                                          |
+| Spec compilation, snapshotting | `src/server/services/questions.ts`                             |
+| Attempt lifecycle, run/submit  | `src/server/services/attempts.ts`                              |
+| Timing rules                   | `src/lib/timing.ts`, `src/server/services/sessions.ts`         |
+| Proctoring dedupe + status     | `src/lib/proctor.ts`, `src/server/services/proctoring.ts`      |
+| Student-safe projections       | `src/lib/outcome.ts`, `toStudentQuestion`                      |
+| Runner auth (HMAC)             | `src/lib/runner-client.ts`, `runner/src/auth.ts`               |
+| Runner execution               | `runner/src/executor.ts`, `runner/src/page-script.ts`          |
+| Sandboxed live preview         | `src/lib/preview.ts`, `src/components/editor/PreviewFrame.tsx` |

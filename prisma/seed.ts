@@ -5,7 +5,9 @@ import { boxQuestion, gridQuestion, type SeedQuestion } from './seed-data';
 const prisma = new PrismaClient();
 
 const ADMIN_EMAIL = (process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com').toLowerCase();
-const STUDENT_EMAILS = (process.env.SEED_STUDENT_EMAILS ?? 'student1@example.com,student2@example.com,student3@example.com')
+const STUDENT_EMAILS = (
+  process.env.SEED_STUDENT_EMAILS ?? 'student1@example.com,student2@example.com,student3@example.com'
+)
   .split(',')
   .map((e) => e.trim().toLowerCase())
   .filter(Boolean);
@@ -133,7 +135,12 @@ async function main(): Promise<void> {
   console.log(`  exam "${exam.title}" with 2 questions, assigned to ${students.length} students`);
 
   await prisma.auditLog.create({
-    data: { userId: admin.id, action: 'seed.completed', entity: 'System', metadata: { students: students.length } },
+    data: {
+      userId: admin.id,
+      action: 'seed.completed',
+      entity: 'System',
+      metadata: { students: students.length },
+    },
   });
 
   console.log('\nSeed complete.');

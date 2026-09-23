@@ -13,9 +13,7 @@ const app = express();
 app.disable('x-powered-by');
 
 // Raw body is required so the HMAC covers exactly what was transmitted.
-app.use(
-  express.raw({ type: '*/*', limit: config.maxPayloadBytes }),
-);
+app.use(express.raw({ type: '*/*', limit: config.maxPayloadBytes }));
 
 app.get('/health', (_req: Request, res: Response) => {
   res.json({
@@ -49,7 +47,8 @@ app.post('/run', async (req: Request, res: Response) => {
     return;
   }
 
-  const runId = typeof parsed.runId === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(parsed.runId) ? parsed.runId : '';
+  const runId =
+    typeof parsed.runId === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(parsed.runId) ? parsed.runId : '';
   if (!runId) {
     res.status(400).json({ error: 'Invalid runId.' });
     return;
@@ -78,9 +77,7 @@ app.post('/run', async (req: Request, res: Response) => {
 
   try {
     const result = await queue.run(async () =>
-      config.isolation === 'docker'
-        ? executeInDocker(input, config.runTimeoutMs)
-        : executeRun(input),
+      config.isolation === 'docker' ? executeInDocker(input, config.runTimeoutMs) : executeRun(input),
     );
     log.info('run.completed', {
       runId,
@@ -108,7 +105,11 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
 });
 
 const server = app.listen(config.port, () => {
-  log.info('runner.listening', { port: config.port, isolation: config.isolation, concurrency: config.maxConcurrency });
+  log.info('runner.listening', {
+    port: config.port,
+    isolation: config.isolation,
+    concurrency: config.maxConcurrency,
+  });
   if (config.isolation === 'container') {
     void getBrowser().catch((err) => log.error('browser.launch_failed', { error: safeError(err) }));
   }

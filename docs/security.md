@@ -148,7 +148,7 @@ which never lets an audit-log failure break the request it's describing.
   interception, resource limits) rather than a fresh OS-level sandbox per
   run. The `docker` isolation mode (`RUNNER_ISOLATION=docker`) trades latency
   for a stronger per-run boundary (`--network=none --read-only
-  --cap-drop=ALL`) — pick it if the container-per-run overhead is acceptable
+--cap-drop=ALL`) — pick it if the container-per-run overhead is acceptable
   for your threat model.
 - **`RUN_TIMEOUT_MS` / `TEST_TIMEOUT_MS`** bound how long a single test or
   run can occupy a runner slot, but a student who writes an infinite loop in

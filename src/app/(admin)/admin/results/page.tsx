@@ -23,8 +23,8 @@ export default async function ResultsPage() {
       <div>
         <h1 className="text-xl font-semibold text-slate-50">Results</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Aggregated from stored attempt scores. Exports contain assessment data only — no student source code and no
-          hidden test content.
+          Aggregated from stored attempt scores. Exports contain assessment data only — no student source code
+          and no hidden test content.
         </p>
       </div>
       <ResultsTable

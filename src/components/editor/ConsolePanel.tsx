@@ -21,13 +21,13 @@ export function ConsolePanel({ lines, onClear }: { lines: ConsoleLine[]; onClear
 
   return (
     <div className="flex h-full flex-col bg-[#0d1724] text-slate-200">
-      <div className="flex items-center justify-between border-b border-[#1b2b40] px-3 py-1 bg-[#09101a] text-xs select-none">
-        <span className="text-[11px] font-mono text-slate-400">Console</span>
+      <div className="flex select-none items-center justify-between border-b border-[#1b2b40] bg-[#09101a] px-3 py-1 text-xs">
+        <span className="font-mono text-[11px] text-slate-400">Console</span>
         {lines.length > 0 && (
           <button
             type="button"
             onClick={onClear}
-            className="rounded px-2 py-0.5 text-[11px] text-slate-400 hover:bg-[#16253a] hover:text-white transition"
+            className="rounded px-2 py-0.5 text-[11px] text-slate-400 transition hover:bg-[#16253a] hover:text-white"
             aria-label="Clear console"
           >
             Clear
@@ -36,10 +36,18 @@ export function ConsolePanel({ lines, onClear }: { lines: ConsoleLine[]; onClear
       </div>
       <div className="flex-1 overflow-auto p-3 font-mono text-xs leading-5">
         {lines.length === 0 ? (
-          <p className="text-slate-500 italic font-sans text-xs">Console output from your code appears here.</p>
+          <p className="font-sans text-xs italic text-slate-500">
+            Console output from your code appears here.
+          </p>
         ) : (
           lines.map((line) => (
-            <div key={line.id} className={cn('whitespace-pre-wrap break-words font-mono', LEVEL_CLASS[line.level] ?? 'text-slate-300')}>
+            <div
+              key={line.id}
+              className={cn(
+                'whitespace-pre-wrap break-words font-mono',
+                LEVEL_CLASS[line.level] ?? 'text-slate-300',
+              )}
+            >
               {line.text}
             </div>
           ))

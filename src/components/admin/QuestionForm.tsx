@@ -146,7 +146,9 @@ export function QuestionForm({
     try {
       const id = await save();
       if (!id) return;
-      const result = await apiPost<ValidationRunResult>(`/api/questions/${id}/validate`, { useReference: true });
+      const result = await apiPost<ValidationRunResult>(`/api/questions/${id}/validate`, {
+        useReference: true,
+      });
       setValidationRun(result);
       setTab('validate');
       toast.push(
@@ -187,7 +189,9 @@ export function QuestionForm({
           <p className="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-400">
             {values.id ? <Badge tone="neutral">version {values.version ?? 1}</Badge> : null}
             {values.validation ? (
-              <Badge tone={values.validation === 'PASSED' ? 'ok' : values.validation === 'FAILED' ? 'bad' : 'warn'}>
+              <Badge
+                tone={values.validation === 'PASSED' ? 'ok' : values.validation === 'FAILED' ? 'bad' : 'warn'}
+              >
                 {values.validation.replace('_', ' ').toLowerCase()}
               </Badge>
             ) : null}
@@ -211,15 +215,15 @@ export function QuestionForm({
 
       {!hasReference ? (
         <div className="rounded-md bg-warn/10 p-3 text-xs text-amber-200 ring-1 ring-warn/30">
-          Add a reference solution before you can validate. Validation runs your tests against it and is required before
-          the question can be used in a published exam.
+          Add a reference solution before you can validate. Validation runs your tests against it and is
+          required before the question can be used in a published exam.
         </div>
       ) : null}
 
       {invalidTests.length > 0 ? (
         <div className="rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30">
-          {invalidTests.length} test case{invalidTests.length === 1 ? ' has' : 's have'} an invalid specification and
-          will be rejected on save.
+          {invalidTests.length} test case{invalidTests.length === 1 ? ' has' : 's have'} an invalid
+          specification and will be rejected on save.
         </div>
       ) : null}
 
@@ -249,7 +253,12 @@ export function QuestionForm({
                 hint="Plain text. Blank lines make paragraphs; lines starting with '-' make a bullet list."
                 htmlFor="q-desc"
               >
-                <Textarea id="q-desc" rows={6} value={values.description} onChange={(e) => set('description', e.target.value)} />
+                <Textarea
+                  id="q-desc"
+                  rows={6}
+                  value={values.description}
+                  onChange={(e) => set('description', e.target.value)}
+                />
               </Field>
               <Field label="Requirements" hint="Optional. Shown in a highlighted box." htmlFor="q-inst">
                 <Textarea
@@ -291,7 +300,11 @@ export function QuestionForm({
                 error={errors.mediaUrl}
                 htmlFor="q-media"
               >
-                <Input id="q-media" value={values.mediaUrl} onChange={(e) => set('mediaUrl', e.target.value)} />
+                <Input
+                  id="q-media"
+                  value={values.mediaUrl}
+                  onChange={(e) => set('mediaUrl', e.target.value)}
+                />
               </Field>
             </>
           ) : null}
@@ -304,10 +317,7 @@ export function QuestionForm({
               css={values.starterCss}
               js={values.starterJs}
               onChange={(part, value) =>
-                set(
-                  part === 'html' ? 'starterHtml' : part === 'css' ? 'starterCss' : 'starterJs',
-                  value,
-                )
+                set(part === 'html' ? 'starterHtml' : part === 'css' ? 'starterCss' : 'starterJs', value)
               }
             />
           ) : null}
@@ -341,7 +351,8 @@ export function QuestionForm({
               {validationRun ? (
                 <>
                   <p className="text-sm text-slate-300">
-                    {validationRun.passedCount}/{validationRun.totalCount} tests passed against the reference solution.
+                    {validationRun.passedCount}/{validationRun.totalCount} tests passed against the reference
+                    solution.
                   </p>
                   <ul className="divide-y divide-ink-800 rounded-md ring-1 ring-ink-700">
                     {validationRun.results.map((r, i) => (
@@ -362,8 +373,8 @@ export function QuestionForm({
                 </>
               ) : (
                 <p className="text-sm text-slate-400">
-                  Press “Save &amp; validate” to run the whole suite against the reference solution in the isolated
-                  runner. Every test must pass before this question can be used in a published exam.
+                  Press “Save &amp; validate” to run the whole suite against the reference solution in the
+                  isolated runner. Every test must pass before this question can be used in a published exam.
                 </p>
               )}
             </div>

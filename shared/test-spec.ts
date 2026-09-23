@@ -54,7 +54,14 @@ export type Assertion =
       tolerance?: number;
       message?: string;
     }
-  | { type: 'attribute'; selector: string; name: string; equals?: string; contains?: string; message?: string }
+  | {
+      type: 'attribute';
+      selector: string;
+      name: string;
+      equals?: string;
+      contains?: string;
+      message?: string;
+    }
   | {
       type: 'size';
       selector: string;
@@ -64,8 +71,22 @@ export type Assertion =
       tolerance?: number;
       message?: string;
     }
-  | { type: 'gridColumns'; selector: string; equals: number; equalWidths?: boolean; tolerance?: number; message?: string }
-  | { type: 'gap'; selector: string; equals: number; axis?: 'row' | 'column' | 'both'; tolerance?: number; message?: string }
+  | {
+      type: 'gridColumns';
+      selector: string;
+      equals: number;
+      equalWidths?: boolean;
+      tolerance?: number;
+      message?: string;
+    }
+  | {
+      type: 'gap';
+      selector: string;
+      equals: number;
+      axis?: 'row' | 'column' | 'both';
+      tolerance?: number;
+      message?: string;
+    }
   | { type: 'boxesPerRow'; selector: string; equals: number; tolerance?: number; message?: string }
   | { type: 'noConsoleErrors'; message?: string };
 
@@ -243,7 +264,9 @@ const clamp255 = (n: number): number => Math.max(0, Math.min(255, Math.round(n))
  * Returns null when the value is not a colour we can resolve offline.
  */
 export function normalizeColorLiteral(input: string): string | null {
-  const raw = String(input ?? '').trim().toLowerCase();
+  const raw = String(input ?? '')
+    .trim()
+    .toLowerCase();
   if (!raw) return null;
 
   if (raw === 'transparent') return 'rgba(0, 0, 0, 0)';
@@ -401,7 +424,9 @@ function validViewport(v: unknown, errors: string[], path: string): Viewport | u
   const inRange = (n: number): boolean =>
     Number.isFinite(n) && n >= SPEC_LIMITS.minViewport && n <= SPEC_LIMITS.maxViewport;
   if (!inRange(w) || !inRange(h)) {
-    errors.push(`${path}: viewport width/height must be between ${SPEC_LIMITS.minViewport} and ${SPEC_LIMITS.maxViewport}`);
+    errors.push(
+      `${path}: viewport width/height must be between ${SPEC_LIMITS.minViewport} and ${SPEC_LIMITS.maxViewport}`,
+    );
     return undefined;
   }
   return { width: Math.round(w), height: Math.round(h) };
@@ -429,7 +454,11 @@ function validateStep(raw: unknown, errors: string[], path: string): Step | null
       return vp ? { action: 'setViewport', viewport: vp } : null;
     }
     case 'click':
-      return { action: 'click', selector: String(s.selector), ...(s.nth !== undefined ? { nth: Number(s.nth) } : {}) };
+      return {
+        action: 'click',
+        selector: String(s.selector),
+        ...(s.nth !== undefined ? { nth: Number(s.nth) } : {}),
+      };
     case 'clickText': {
       const text = String(s.text ?? '');
       if (!text || text.length > SPEC_LIMITS.maxTextLength) {
@@ -447,7 +476,11 @@ function validateStep(raw: unknown, errors: string[], path: string): Step | null
         errors.push(`${path}: press requires a key`);
         return null;
       }
-      return { action: 'press', key, ...(isSafeSelector(s.selector) ? { selector: String(s.selector) } : {}) };
+      return {
+        action: 'press',
+        key,
+        ...(isSafeSelector(s.selector) ? { selector: String(s.selector) } : {}),
+      };
     }
     case 'hover':
       return { action: 'hover', selector: String(s.selector) };
@@ -481,7 +514,8 @@ function validateAssertion(raw: unknown, errors: string[], path: string): Assert
     errors.push(`${path}: unknown assertion type "${type}"`);
     return null;
   }
-  const message = typeof a.message === 'string' && a.message.length <= SPEC_LIMITS.maxTextLength ? a.message : undefined;
+  const message =
+    typeof a.message === 'string' && a.message.length <= SPEC_LIMITS.maxTextLength ? a.message : undefined;
   const withMsg = <T extends object>(o: T): T => (message ? { ...o, message } : o);
 
   if (type !== 'noConsoleErrors' && !isSafeSelector(a.selector)) {
@@ -527,7 +561,9 @@ function validateAssertion(raw: unknown, errors: string[], path: string): Assert
         return null;
       }
       const equals = typeof a.equals === 'string' ? a.equals : undefined;
-      const oneOf = Array.isArray(a.oneOf) ? a.oneOf.filter((x): x is string => typeof x === 'string') : undefined;
+      const oneOf = Array.isArray(a.oneOf)
+        ? a.oneOf.filter((x): x is string => typeof x === 'string')
+        : undefined;
       if (equals === undefined && (!oneOf || oneOf.length === 0)) {
         errors.push(`${path}: css assertion needs "equals" or a non-empty "oneOf"`);
         return null;
@@ -725,7 +761,8 @@ export function validateRunnerSpec(raw: unknown): ValidationResult<RunnerSpec> {
     errors.push('spec.tests must be a non-empty array');
     return { ok: false, errors };
   }
-  if (testsRaw.length > SPEC_LIMITS.maxTests) errors.push(`spec.tests may contain at most ${SPEC_LIMITS.maxTests} tests`);
+  if (testsRaw.length > SPEC_LIMITS.maxTests)
+    errors.push(`spec.tests may contain at most ${SPEC_LIMITS.maxTests} tests`);
 
   const setup: Step[] = [];
   if (Array.isArray(spec.setup)) {
@@ -803,7 +840,10 @@ export function describeAssertion(a: Assertion): string {
 }
 
 export function totalPoints(tests: { points: number }[]): number {
-  return tests.reduce((sum, t) => sum + (Number.isFinite(t.points) ? Math.max(0, Math.round(t.points)) : 0), 0);
+  return tests.reduce(
+    (sum, t) => sum + (Number.isFinite(t.points) ? Math.max(0, Math.round(t.points)) : 0),
+    0,
+  );
 }
 
 /** Question-authoring gate (product requirement #52). */

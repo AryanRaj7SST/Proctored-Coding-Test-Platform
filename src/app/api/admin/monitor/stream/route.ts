@@ -48,11 +48,15 @@ export async function GET(req: Request): Promise<Response> {
         try {
           const rows = await monitorSnapshot(examId);
           controller.enqueue(
-            encoder.encode(`event: snapshot\ndata: ${JSON.stringify({ rows, at: new Date().toISOString() })}\n\n`),
+            encoder.encode(
+              `event: snapshot\ndata: ${JSON.stringify({ rows, at: new Date().toISOString() })}\n\n`,
+            ),
           );
         } catch (err) {
           logger.warn('monitor.stream_error', { error: sanitizeError(err) });
-          controller.enqueue(encoder.encode(`event: error\ndata: ${JSON.stringify({ error: 'snapshot failed' })}\n\n`));
+          controller.enqueue(
+            encoder.encode(`event: error\ndata: ${JSON.stringify({ error: 'snapshot failed' })}\n\n`),
+          );
         }
         if (Date.now() - startedAt > MAX_LIFETIME_MS) {
           controller.enqueue(encoder.encode('event: bye\ndata: {}\n\n'));

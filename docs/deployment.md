@@ -9,28 +9,28 @@ be exposed to the public internet directly (see below).
 
 ### App (`.env`, see `.env.example`)
 
-| Variable | Required | Notes |
-|---|---|---|
-| `DATABASE_URL` | yes | PostgreSQL connection string |
-| `AUTH_SECRET` | yes | `openssl rand -base64 32` |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET` | yes | Google Cloud Console → APIs & Services → Credentials |
-| `AUTH_URL` | production | Public base URL; needed for the OAuth callback |
-| `AUTH_TRUST_HOST` | behind a proxy | `"true"` on Vercel or behind any reverse proxy |
-| `RUNNER_URL` | yes | Where the app reaches the runner |
-| `RUNNER_SECRET` | yes | `openssl rand -hex 32`. **Must match the runner's copy exactly.** |
-| `RUNNER_TIMEOUT_MS` | no | App-side budget per run request (default 30000) |
-| `MAX_CODE_BYTES`, `RUN_RATE_LIMIT_PER_MIN`, `SUBMIT_RATE_LIMIT_PER_MIN`, `PROCTOR_RATE_LIMIT_PER_MIN`, `HEARTBEAT_INTERVAL_SECONDS`, `SESSION_STALE_SECONDS`, `TEST_LOG_RETENTION_DAYS`, `LOG_LEVEL` | no | See `.env.example` for defaults |
-| `SEED_ADMIN_EMAIL`, `SEED_STUDENT_EMAILS`, `SEED_BATCH` | dev only | Used only by `npm run db:seed` |
+| Variable                                                                                                                                                                                             | Required       | Notes                                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------- |
+| `DATABASE_URL`                                                                                                                                                                                       | yes            | PostgreSQL connection string                                      |
+| `AUTH_SECRET`                                                                                                                                                                                        | yes            | `openssl rand -base64 32`                                         |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`                                                                                                                                                              | yes            | Google Cloud Console → APIs & Services → Credentials              |
+| `AUTH_URL`                                                                                                                                                                                           | production     | Public base URL; needed for the OAuth callback                    |
+| `AUTH_TRUST_HOST`                                                                                                                                                                                    | behind a proxy | `"true"` on Vercel or behind any reverse proxy                    |
+| `RUNNER_URL`                                                                                                                                                                                         | yes            | Where the app reaches the runner                                  |
+| `RUNNER_SECRET`                                                                                                                                                                                      | yes            | `openssl rand -hex 32`. **Must match the runner's copy exactly.** |
+| `RUNNER_TIMEOUT_MS`                                                                                                                                                                                  | no             | App-side budget per run request (default 30000)                   |
+| `MAX_CODE_BYTES`, `RUN_RATE_LIMIT_PER_MIN`, `SUBMIT_RATE_LIMIT_PER_MIN`, `PROCTOR_RATE_LIMIT_PER_MIN`, `HEARTBEAT_INTERVAL_SECONDS`, `SESSION_STALE_SECONDS`, `TEST_LOG_RETENTION_DAYS`, `LOG_LEVEL` | no             | See `.env.example` for defaults                                   |
+| `SEED_ADMIN_EMAIL`, `SEED_STUDENT_EMAILS`, `SEED_BATCH`                                                                                                                                              | dev only       | Used only by `npm run db:seed`                                    |
 
 ### Runner (`runner/.env`, see `runner/.env.example`)
 
-| Variable | Required | Notes |
-|---|---|---|
-| `RUNNER_SECRET` | yes | Must match the app's copy |
-| `RUNNER_ISOLATION` | no | `container` (default) or `docker` — see `docs/security.md#isolation-modes` |
-| `RUNNER_MAX_CONCURRENCY`, `RUNNER_MAX_QUEUE` | no | Bounded-queue tuning; see `docs/architecture.md#rate-limiting-without-redis` |
-| `RUN_TIMEOUT_MS`, `TEST_TIMEOUT_MS` | no | Per-run / per-test wall-clock limits |
-| `DOCKER_IMAGE`, `DOCKER_MEMORY`, `DOCKER_CPUS`, `DOCKER_PIDS_LIMIT` | only if `RUNNER_ISOLATION=docker` | Per-container resource limits |
+| Variable                                                            | Required                          | Notes                                                                        |
+| ------------------------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
+| `RUNNER_SECRET`                                                     | yes                               | Must match the app's copy                                                    |
+| `RUNNER_ISOLATION`                                                  | no                                | `container` (default) or `docker` — see `docs/security.md#isolation-modes`   |
+| `RUNNER_MAX_CONCURRENCY`, `RUNNER_MAX_QUEUE`                        | no                                | Bounded-queue tuning; see `docs/architecture.md#rate-limiting-without-redis` |
+| `RUN_TIMEOUT_MS`, `TEST_TIMEOUT_MS`                                 | no                                | Per-run / per-test wall-clock limits                                         |
+| `DOCKER_IMAGE`, `DOCKER_MEMORY`, `DOCKER_CPUS`, `DOCKER_PIDS_LIMIT` | only if `RUNNER_ISOLATION=docker` | Per-container resource limits                                                |
 
 Neither `.env` should ever be committed; both are already in `.gitignore`.
 
@@ -136,7 +136,7 @@ attention before running the app horizontally scaled:
 - **Rate limiting** (`src/lib/rate-limit.ts`) is in-memory per instance —
   each instance would enforce its own limit independently. Swap in a
   Redis/Upstash-backed implementation behind the same `rateLimit(key, limit,
-  windowMs)` interface.
+windowMs)` interface.
 - **The SSE monitor stream** holds its poll loop in the serving instance's
   memory for up to 4 minutes per connection; this works fine scaled out (each
   admin's browser just talks to whichever instance handled that connection),

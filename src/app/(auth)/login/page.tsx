@@ -47,7 +47,10 @@ export default async function LoginPage({
         </div>
 
         {message ? (
-          <div className="mb-4 rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30" role="alert">
+          <div
+            className="mb-4 rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30"
+            role="alert"
+          >
             {message}
           </div>
         ) : null}
@@ -57,8 +60,8 @@ export default async function LoginPage({
         </form>
 
         <p className="mt-6 text-center text-[11px] leading-5 text-slate-500">
-          Access is limited to individually invited addresses. Exam sessions are proctored: tab switches, focus loss and
-          clipboard activity are recorded.
+          Access is limited to individually invited addresses. Exam sessions are proctored: tab switches,
+          focus loss and clipboard activity are recorded.
         </p>
       </div>
     </main>

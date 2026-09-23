@@ -31,7 +31,10 @@ test.describe('student exam flow', () => {
 
   test('the workspace loads the IDE, the timer and the question', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.getByRole('button', { name: /start exam|resume exam/i }).first().click();
+    await page
+      .getByRole('button', { name: /start exam|resume exam/i })
+      .first()
+      .click();
     await page.getByRole('button', { name: /start the timer|resume now/i }).click();
 
     await expect(page).toHaveURL(/\/exam\//);
@@ -46,7 +49,10 @@ test.describe('student exam flow', () => {
 
   test('running the tests returns per-test results without exposing hidden test bodies', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.getByRole('button', { name: /start exam|resume exam/i }).first().click();
+    await page
+      .getByRole('button', { name: /start exam|resume exam/i })
+      .first()
+      .click();
     await page.getByRole('button', { name: /start the timer|resume now/i }).click();
     await expect(page.getByRole('timer')).toBeVisible();
 
@@ -73,7 +79,10 @@ test.describe('student exam flow', () => {
 
   test('the timer is display-only: the server decides how much time is left', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.getByRole('button', { name: /start exam|resume exam/i }).first().click();
+    await page
+      .getByRole('button', { name: /start exam|resume exam/i })
+      .first()
+      .click();
     await page.getByRole('button', { name: /start the timer|resume now/i }).click();
     await expect(page.getByRole('timer')).toBeVisible();
 
@@ -89,15 +98,20 @@ test.describe('student exam flow', () => {
       // eslint-disable-next-line no-global-assign
       Date.now = () => original() - 60 * 60 * 1000;
     });
-    const second = await (await page.waitForResponse((r) => r.url().includes('/api/heartbeat'), {
-      timeout: 30_000,
-    })).json();
+    const second = await (
+      await page.waitForResponse((r) => r.url().includes('/api/heartbeat'), {
+        timeout: 30_000,
+      })
+    ).json();
     expect(second.msRemaining).toBeLessThan(before + 1000);
   });
 
   test('leaving the tab is recorded and acknowledged on return', async ({ page, context }) => {
     await page.goto('/dashboard');
-    await page.getByRole('button', { name: /start exam|resume exam/i }).first().click();
+    await page
+      .getByRole('button', { name: /start exam|resume exam/i })
+      .first()
+      .click();
     await page.getByRole('button', { name: /start the timer|resume now/i }).click();
     await expect(page.getByRole('timer')).toBeVisible();
 
@@ -122,7 +136,10 @@ test.describe('student exam flow', () => {
 
   test('autosave persists work across a reload', async ({ page }) => {
     await page.goto('/dashboard');
-    await page.getByRole('button', { name: /start exam|resume exam/i }).first().click();
+    await page
+      .getByRole('button', { name: /start exam|resume exam/i })
+      .first()
+      .click();
     await page.getByRole('button', { name: /start the timer|resume now/i }).click();
     await expect(page.getByRole('timer')).toBeVisible();
 
