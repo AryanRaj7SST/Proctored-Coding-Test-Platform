@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Button, Modal } from '@/components/ui';
+import { Modal } from '@/components/ui';
 
 /**
  * Shown when the student RETURNS to the exam tab.
