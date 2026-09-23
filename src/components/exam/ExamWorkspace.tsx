@@ -90,6 +90,8 @@ export function ExamWorkspace({ examId }: { examId: string }) {
   const [runError, setRunError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
   const [confirmSubmit, setConfirmSubmit] = React.useState(false);
+  const [confirmEndExam, setConfirmEndExam] = React.useState(false);
+  const [endingExam, setEndingExam] = React.useState(false);
 
   const [clock, setClock] = React.useState({ msRemaining: 0, syncedAt: Date.now() });
   const [expired, setExpired] = React.useState(false);
@@ -327,6 +329,21 @@ export function ExamWorkspace({ examId }: { examId: string }) {
     }
   }, [attempt, submitting, locked, code, index, flush, toast]);
 
+  const handleEndExam = React.useCallback(async () => {
+    if (endingExam || expired) return;
+    setEndingExam(true);
+    try {
+      await flush();
+      await apiPost(`/api/exams/${examId}/end`);
+      toast.push('Test submitted successfully! Redirecting…', 'success');
+      setConfirmEndExam(false);
+      setTimeout(() => router.push('/dashboard'), 1200);
+    } catch (err) {
+      toast.push(err instanceof ApiError ? err.message : 'Failed to end test. Please try again.', 'error');
+      setEndingExam(false);
+    }
+  }, [examId, endingExam, expired, flush, router, toast]);
+
   const resetStarter = React.useCallback(() => {
     if (!slot || locked) return;
     setCode({
@@ -410,6 +427,17 @@ export function ExamWorkspace({ examId }: { examId: string }) {
               <span>{violationCount}</span>
             </span>
           ) : null}
+
+          {/* End Test Button */}
+          <button
+            type="button"
+            onClick={() => setConfirmEndExam(true)}
+            disabled={expired || endingExam}
+            className="rounded-[4px] bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-rose-700 shadow-xs transition disabled:opacity-50 flex items-center gap-1.5 cursor-pointer"
+            title="End and submit entire test"
+          >
+            {endingExam ? 'Ending…' : 'End Test'}
+          </button>
 
           {/* User Profile Avatar */}
           <button
@@ -989,6 +1017,17 @@ export function ExamWorkspace({ examId }: { examId: string }) {
         busy={submitting}
         onConfirm={() => void submit()}
         onCancel={() => setConfirmSubmit(false)}
+      />
+
+      <ConfirmDialog
+        open={confirmEndExam}
+        title="End Test?"
+        message={`You have attempted ${attemptedCount} of ${data.questions.length} questions. Are you sure you want to end your test? Once submitted, your exam will finish and you cannot make further changes.`}
+        confirmLabel={endingExam ? 'Ending Test…' : 'Yes, End Test'}
+        danger
+        busy={endingExam}
+        onConfirm={() => void handleEndExam()}
+        onCancel={() => setConfirmEndExam(false)}
       />
     </div>
   );

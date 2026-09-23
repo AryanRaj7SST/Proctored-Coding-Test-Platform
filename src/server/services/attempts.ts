@@ -368,3 +368,46 @@ export async function finalizeExpiredAttempts(examId: string, userId: string): P
   await endSession(examId, userId, 'EXPIRED');
   return finalised;
 }
+
+/**
+ * End the exam explicitly by the student.
+ * Submits all open attempts (grading them with current code),
+ * marks the exam assignment as SUBMITTED, and closes the session.
+ */
+export async function endExam(examId: string, userId: string): Promise<{ submittedCount: number }> {
+  const openAttempts = await prisma.attempt.findMany({
+    where: { examId, userId, status: 'IN_PROGRESS' },
+  });
+
+  let submittedCount = 0;
+  for (const attempt of openAttempts) {
+    try {
+      await submitAttempt({ attemptId: attempt.id, userId, auto: false });
+      submittedCount += 1;
+    } catch (err) {
+      logger.warn('endExam.submit_failed', { attemptId: attempt.id, error: sanitizeError(err) });
+      await prisma.attempt.updateMany({
+        where: { id: attempt.id, status: 'IN_PROGRESS' },
+        data: { status: 'SUBMITTED', submittedAt: new Date() },
+      });
+      submittedCount += 1;
+    }
+  }
+
+  await prisma.$transaction([
+    prisma.examAssignment.updateMany({ where: { examId, userId }, data: { status: 'SUBMITTED' } }),
+    prisma.proctorEvent.create({ data: { userId, examId, type: 'EXAM_SUBMITTED', violation: false } }),
+  ]);
+  await endSession(examId, userId, 'SUBMITTED');
+
+  await recordAudit({
+    userId,
+    action: 'exam.ended',
+    entity: 'Exam',
+    entityId: examId,
+    metadata: { submittedCount },
+  });
+
+  return { submittedCount };
+}
+
