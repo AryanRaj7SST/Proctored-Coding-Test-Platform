@@ -153,17 +153,8 @@ jobs:
           npx prisma generate
           npm run db:deploy
 
-      - name: Start the app
-        run: npm run build && npm run start &
-
-      - name: Wait for the app
-        run: |
-          for i in $(seq 1 30); do
-            curl -sf http://localhost:3000/api/health && exit 0
-            sleep 2
-          done
-          echo "App did not become ready in time" >&2
-          exit 1
+      - name: Build the app
+        run: npm run build
 
       # Only the tier that needs no Google sign-in -- see tests/e2e/README.md
       # for why the authenticated tier cannot run unattended in CI either.
