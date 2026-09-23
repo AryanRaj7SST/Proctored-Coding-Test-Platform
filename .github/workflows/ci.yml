@@ -39,6 +39,7 @@ jobs:
       AUTH_GOOGLE_SECRET: ci-placeholder
       RUNNER_URL: http://localhost:4000
       RUNNER_SECRET: ci-only-runner-secret-at-least-16-chars
+      AUTH_TRUST_HOST: 'true'
     steps:
       - uses: actions/checkout@v4
 
@@ -134,6 +135,7 @@ jobs:
       AUTH_GOOGLE_SECRET: ci-placeholder
       RUNNER_URL: http://localhost:4000
       RUNNER_SECRET: ci-only-runner-secret-at-least-16-chars
+      AUTH_TRUST_HOST: 'true'
     steps:
       - uses: actions/checkout@v4
 

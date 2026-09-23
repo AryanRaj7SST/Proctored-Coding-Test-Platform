@@ -24,7 +24,7 @@ test.describe('unauthenticated surface', () => {
 
   test('a rejected sign-in shows a specific, non-technical reason', async ({ page }) => {
     await page.goto('/login?error=NotAllowlisted');
-    await expect(page.getByRole('alert')).toContainText(/not on the invite list/i);
+    await expect(page.getByRole('alert').filter({ hasText: /not on the invite list/i })).toBeVisible();
   });
 
   test('protected routes redirect to login instead of rendering', async ({ page }) => {
