@@ -36,16 +36,17 @@ export function PreviewFrame({
   className?: string;
 }) {
   const frameRef = React.useRef<HTMLIFrameElement>(null);
-  const [doc, setDoc] = React.useState('');
+  const [doc, setDoc] = React.useState(() => buildPreviewDocument(html, css, js));
   const onConsoleRef = React.useRef(onConsole);
   onConsoleRef.current = onConsole;
 
-  // Rebuild only when the student asks for it (or on mount), so typing does not
-  // restart their script on every keystroke.
+  // Live updating in parallel with the code (debounced 250ms), and immediately on refreshKey
   React.useEffect(() => {
-    setDoc(buildPreviewDocument(html, css, js));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshKey]);
+    const timer = setTimeout(() => {
+      setDoc(buildPreviewDocument(html, css, js));
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [html, css, js, refreshKey]);
 
   React.useEffect(() => {
     const onMessage = (event: MessageEvent) => {

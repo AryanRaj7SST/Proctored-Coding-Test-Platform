@@ -38,29 +38,37 @@ export function TabSwitchModal({
       open={open}
       title={title}
       dismissible={false}
+      theme="light"
       footer={
-        <Button
+        <button
+          type="button"
           onClick={onAcknowledge}
           autoFocus
-          className="bg-blue-600 font-medium text-white hover:bg-blue-700"
+          className="shadow-xs rounded-[4px] bg-[#0066d6] px-5 py-2 text-xs font-semibold text-white transition hover:bg-[#0052b3]"
         >
           Continue in Full Screen
-        </Button>
+        </button>
       }
     >
-      <p>{message ?? 'Leaving the exam window has been recorded.'}</p>
-      <p className="mt-3 text-slate-400">
-        Recorded violations: <span className="font-semibold text-slate-200">{violationCount}</span>
-        {remaining !== null ? (
-          <>
-            {' '}
-            — your exam is submitted automatically after {maxViolations} ({remaining} remaining).
-          </>
-        ) : null}
-      </p>
-      <p className="mt-3 text-xs text-slate-500">
-        Every event is stored on the server with a timestamp and reviewed by your mentor.
-      </p>
+      <div className="space-y-3 text-xs sm:text-sm">
+        <p className="font-medium text-slate-800">
+          {message ?? 'Leaving the exam window has been recorded.'}
+        </p>
+        <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+          <p className="text-slate-700">
+            Recorded violations: <span className="font-bold text-rose-600">{violationCount}</span>
+            {remaining !== null ? (
+              <>
+                {' '}
+                — your exam is submitted automatically after {maxViolations} ({remaining} remaining).
+              </>
+            ) : null}
+          </p>
+        </div>
+        <p className="text-xs text-slate-500">
+          Every event is stored on the server with a timestamp and reviewed by your mentor.
+        </p>
+      </div>
     </Modal>
   );
 }

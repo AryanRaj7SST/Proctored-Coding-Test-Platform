@@ -30,6 +30,24 @@ import {
   Settings,
 } from 'lucide-react';
 
+const LANGUAGE_ICONS: Record<string, string> = {
+  html: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg',
+  css: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/css3/css3-original.svg',
+  js: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
+  javascript: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/javascript/javascript-original.svg',
+  py: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
+  python: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/python/python-original.svg',
+  cpp: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/cplusplus/cplusplus-original.svg',
+  java: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/java/java-original.svg',
+};
+
+const DEFAULT_ICON = 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/html5/html5-original.svg';
+
+function getLanguageIcon(langOrExt: string): string {
+  const key = langOrExt.toLowerCase();
+  return LANGUAGE_ICONS[key] ?? DEFAULT_ICON;
+}
+
 /* ------------------------------------------------------------------ types */
 
 interface AttemptDto {
@@ -408,25 +426,13 @@ export function ExamWorkspace({ examId }: { examId: string }) {
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex items-center gap-2">
             {/* SCALER Logo */}
-            <div className="flex cursor-pointer items-center gap-1.5">
-              <span className="text-base font-black tracking-wider text-slate-900">SCALER</span>
-              <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none">
-                <path d="M4 4H16L20 8V20H4V4Z" fill="#0066d6" />
-                <path
-                  d="M10 8H16V14"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path
-                  d="M8 16L16 8"
-                  stroke="white"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+            <div className="flex cursor-pointer items-center">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://s3-ap-southeast-1.amazonaws.com/ghost-production-blog/2022/12/Scaler_Logo_Transparent.png"
+                alt="Scaler"
+                className="h-6 w-auto object-contain"
+              />
             </div>
             <span className="text-slate-300">|</span>
             <h1 className="max-w-xs truncate text-xs font-semibold text-slate-800 sm:text-[13px] md:max-w-md">
@@ -740,9 +746,12 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                           : 'border-transparent text-slate-400 hover:text-slate-200',
                       )}
                     >
-                      <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-orange-600 text-[9px] font-bold text-white">
-                        5
-                      </span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getLanguageIcon('html')}
+                        alt="HTML5"
+                        className="h-3.5 w-3.5 shrink-0 object-contain"
+                      />
                       <span>index.html</span>
                     </button>
                     <button
@@ -755,9 +764,12 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                           : 'border-transparent text-slate-400 hover:text-slate-200',
                       )}
                     >
-                      <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-blue-600 text-[9px] font-bold text-white">
-                        3
-                      </span>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getLanguageIcon('css')}
+                        alt="CSS3"
+                        className="h-3.5 w-3.5 shrink-0 object-contain"
+                      />
                       <span>style.css</span>
                     </button>
                     {slot.question.starterJs ? (
@@ -771,9 +783,12 @@ export function ExamWorkspace({ examId }: { examId: string }) {
                             : 'border-transparent text-slate-400 hover:text-slate-200',
                         )}
                       >
-                        <span className="flex h-3.5 w-3.5 items-center justify-center rounded bg-amber-500 text-[9px] font-bold text-black">
-                          JS
-                        </span>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={getLanguageIcon('js')}
+                          alt="JavaScript"
+                          className="h-3.5 w-3.5 shrink-0 object-contain"
+                        />
                         <span>script.js</span>
                       </button>
                     ) : null}
@@ -793,62 +808,6 @@ export function ExamWorkspace({ examId }: { examId: string }) {
 
                 {/* Editor & Preview Split */}
                 <div className="flex min-h-0 flex-1">
-                  {/* Project Sidebar (~210px, Navy #10233d) */}
-                  <div className="flex w-52 flex-shrink-0 select-none flex-col border-r border-[#1a3150] bg-[#10233d]">
-                    <div className="border-b border-[#1a3150]/60 px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                      PROJECT
-                    </div>
-                    <div className="space-y-0.5 p-1.5">
-                      <button
-                        type="button"
-                        onClick={() => setPane('html')}
-                        className={cn(
-                          'flex w-full items-center gap-2 rounded-[4px] px-2.5 py-1.5 text-left text-xs transition',
-                          pane === 'html'
-                            ? 'bg-[#172b46] font-medium text-white ring-1 ring-[#203a5f]'
-                            : 'text-slate-300 hover:bg-[#15273f] hover:text-white',
-                        )}
-                      >
-                        <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded bg-orange-600 text-[9px] font-bold text-white">
-                          5
-                        </span>
-                        <span className="truncate">index.html</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setPane('css')}
-                        className={cn(
-                          'flex w-full items-center gap-2 rounded-[4px] px-2.5 py-1.5 text-left text-xs transition',
-                          pane === 'css'
-                            ? 'bg-[#172b46] font-medium text-white ring-1 ring-[#203a5f]'
-                            : 'text-slate-300 hover:bg-[#15273f] hover:text-white',
-                        )}
-                      >
-                        <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded bg-blue-600 text-[9px] font-bold text-white">
-                          3
-                        </span>
-                        <span className="truncate">style.css</span>
-                      </button>
-                      {slot.question.starterJs ? (
-                        <button
-                          type="button"
-                          onClick={() => setPane('js')}
-                          className={cn(
-                            'flex w-full items-center gap-2 rounded-[4px] px-2.5 py-1.5 text-left text-xs transition',
-                            pane === 'js'
-                              ? 'bg-[#172b46] font-medium text-white ring-1 ring-[#203a5f]'
-                              : 'text-slate-300 hover:bg-[#15273f] hover:text-white',
-                          )}
-                        >
-                          <span className="flex h-3.5 w-3.5 flex-shrink-0 items-center justify-center rounded bg-amber-500 text-[9px] font-bold text-black">
-                            JS
-                          </span>
-                          <span className="truncate">script.js</span>
-                        </button>
-                      ) : null}
-                    </div>
-                  </div>
-
                   {/* Code Area */}
                   <div className="flex min-w-0 flex-1 flex-col bg-[#131f30]">
                     <div className="min-h-0 flex-1">
@@ -880,31 +839,31 @@ export function ExamWorkspace({ examId }: { examId: string }) {
 
                   {/* Side-by-Side Live Preview */}
                   {showPreview && (
-                    <>
-                      {/* Splitter: Editor vs Live Preview */}
-                      <ResizeHandle
-                        direction="horizontal"
-                        className="bg-[#10233d]"
-                        onResize={(delta) => {
-                          setPreviewWidth((w) => Math.max(240, Math.min(800, w - delta)));
-                        }}
-                      />
-                      <div
-                        style={{ width: `${previewWidth}px` }}
-                        className="flex flex-shrink-0 flex-col border-l border-slate-200 bg-[#fff] p-3"
-                      >
-                        <div className="h-full w-full overflow-hidden rounded-[4px] border border-dashed border-[#b7b7b7] bg-[#fafafa]">
-                          <PreviewFrame
-                            html={code.html}
-                            css={code.css}
-                            js={code.js}
-                            refreshKey={previewKey}
-                            onConsole={pushConsole}
-                          />
-                        </div>
-                      </div>
-                    </>
+                    <ResizeHandle
+                      direction="horizontal"
+                      className="bg-[#10233d]"
+                      onResize={(delta) => {
+                        setPreviewWidth((w) => Math.max(240, Math.min(800, w - delta)));
+                      }}
+                    />
                   )}
+                  <div
+                    style={{
+                      width: `${previewWidth}px`,
+                      display: showPreview ? 'flex' : 'none',
+                    }}
+                    className="flex flex-shrink-0 flex-col border-l border-slate-200 bg-[#fff] p-3"
+                  >
+                    <div className="h-full w-full overflow-hidden rounded-[4px] border border-dashed border-[#b7b7b7] bg-[#fafafa]">
+                      <PreviewFrame
+                        html={code.html}
+                        css={code.css}
+                        js={code.js}
+                        refreshKey={previewKey}
+                        onConsole={pushConsole}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

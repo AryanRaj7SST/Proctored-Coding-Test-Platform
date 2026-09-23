@@ -316,6 +316,7 @@ export function Modal({
   children,
   footer,
   dismissible = true,
+  theme = 'dark',
 }: {
   open: boolean;
   title: string;
@@ -323,8 +324,10 @@ export function Modal({
   children: React.ReactNode;
   footer?: React.ReactNode;
   dismissible?: boolean;
+  theme?: 'dark' | 'light';
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
+  const isLight = theme === 'light';
 
   // Focus management: move focus into the dialog, trap Tab, restore on close.
   React.useEffect(() => {
@@ -372,7 +375,10 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
-        className="absolute inset-0 bg-black/70"
+        className={cn(
+          'absolute inset-0 transition-opacity',
+          isLight ? 'backdrop-blur-xs bg-slate-900/60' : 'bg-black/70',
+        )}
         onClick={dismissible ? onClose : undefined}
         aria-hidden="true"
       />
@@ -381,24 +387,57 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative z-10 w-full max-w-lg animate-fade-in rounded-lg bg-ink-850 shadow-2xl ring-1 ring-ink-600"
+        className={cn(
+          'relative z-10 w-full max-w-lg animate-fade-in rounded-lg shadow-2xl transition-all',
+          isLight
+            ? 'border border-slate-200 bg-white ring-1 ring-slate-200/80'
+            : 'bg-ink-850 ring-1 ring-ink-600',
+        )}
       >
-        <div className="flex items-center justify-between border-b border-ink-700 px-4 py-3">
-          <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
+        <div
+          className={cn(
+            'flex items-center justify-between border-b px-5 py-3.5',
+            isLight ? 'border-slate-100' : 'border-ink-700',
+          )}
+        >
+          <h2
+            className={cn(
+              'text-base font-bold',
+              isLight ? 'text-slate-900' : 'text-sm font-semibold text-slate-100',
+            )}
+          >
+            {title}
+          </h2>
           {dismissible && onClose ? (
             <button
               type="button"
               onClick={onClose}
               aria-label="Close dialog"
-              className="rounded p-1 text-slate-400 hover:bg-ink-800 hover:text-white"
+              className={cn(
+                'rounded p-1 text-xs transition',
+                isLight
+                  ? 'text-slate-400 hover:bg-slate-100 hover:text-slate-700'
+                  : 'text-slate-400 hover:bg-ink-800 hover:text-white',
+              )}
             >
               ✕
             </button>
           ) : null}
         </div>
-        <div className="px-4 py-4 text-sm text-slate-300">{children}</div>
+        <div
+          className={cn('px-5 py-4 text-sm leading-relaxed', isLight ? 'text-slate-600' : 'text-slate-300')}
+        >
+          {children}
+        </div>
         {footer ? (
-          <div className="flex justify-end gap-2 border-t border-ink-700 px-4 py-3">{footer}</div>
+          <div
+            className={cn(
+              'flex justify-end gap-2.5 border-t px-5 py-3.5',
+              isLight ? 'rounded-b-lg border-slate-100 bg-slate-50/70' : 'border-ink-700',
+            )}
+          >
+            {footer}
+          </div>
         ) : null}
       </div>
     </div>
@@ -414,6 +453,7 @@ export function ConfirmDialog({
   busy,
   onConfirm,
   onCancel,
+  theme = 'light',
 }: {
   open: boolean;
   title: string;
@@ -423,20 +463,42 @@ export function ConfirmDialog({
   busy?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
+  theme?: 'dark' | 'light';
 }) {
+  const isLight = theme === 'light';
+
   return (
     <Modal
       open={open}
       title={title}
       onClose={onCancel}
+      theme={theme}
       footer={
         <>
-          <Button variant="secondary" onClick={onCancel} disabled={busy}>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={busy}
+            className={cn(
+              'rounded-[4px] px-4 py-2 text-xs font-semibold transition',
+              isLight
+                ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50'
+                : 'border border-ink-600 bg-ink-800 text-slate-200 hover:bg-ink-700 disabled:opacity-50',
+            )}
+          >
             Cancel
-          </Button>
-          <Button variant={danger ? 'danger' : 'primary'} onClick={onConfirm} loading={busy}>
-            {confirmLabel}
-          </Button>
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={busy}
+            className={cn(
+              'shadow-xs rounded-[4px] px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50',
+              danger ? 'bg-[#e11d48] hover:bg-[#be123c]' : 'bg-[#0066d6] hover:bg-[#0052b3]',
+            )}
+          >
+            {busy ? 'Processing…' : confirmLabel}
+          </button>
         </>
       }
     >
