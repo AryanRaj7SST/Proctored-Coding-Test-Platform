@@ -1,7 +1,8 @@
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
-import { ExamForm, examValuesFrom } from '@/components/admin/ExamForm';
+import { ExamForm } from '@/components/admin/ExamForm';
+import { examValuesFrom } from '@/components/admin/exam-types';
 
 export const dynamic = 'force-dynamic';
 
