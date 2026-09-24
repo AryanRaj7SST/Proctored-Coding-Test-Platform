@@ -101,6 +101,7 @@ export default async function StudentExamsPage() {
                   <Th>Tests passed</Th>
                   <Th>Score</Th>
                   <Th>Submitted</Th>
+                  <Th>Action</Th>
                 </tr>
               </thead>
               <tbody>
@@ -115,6 +116,14 @@ export default async function StudentExamsPage() {
                       {a.score}/{a.maxScore}
                     </Td>
                     <Td className="text-slate-500">{formatDateTime(a.submittedAt)}</Td>
+                    <Td>
+                      <a
+                        href={`/practice/${a.id}`}
+                        className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/20"
+                      >
+                        Practice
+                      </a>
+                    </Td>
                   </tr>
                 ))}
               </tbody>
