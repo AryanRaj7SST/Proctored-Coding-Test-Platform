@@ -1,6 +1,6 @@
 import type { Exam, ExamSession } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { computeExpiry, examAvailability, msRemaining, type ExamAvailability } from '@/lib/timing';
+import { computeExpiry, examAvailability, isExpired, msRemaining, type ExamAvailability } from '@/lib/timing';
 import { env } from '@/lib/env';
 import { deriveSessionStatus } from '@/lib/proctor';
 import { conflict, forbidden } from '@/lib/http';
@@ -27,11 +27,10 @@ export async function getExamTimeState(examId: string, userId: string, exam?: Ex
     session ? { startedAt: session.startedAt, expiresAt: session.expiresAt, endedAt: session.endedAt } : null,
     { now },
   );
-  if (availability === 'NOT_STARTED') {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, role: true } });
-    if (user?.email === 'agnihotriaryan5361@gmail.com' || user?.role === 'ADMIN') {
-      availability = 'AVAILABLE';
-    }
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, role: true } });
+  const isExempt = user?.email === 'agnihotriaryan5361@gmail.com' || user?.role === 'ADMIN';
+  if (isExempt && (availability === 'NOT_STARTED' || availability === 'ENDED')) {
+    availability = 'AVAILABLE';
   }
   return {
     availability,
@@ -48,14 +47,21 @@ export async function startExamSession(
   userId: string,
   userAgent?: string | null,
 ): Promise<ExamSession> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, role: true } });
+  const isExempt = user?.email === 'agnihotriaryan5361@gmail.com' || user?.role === 'ADMIN';
   const state = await getExamTimeState(exam.id, userId, exam);
 
-  if (state.availability === 'NOT_STARTED') throw forbidden('This exam has not opened yet.');
-  if (state.availability === 'ENDED') throw forbidden('This exam has closed.');
-  if (state.availability === 'UNPUBLISHED') throw forbidden('This exam is not available.');
-  if (state.availability === 'SUBMITTED') throw conflict('You have already submitted this exam.');
-  if (state.availability === 'EXPIRED') throw conflict('Your time for this exam has expired.');
-  if (state.session) return state.session; // resume -- never extends the deadline
+  if (!isExempt) {
+    if (state.availability === 'NOT_STARTED') throw forbidden('This exam has not opened yet.');
+    if (state.availability === 'ENDED') throw forbidden('This exam has closed.');
+    if (state.availability === 'UNPUBLISHED') throw forbidden('This exam is not available.');
+    if (state.availability === 'SUBMITTED') throw conflict('You have already submitted this exam.');
+    if (state.availability === 'EXPIRED') throw conflict('Your time for this exam has expired.');
+  }
+  if (state.session && (!isExempt || !isExpired(state.session.expiresAt))) return state.session; // resume
+  if (state.session && isExempt && isExpired(state.session.expiresAt)) {
+    await prisma.examSession.delete({ where: { id: state.session.id } });
+  }
 
   const startedAt = new Date();
   const expiresAt = computeExpiry(startedAt, exam.durationMinutes, exam.endTime);

@@ -180,7 +180,7 @@ export async function listStudentExams(userId: string) {
       { submitted: allDone, now },
     );
     if (
-      availability === 'NOT_STARTED' &&
+      (availability === 'NOT_STARTED' || availability === 'ENDED') &&
       (user?.email === 'agnihotriaryan5361@gmail.com' || user?.role === 'ADMIN')
     ) {
       availability = 'AVAILABLE';
