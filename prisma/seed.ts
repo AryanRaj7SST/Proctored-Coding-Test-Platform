@@ -4,7 +4,10 @@ import { boxQuestion, gridQuestion, type SeedQuestion } from './seed-data';
 
 const prisma = new PrismaClient();
 
-const ADMIN_EMAIL = (process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com').toLowerCase();
+const ADMIN_EMAILS = (process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 const STUDENT_EMAILS = (
   process.env.SEED_STUDENT_EMAILS ?? 'student1@example.com,student2@example.com,student3@example.com'
 )
@@ -64,11 +67,13 @@ async function main(): Promise<void> {
   console.log('Seeding development data...');
 
   // 1. Allowlist -------------------------------------------------------
-  await prisma.allowedEmail.upsert({
-    where: { email: ADMIN_EMAIL },
-    create: { email: ADMIN_EMAIL, role: 'ADMIN', batch: 'STAFF', active: true, note: 'Seeded administrator' },
-    update: { role: 'ADMIN', active: true },
-  });
+  for (const email of ADMIN_EMAILS) {
+    await prisma.allowedEmail.upsert({
+      where: { email },
+      create: { email, role: 'ADMIN', batch: 'STAFF', active: true, note: 'Seeded administrator' },
+      update: { role: 'ADMIN', batch: 'STAFF', active: true },
+    });
+  }
   for (const email of STUDENT_EMAILS) {
     await prisma.allowedEmail.upsert({
       where: { email },
@@ -76,15 +81,21 @@ async function main(): Promise<void> {
       update: { role: 'STUDENT', batch: BATCH, active: true },
     });
   }
-  console.log(`  allowlist: 1 admin + ${STUDENT_EMAILS.length} students`);
+  console.log(`  allowlist: ${ADMIN_EMAILS.length} admin(s) + ${STUDENT_EMAILS.length} students`);
 
   // 2. Local user rows so the exam can be assigned before first sign-in.
   //    (Google sign-in refreshes name/image/role on first login.)
-  const admin = await prisma.user.upsert({
-    where: { email: ADMIN_EMAIL },
-    create: { email: ADMIN_EMAIL, name: 'Seed Administrator', role: 'ADMIN', batch: 'STAFF' },
-    update: { role: 'ADMIN' },
-  });
+  const admins = [];
+  for (const [i, email] of ADMIN_EMAILS.entries()) {
+    admins.push(
+      await prisma.user.upsert({
+        where: { email },
+        create: { email, name: `Seed Administrator ${i + 1}`, role: 'ADMIN', batch: 'STAFF' },
+        update: { role: 'ADMIN', batch: 'STAFF' },
+      }),
+    );
+  }
+  const admin = admins[0];
   const students = [];
   for (const [i, email] of STUDENT_EMAILS.entries()) {
     students.push(
@@ -134,17 +145,19 @@ async function main(): Promise<void> {
   });
   console.log(`  exam "${exam.title}" with 2 questions, assigned to ${students.length} students`);
 
-  await prisma.auditLog.create({
-    data: {
-      userId: admin.id,
-      action: 'seed.completed',
-      entity: 'System',
-      metadata: { students: students.length },
-    },
-  });
+  if (admin) {
+    await prisma.auditLog.create({
+      data: {
+        userId: admin.id,
+        action: 'seed.completed',
+        entity: 'System',
+        metadata: { students: students.length },
+      },
+    });
+  }
 
   console.log('\nSeed complete.');
-  console.log(`  Admin login:   ${ADMIN_EMAIL}`);
+  console.log(`  Admin login:   ${ADMIN_EMAILS.join(', ')}`);
   console.log(`  Student login: ${STUDENT_EMAILS.join(', ')}`);
   console.log('\nNext: sign in with Google using an allowlisted address, then open /admin.');
   console.log('Questions are seeded as NOT_VALIDATED on purpose -- run "Validate Question"');
