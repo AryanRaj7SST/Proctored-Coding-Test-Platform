@@ -35,9 +35,20 @@ export const env = {
   isProduction: process.env.NODE_ENV === 'production',
 } as const;
 
+const ENV_KEY_MAP: Record<string, string> = {
+  databaseUrl: 'DATABASE_URL',
+  authSecret: 'AUTH_SECRET',
+  googleId: 'AUTH_GOOGLE_ID',
+  googleSecret: 'AUTH_GOOGLE_SECRET',
+  runnerUrl: 'RUNNER_URL',
+  runnerSecret: 'RUNNER_SECRET',
+};
+
 /** Throw a clear error when a hard requirement is missing at request time. */
 export function requireEnv(name: keyof typeof env): string {
-  const value = env[name];
+  const envKey = ENV_KEY_MAP[name as string];
+  const dynamicVal = envKey && typeof process !== 'undefined' ? process.env[envKey] : undefined;
+  const value = dynamicVal || env[name];
   if (typeof value !== 'string' || value === '') {
     throw new Error(`Missing required environment variable for "${String(name)}". See .env.example.`);
   }
