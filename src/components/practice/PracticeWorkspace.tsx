@@ -24,12 +24,7 @@ interface PracticeWorkspaceProps {
   };
 }
 
-export function PracticeWorkspace({
-  attemptId,
-  question,
-  examTitle,
-  initialCode,
-}: PracticeWorkspaceProps) {
+export function PracticeWorkspace({ attemptId, question, examTitle, initialCode }: PracticeWorkspaceProps) {
   const toast = useToast();
 
   const [code, setCode] = React.useState(initialCode);
@@ -73,7 +68,11 @@ export function PracticeWorkspace({
   };
 
   const resetToSubmitted = () => {
-    if (window.confirm('Reset code to your original submitted version? Current practice changes will be discarded.')) {
+    if (
+      window.confirm(
+        'Reset code to your original submitted version? Current practice changes will be discarded.',
+      )
+    ) {
       setCode(initialCode);
       setPreviewKey((k) => k + 1);
       toast.push('Code reset to your original submitted version.', 'info');
@@ -104,12 +103,13 @@ export function PracticeWorkspace({
         <div className="flex items-center gap-2">
           <Badge tone="warn">Practice Mode</Badge>
           <span className="font-medium">
-            Proctoring is OFF. Your edits and test runs are for practice only and will NEVER modify your graded submission.
+            Proctoring is OFF. Your edits and test runs are for practice only and will NEVER modify your
+            graded submission.
           </span>
         </div>
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1 rounded bg-amber-500/20 px-2 py-0.5 font-medium text-amber-100 hover:bg-amber-500/30 transition"
+          className="inline-flex items-center gap-1 rounded bg-amber-500/20 px-2 py-0.5 font-medium text-amber-100 transition hover:bg-amber-500/30"
         >
           <ArrowLeft className="h-3 w-3" />
           <span>Exit Practice</span>
@@ -120,7 +120,7 @@ export function PracticeWorkspace({
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-ink-800 bg-[#0f172a] px-4">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="font-bold tracking-tight text-blue-500 text-sm">SCALER</span>
+            <span className="text-sm font-bold tracking-tight text-blue-500">SCALER</span>
             <span className="text-slate-500">/</span>
             <span className="text-xs font-medium text-slate-400">{examTitle}</span>
             <span className="text-slate-500">/</span>
@@ -132,7 +132,7 @@ export function PracticeWorkspace({
           <button
             type="button"
             onClick={resetToSubmitted}
-            className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-ink-800/80 px-2.5 py-1 text-xs text-slate-300 hover:bg-ink-700 hover:text-white transition"
+            className="inline-flex items-center gap-1.5 rounded-md border border-slate-700 bg-ink-800/80 px-2.5 py-1 text-xs text-slate-300 transition hover:bg-ink-700 hover:text-white"
             title="Reset code to your original submitted version"
           >
             <RotateCcw className="h-3.5 w-3.5" />
@@ -145,9 +145,7 @@ export function PracticeWorkspace({
             disabled={running}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-md px-3.5 py-1 text-xs font-medium text-white transition',
-              running
-                ? 'bg-blue-600/70 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-500 shadow-sm'
+              running ? 'cursor-not-allowed bg-blue-600/70' : 'bg-blue-600 shadow-sm hover:bg-blue-500',
             )}
             title="Run test cases (Ctrl + ')"
           >
@@ -157,7 +155,7 @@ export function PracticeWorkspace({
 
           <Link
             href="/dashboard"
-            className="ml-2 inline-flex items-center gap-1 rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-400 hover:bg-ink-800 hover:text-slate-200 transition"
+            className="ml-2 inline-flex items-center gap-1 rounded-md border border-slate-700 px-2.5 py-1 text-xs text-slate-400 transition hover:bg-ink-800 hover:text-slate-200"
           >
             Dashboard
           </Link>
@@ -188,7 +186,10 @@ export function PracticeWorkspace({
         {/* Right Column: Code Editor & Preview/Results Panel */}
         <div style={{ width: `${100 - leftWidth}%` }} className="flex h-full flex-col overflow-hidden">
           {/* Top Half: Code Editor */}
-          <div style={{ height: `${editorHeight}%` }} className="flex flex-col overflow-hidden border-b border-ink-800 bg-[#131f30]">
+          <div
+            style={{ height: `${editorHeight}%` }}
+            className="flex flex-col overflow-hidden border-b border-ink-800 bg-[#131f30]"
+          >
             {/* Editor Language Tabs */}
             <div className="flex h-9 shrink-0 items-center justify-between border-b border-ink-800 bg-[#0e1626] px-3">
               <div className="flex items-center gap-1">
@@ -201,16 +202,14 @@ export function PracticeWorkspace({
                       'rounded px-2.5 py-1 text-xs font-medium uppercase tracking-wider transition',
                       pane === lang
                         ? 'bg-[#1e293b] text-blue-400'
-                        : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200'
+                        : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200',
                     )}
                   >
                     {lang === 'javascript' ? 'JS' : lang}
                   </button>
                 ))}
               </div>
-              <span className="text-[11px] text-slate-500 font-mono">
-                Untracked practice buffer
-              </span>
+              <span className="font-mono text-[11px] text-slate-500">Untracked practice buffer</span>
             </div>
 
             {/* CodeMirror Editor */}
@@ -242,7 +241,10 @@ export function PracticeWorkspace({
           />
 
           {/* Bottom Half: Tabs for Output / Test Results / Console */}
-          <div style={{ height: `${100 - editorHeight}%` }} className="flex flex-col overflow-hidden bg-[#0e1626]">
+          <div
+            style={{ height: `${100 - editorHeight}%` }}
+            className="flex flex-col overflow-hidden bg-[#0e1626]"
+          >
             {/* Bottom Tabs Header */}
             <div className="flex h-9 shrink-0 items-center justify-between border-b border-ink-800 bg-[#0a101d] px-3">
               <div className="flex items-center gap-1">
@@ -253,7 +255,7 @@ export function PracticeWorkspace({
                     'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition',
                     bottomTab === 'preview'
                       ? 'bg-[#1e293b] text-slate-100'
-                      : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200'
+                      : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200',
                   )}
                 >
                   <Eye className="h-3.5 w-3.5" />
@@ -266,7 +268,7 @@ export function PracticeWorkspace({
                     'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition',
                     bottomTab === 'results'
                       ? 'bg-[#1e293b] text-slate-100'
-                      : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200'
+                      : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200',
                   )}
                 >
                   <CheckSquare className="h-3.5 w-3.5" />
@@ -277,7 +279,7 @@ export function PracticeWorkspace({
                         'ml-1 rounded px-1 text-[10px] font-semibold',
                         outcome.passedCount === outcome.totalCount
                           ? 'bg-emerald-500/20 text-emerald-400'
-                          : 'bg-rose-500/20 text-rose-400'
+                          : 'bg-rose-500/20 text-rose-400',
                       )}
                     >
                       {outcome.passedCount}/{outcome.totalCount}
@@ -291,7 +293,7 @@ export function PracticeWorkspace({
                     'inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-xs font-medium transition',
                     bottomTab === 'console'
                       ? 'bg-[#1e293b] text-slate-100'
-                      : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200'
+                      : 'text-slate-400 hover:bg-[#1e293b]/50 hover:text-slate-200',
                   )}
                 >
                   <Terminal className="h-3.5 w-3.5" />
@@ -308,7 +310,7 @@ export function PracticeWorkspace({
                 <button
                   type="button"
                   onClick={() => setPreviewKey((k) => k + 1)}
-                  className="rounded px-2 py-0.5 text-xs text-slate-400 hover:bg-ink-800 hover:text-white transition"
+                  className="rounded px-2 py-0.5 text-xs text-slate-400 transition hover:bg-ink-800 hover:text-white"
                 >
                   Refresh View
                 </button>
@@ -318,7 +320,7 @@ export function PracticeWorkspace({
                 <button
                   type="button"
                   onClick={() => setConsoleLogs([])}
-                  className="rounded px-2 py-0.5 text-xs text-slate-400 hover:bg-ink-800 hover:text-white transition"
+                  className="rounded px-2 py-0.5 text-xs text-slate-400 transition hover:bg-ink-800 hover:text-white"
                 >
                   Clear Console
                 </button>
@@ -353,7 +355,7 @@ export function PracticeWorkspace({
               {bottomTab === 'console' && (
                 <div className="h-full overflow-auto rounded bg-[#090d16] p-3 font-mono text-xs text-slate-300">
                   {consoleLogs.length === 0 ? (
-                    <p className="text-slate-500 italic">No console output recorded.</p>
+                    <p className="italic text-slate-500">No console output recorded.</p>
                   ) : (
                     consoleLogs.map((log, idx) => (
                       <div key={idx} className="border-b border-slate-800/60 py-1 font-mono">

@@ -118,6 +118,18 @@ bash scripts/validate-stack.sh
 - `/admin/test-logs` and `/admin/settings` (audit log) are the operational
   diagnosis surfaces once something has gone wrong.
 
+### Render Free Tier & Runner Keep-Alive
+
+When hosting the runner on **Render's free web service tier**, note that Render spins down free services after **~15 minutes** of inbound inactivity. A cold start on wake-up takes 50+ seconds, which causes the Next.js app's health check to timeout and display "Runner offline".
+
+To prevent the instance from entering sleep mode:
+
+- A GitHub Actions workflow ([`.github/workflows/runner-keepalive.yml`](../.github/workflows/runner-keepalive.yml)) runs every 10 minutes (`cron: '*/10 * * * *'`) and sends a `GET` request directly to the runner's public health endpoint (e.g. `https://<render-service>.onrender.com/health`).
+- **Configuration**:
+  - `vars.RUNNER_HEALTH_URL` (Repository Variable): The runner's public health URL. Configured in GitHub under **Settings → Secrets and variables → Actions → Variables**.
+  - `secrets.ALERT_WEBHOOK_URL` (Repository Secret, optional): Webhook URL (Slack, Discord, or generic) called when the runner fails the health check (non-200 response).
+- **Operational Tradeoff**: Using a cron keepalive adds an external dependency on GitHub Actions scheduler punctuality. For production environments hosting high-stakes assessments, upgrading the runner container to Render's paid **Starter tier** natively eliminates sleep behavior without requiring keep-alive pings.
+
 ## Backups
 
 Nothing in this repository backs up PostgreSQL for you — use your database

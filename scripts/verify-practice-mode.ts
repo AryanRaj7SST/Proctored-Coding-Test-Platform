@@ -70,7 +70,13 @@ async function main() {
   console.log('Running practice tests with modified code against the runner container...');
   const outcome = await executePracticeTests({
     attemptId: attempt.id,
-    user: { id: attempt.userId, role: 'STUDENT', email: attempt.user.email, name: attempt.user.name, batch: null },
+    user: {
+      id: attempt.userId,
+      role: 'STUDENT',
+      email: attempt.user.email,
+      name: attempt.user.name,
+      batch: null,
+    },
     code: modifiedCode,
   });
 
@@ -94,7 +100,9 @@ async function main() {
   `);
 
   if (afterAttempt.html !== originalHtml) {
-    throw new Error(`FAIL: Attempt html was modified! Expected "${originalHtml}", got "${afterAttempt.html}"`);
+    throw new Error(
+      `FAIL: Attempt html was modified! Expected "${originalHtml}", got "${afterAttempt.html}"`,
+    );
   }
   if (afterAttempt.css !== originalCss) {
     throw new Error(`FAIL: Attempt css was modified! Expected "${originalCss}", got "${afterAttempt.css}"`);
@@ -106,10 +114,14 @@ async function main() {
     throw new Error(`FAIL: Attempt score was modified! Expected ${originalScore}, got ${afterAttempt.score}`);
   }
   if (afterAttempt.maxScore !== originalMaxScore) {
-    throw new Error(`FAIL: Attempt maxScore was modified! Expected ${originalMaxScore}, got ${afterAttempt.maxScore}`);
+    throw new Error(
+      `FAIL: Attempt maxScore was modified! Expected ${originalMaxScore}, got ${afterAttempt.maxScore}`,
+    );
   }
   if (afterAttempt.status !== originalStatus) {
-    throw new Error(`FAIL: Attempt status was modified! Expected ${originalStatus}, got ${afterAttempt.status}`);
+    throw new Error(
+      `FAIL: Attempt status was modified! Expected ${originalStatus}, got ${afterAttempt.status}`,
+    );
   }
   if (afterAttempt.submittedAt?.getTime() !== originalSubmittedAt) {
     throw new Error('FAIL: Attempt submittedAt was modified!');
@@ -120,7 +132,9 @@ async function main() {
     where: { attemptId: attempt.id },
   });
   if (afterTestResultCount !== originalTestResultCount) {
-    throw new Error(`FAIL: TestResult count changed for attempt! Expected ${originalTestResultCount}, got ${afterTestResultCount}`);
+    throw new Error(
+      `FAIL: TestResult count changed for attempt! Expected ${originalTestResultCount}, got ${afterTestResultCount}`,
+    );
   }
 
   // Check that the TestRun created has attemptId: null and kind: VALIDATION
@@ -130,7 +144,9 @@ async function main() {
   });
   const latestRun = newTestRuns[0];
   if (latestRun) {
-    console.log(`Latest TestRun: id=${latestRun.id}, attemptId=${latestRun.attemptId}, kind=${latestRun.kind}`);
+    console.log(
+      `Latest TestRun: id=${latestRun.id}, attemptId=${latestRun.attemptId}, kind=${latestRun.kind}`,
+    );
     if (latestRun.attemptId !== null) {
       throw new Error(`FAIL: Latest TestRun attemptId must be null! Got: ${latestRun.attemptId}`);
     }
@@ -143,7 +159,13 @@ async function main() {
   try {
     await executePracticeTests({
       attemptId: attempt.id,
-      user: { id: 'non-existent-user-id', role: 'STUDENT', email: 'other@example.com', name: 'Other', batch: null },
+      user: {
+        id: 'non-existent-user-id',
+        role: 'STUDENT',
+        email: 'other@example.com',
+        name: 'Other',
+        batch: null,
+      },
       code: modifiedCode,
     });
     throw new Error('FAIL: Practice test execution should have thrown forbidden/notFound for wrong user!');
