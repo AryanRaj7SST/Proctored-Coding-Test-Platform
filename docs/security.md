@@ -87,8 +87,7 @@ rendered, and they're behind `requireAdmin()`.
 ## Rate limits and payload ceilings
 
 Every mutating route the student can call is rate-limited per user
-(`src/lib/rate-limit.ts`, in-memory, see `docs/architecture.md` for why no
-Redis): 12 runs/min, 6 submits/min, 120 proctor events/min, 5 CSV
+(`src/lib/rate-limit.ts`, sliding-window via Upstash Redis): 12 runs/min, 6 submits/min, 120 proctor events/min, 5 CSV
 imports/min for admins, by default (`.env.example`). `readJson`/`readText`
 (`src/lib/http.ts`) enforce a byte ceiling **before** parsing, checking
 `Content-Length` first so an oversized body is rejected without even being

@@ -1,25 +1,14 @@
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
+
 /**
- * Fixed-window rate limiter held in process memory.
+ * Sliding-window rate limiter backed by Upstash Redis.
  *
- * Deliberate scope decision (product requirement #33): a single app instance
- * serving 50-100 students does not need Redis. The interface is intentionally
- * tiny so it can be swapped for a Redis/Upstash implementation when the app is
- * scaled to multiple instances -- see docs/deployment.md.
+ * Provides distributed, serverless-safe rate limiting across ephemeral
+ * Lambda instances on Vercel. In local development without configured
+ * Upstash credentials, it fails open with a warning to allow frictionless
+ * offline dev.
  */
-
-interface Bucket {
-  count: number;
-  resetAt: number;
-}
-
-const buckets = new Map<string, Bucket>();
-let lastSweep = Date.now();
-
-function sweep(now: number): void {
-  if (now - lastSweep < 60_000) return;
-  lastSweep = now;
-  for (const [key, bucket] of buckets) if (bucket.resetAt <= now) buckets.delete(key);
-}
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -27,20 +16,79 @@ export interface RateLimitResult {
   resetInMs: number;
 }
 
-export function rateLimit(key: string, limit: number, windowMs = 60_000): RateLimitResult {
-  const now = Date.now();
-  sweep(now);
-  const existing = buckets.get(key);
-  if (!existing || existing.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: Math.max(0, limit - 1), resetInMs: windowMs };
+let warnedMissingEnv = false;
+let redisClient: Redis | null | undefined = undefined;
+const limiters = new Map<string, Ratelimit>();
+
+function getRedis(): Redis | null {
+  if (redisClient !== undefined) return redisClient;
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    if (!warnedMissingEnv) {
+      warnedMissingEnv = true;
+      console.warn(
+        '[RateLimit] Upstash Redis environment variables (UPSTASH_REDIS_REST_URL, UPSTASH_REDIS_REST_TOKEN) are not set. Rate limiting is disabled (failing open for local development).',
+      );
+    }
+    redisClient = null;
+    return null;
   }
-  existing.count += 1;
-  const allowed = existing.count <= limit;
-  return { allowed, remaining: Math.max(0, limit - existing.count), resetInMs: existing.resetAt - now };
+
+  try {
+    redisClient = new Redis({ url, token });
+    return redisClient;
+  } catch (err) {
+    console.warn('[RateLimit] Failed to initialize Upstash Redis client, failing open:', err);
+    redisClient = null;
+    return null;
+  }
+}
+
+function getLimiter(redis: Redis, limit: number, windowMs: number): Ratelimit {
+  const cacheKey = `${limit}:${windowMs}`;
+  let limiter = limiters.get(cacheKey);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(limit, `${windowMs} ms`),
+      prefix: 'proctored:ratelimit',
+    });
+    limiters.set(cacheKey, limiter);
+  }
+  return limiter;
+}
+
+export async function rateLimit(key: string, limit: number, windowMs = 60_000): Promise<RateLimitResult> {
+  const fallback: RateLimitResult = {
+    allowed: true,
+    remaining: limit,
+    resetInMs: 0,
+  };
+
+  const redis = getRedis();
+  if (!redis) {
+    return fallback;
+  }
+
+  try {
+    const limiter = getLimiter(redis, limit, windowMs);
+    const res = await limiter.limit(key);
+    return {
+      allowed: res.success,
+      remaining: res.remaining,
+      resetInMs: Math.max(0, res.reset - Date.now()),
+    };
+  } catch (err) {
+    console.warn(`[RateLimit] Upstash rate limit error for key "${key}", failing open:`, err);
+    return fallback;
+  }
 }
 
 /** Test helper / operational reset. */
 export function resetRateLimits(): void {
-  buckets.clear();
+  limiters.clear();
+  redisClient = undefined;
+  warnedMissingEnv = false;
 }

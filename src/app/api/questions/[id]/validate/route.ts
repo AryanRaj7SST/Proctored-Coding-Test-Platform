@@ -16,7 +16,7 @@ export const POST = handler(async (req: Request, ctx: Ctx): Promise<NextResponse
   const admin = await requireAdmin();
   const { id } = await ctx.params;
 
-  const limit = rateLimit(`validate:${admin.id}`, 10, 60_000);
+  const limit = await rateLimit(`validate:${admin.id}`, 10, 60_000);
   if (!limit.allowed) throw tooManyRequests('Too many validation runs. Please wait a moment.');
 
   const body = parseOrThrow(validateQuestionInput, await readJson(req));

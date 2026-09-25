@@ -122,14 +122,14 @@ students), a poll-over-SSE loop is simpler to reason about, has no separate
 connection-state store, and degrades to plain polling if SSE itself is
 blocked by a proxy.
 
-## Rate limiting without Redis
+## Rate limiting with Upstash Redis
 
-`src/lib/rate-limit.ts` is a fixed-window limiter held in a `Map` in process
-memory. For a single app instance serving a cohort of students this is
-sufficient and needs no external dependency; the module's interface is
-intentionally tiny (`rateLimit(key, limit, windowMs)`) so it can be swapped
-for a Redis/Upstash-backed implementation without touching call sites if the
-app is ever scaled to multiple instances — see `docs/deployment.md`.
+`src/lib/rate-limit.ts` uses Upstash Redis sliding-window rate limiting
+(`@upstash/ratelimit` + `@upstash/redis`) to provide distributed rate limiting
+across serverless Lambda invocations on Vercel. The interface is intentionally
+standardized (`rateLimit(key, limit, windowMs)`) returning `{ allowed, remaining, resetInMs }`.
+In local development where Upstash credentials are omitted, it automatically fails open
+with a console warning to preserve frictionless offline dev — see `docs/deployment.md`.
 
 ## Sessions: JWT, not a database adapter table
 
