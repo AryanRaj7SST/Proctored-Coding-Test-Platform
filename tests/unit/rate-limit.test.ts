@@ -45,7 +45,9 @@ describe('rateLimit', () => {
         resetInMs: 0,
       });
       expect(warnSpy).toHaveBeenCalledTimes(1);
-      expect(warnSpy.mock.calls[0][0]).toContain('failing open');
+      const firstCall = warnSpy.mock.calls[0];
+      expect(firstCall).toBeDefined();
+      expect(firstCall?.[0]).toContain('failing open');
     });
 
     it('warns only once across multiple calls when env vars are missing', async () => {
@@ -117,7 +119,9 @@ describe('rateLimit', () => {
         resetInMs: 0,
       });
       expect(warnSpy).toHaveBeenCalled();
-      expect(warnSpy.mock.calls[0][0]).toContain('Upstash rate limit error');
+      const firstCall = warnSpy.mock.calls[0];
+      expect(firstCall).toBeDefined();
+      expect(firstCall?.[0]).toContain('Upstash rate limit error');
     });
   });
 });
