@@ -8,17 +8,26 @@ import { ConsolePanel } from '@/components/editor/ConsolePanel';
 import { QuestionPanel, type StudentQuestion } from './QuestionPanel';
 import { TestResults, type RunOutcome } from './TestResults';
 import { ExamTimer } from './ExamTimer';
+import {
+  QuestionStatusDot,
+  QuestionStatusLabel,
+  questionState,
+  type QuestionResultStatus,
+} from './QuestionStatus';
 import { TabSwitchModal } from '@/components/proctor/TabSwitchModal';
+import { CameraPreview } from '@/components/proctor/CameraPreview';
+import { ProctorGate } from '@/components/proctor/ProctorGate';
 import { Button, ConfirmDialog, Spinner, ResizeHandle } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
 import { useAutosave } from '@/hooks/useAutosave';
 import { useProctor } from '@/hooks/useProctor';
+import { useCameraMonitor } from '@/hooks/useCameraMonitor';
+import { cameraFailureMessage, requestCamera } from '@/lib/camera';
 import { apiPatch, apiPost, ApiError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import {
   User,
   Info,
-  Check,
   ChevronUp,
   ChevronDown,
   ChevronLeft,
@@ -59,6 +68,8 @@ interface AttemptDto {
   score: number | null;
   maxScore: number;
   updatedAt: string;
+  gradingPending?: boolean;
+  resultStatus?: QuestionResultStatus;
 }
 
 interface QuestionSlot {
@@ -88,14 +99,63 @@ interface StartResponse {
     availability: string;
   };
   violationCount: number;
+  accommodations?: { allowClipboard: boolean };
   questions: QuestionSlot[];
 }
 
 interface HeartbeatResponse {
   status: string;
   msRemaining: number;
+  /** Server clock: the sitting's time is up. */
   expired: boolean;
+  /** The sitting is closed server-side (work submitted; graded or pending). */
+  finalized: boolean;
+  endReason: 'STUDENT_ENDED' | 'EXPIRED' | 'EXAM_CLOSED' | 'VIOLATION_LIMIT' | 'ACCESS_REVOKED' | null;
+  gradingPending: number;
   violationCount: number;
+}
+
+interface EndExamResponse {
+  submittedCount: number;
+  gradedCount: number;
+  pendingCount: number;
+}
+
+type SubmitResponse = Omit<RunOutcome, 'score'> & {
+  alreadySubmitted: boolean;
+  gradingPending: boolean;
+  gradingError: string | null;
+  score: number | null;
+  questionStatus: 'PASSED' | 'PARTIAL' | 'FAILED' | null;
+};
+
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
+/** The code to show for a question: the saved attempt, or the starter where a file is still empty. */
+function codeOf(slot: QuestionSlot): { html: string; css: string; js: string } {
+  return {
+    html: slot.attempt.html || slot.question.starterHtml,
+    css: slot.attempt.css || slot.question.starterCss,
+    js: slot.attempt.js || slot.question.starterJs,
+  };
+}
+
+const ACCESS_REVOKED_MESSAGE =
+  'An administrator removed your access to this test. Your saved work was submitted.';
+
+/** Student-facing summary once the server has closed the sitting. */
+function closedMessage(reason: HeartbeatResponse['endReason'], gradingPending: number): string {
+  const base =
+    reason === 'VIOLATION_LIMIT'
+      ? 'The proctoring violation limit was reached, so your test was ended and your saved work submitted.'
+      : reason === 'STUDENT_ENDED'
+        ? 'Your test has been submitted.'
+        : reason === 'ACCESS_REVOKED'
+          ? ACCESS_REVOKED_MESSAGE
+          : "Time's up. Your saved work has been submitted.";
+  return gradingPending > 0
+    ? `${base} Your answers are being graded; results will appear on your dashboard. A delay in grading never counts against you.`
+    : base;
 }
 
 type Pane = 'html' | 'css' | 'js';
@@ -104,7 +164,19 @@ const HEARTBEAT_MS = 12_000;
 
 /* ------------------------------------------------------------- component */
 
-export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail?: string }) {
+export function ExamWorkspace({
+  examId,
+  camera = null,
+  onCameraChange,
+  onClosed,
+}: {
+  examId: string;
+  /** The live camera stream from the system check (kept in memory, shown locally only). */
+  camera?: MediaStream | null;
+  onCameraChange?: (stream: MediaStream | null) => void;
+  /** The sitting is closed: the camera is released. */
+  onClosed?: () => void;
+}) {
   const router = useRouter();
   const toast = useToast();
 
@@ -164,16 +236,10 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
         setData(res);
         setClock({ msRemaining: res.session.msRemaining, syncedAt: Date.now() });
         const first = res.questions[0];
-        if (first) {
-          setCode({
-            html: first.attempt.html || first.question.starterHtml,
-            css: first.attempt.css || first.question.starterCss,
-            js: first.attempt.js || first.question.starterJs,
-          });
-        }
+        if (first) setCode(codeOf(first));
         setPreviewKey((k) => k + 1);
       } catch (err) {
-        if (!cancelled) setFatal(err instanceof Error ? err.message : 'Could not open this exam.');
+        if (!cancelled) setFatal(err instanceof Error ? err.message : 'Could not open this test.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -185,103 +251,227 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
 
   /* ------------------------------------------------------------- autosave */
 
+  // The attempt id travels with every save (never read from current state),
+  // so an edit made on one question can never be written to another.
   const saveCode = React.useCallback(
-    async (value: { html: string; css: string; js: string }) => {
-      if (!attempt || locked) return;
-      await apiPatch(`/api/attempts/${attempt.id}`, value);
+    async (attemptId: string, value: { html: string; css: string; js: string }) => {
+      await apiPatch(`/api/attempts/${attemptId}`, value);
     },
-    [attempt, locked],
+    [],
   );
 
-  const { state: saveState, flush } = useAutosave(code, saveCode, { enabled: Boolean(attempt) && !locked });
+  const { state: saveState, flush } = useAutosave(code, attempt?.id ?? null, saveCode, {
+    enabled: Boolean(attempt) && !locked,
+  });
 
   /* ------------------------------------------------------------ heartbeat */
-
-  const finish = React.useCallback(() => {
-    setExpired(true);
-    toast.push('Your time has expired. Your work was submitted automatically.', 'error');
-    setTimeout(() => router.push(`/dashboard`), 2500);
-  }, [router, toast]);
 
   const [violationCount, setViolationCount] = React.useState(0);
   React.useEffect(() => {
     if (data) setViolationCount(data.violationCount);
   }, [data]);
 
+  // Closing the sitting is SERVER work: the page only flushes its last edit and
+  // then asks the server (via the heartbeat) to finalise, retrying until the
+  // server confirms. Nothing is claimed as submitted before that confirmation.
+  const [closing, setClosing] = React.useState<{
+    phase: 'finalizing' | 'done' | 'unconfirmed';
+    message: string;
+  } | null>(null);
+  const closingRef = React.useRef(false);
+
+  const closeSitting = React.useCallback(
+    async (known?: HeartbeatResponse, trigger: 'timer' | 'server' = 'server') => {
+      if (closingRef.current) return; // timer, heartbeat and violations may all fire
+      closingRef.current = true;
+      const timeUp = trigger === 'timer' || (known?.expired && !known.finalized);
+      setClosing({
+        phase: 'finalizing',
+        message: timeUp ? "Time's up. Submitting your work…" : 'Closing your test…',
+      });
+      try {
+        await flush(); // accepted by the server inside the submit grace window
+      } catch {
+        /* the server grades the last autosaved code regardless */
+      }
+      setExpired(true); // lock the editor and stop the regular heartbeat
+
+      let res: HeartbeatResponse | undefined = known?.finalized ? known : undefined;
+      for (let attemptNo = 0; !res && attemptNo < 24; attemptNo += 1) {
+        try {
+          const beat = await apiPost<HeartbeatResponse>('/api/heartbeat', { examId });
+          setViolationCount(beat.violationCount);
+          if (beat.finalized) {
+            res = beat;
+            break;
+          }
+          if (!beat.expired && beat.msRemaining > 1000) {
+            // Our countdown ran ahead of the server's: the sitting is still open.
+            setClock({ msRemaining: beat.msRemaining, syncedAt: Date.now() });
+            setExpired(false);
+            setClosing(null);
+            closingRef.current = false;
+            return;
+          }
+        } catch (err) {
+          if (err instanceof ApiError && err.status === 401) {
+            setClosing({
+              phase: 'unconfirmed',
+              message:
+                'Your sign-in expired. Your saved work is kept and will be submitted by the server. Sign in again to see your result.',
+            });
+            return;
+          }
+        }
+        // The server waits out a short grace window before finalising.
+        await sleep(attemptNo < 5 ? 1500 : 5000);
+      }
+
+      if (!res) {
+        setClosing({
+          phase: 'unconfirmed',
+          message:
+            "We couldn't reach the server to confirm your submission. Your saved work is kept and will be submitted automatically.",
+        });
+        return;
+      }
+      const message = closedMessage(res.endReason, res.gradingPending);
+      setClosing({ phase: 'done', message });
+      toast.push(message, res.endReason === 'VIOLATION_LIMIT' ? 'error' : 'success');
+      setTimeout(() => router.push('/dashboard'), 4000);
+    },
+    [examId, flush, router, toast],
+  );
+
   React.useEffect(() => {
     if (!data || expired) return;
     let stop = false;
+    const timer: { id?: ReturnType<typeof setInterval> } = {};
     const tick = async () => {
       try {
         const res = await apiPost<HeartbeatResponse>('/api/heartbeat', { examId });
         if (stop) return;
         setClock({ msRemaining: res.msRemaining, syncedAt: Date.now() });
         setViolationCount(res.violationCount);
-        if (res.expired) finish();
-      } catch {
+        // Time ran out, or the server closed the sitting (violation limit,
+        // exam ended by an administrator).
+        if (res.expired || res.finalized) void closeSitting(res);
+      } catch (err) {
+        // 404: this student can no longer open the test (an administrator
+        // revoked their access; the server already submitted their work).
+        if (err instanceof ApiError && err.status === 404) {
+          if (stop) return;
+          stop = true;
+          clearInterval(timer.id);
+          setClosing({ phase: 'done', message: ACCESS_REVOKED_MESSAGE });
+          setTimeout(() => router.push('/dashboard'), 4000);
+          return;
+        }
         // Offline: keep the local countdown running; the server still owns the
         // deadline and will finalise the attempt regardless.
       }
     };
     void tick();
-    const id = setInterval(() => void tick(), HEARTBEAT_MS);
+    timer.id = setInterval(() => void tick(), HEARTBEAT_MS);
     return () => {
       stop = true;
-      clearInterval(id);
+      clearInterval(timer.id);
     };
-  }, [data, examId, expired, finish]);
+  }, [data, examId, expired, closeSitting, router]);
 
   /* ----------------------------------------------------------- proctoring */
 
-  const currentUserEmail = (userEmail ?? data?.user?.email ?? '').trim().toLowerCase();
-  const isPasteAllowed = currentUserEmail === 'agnihotriaryan5361@gmail.com';
+  const onServerClosed = React.useCallback(() => void closeSitting(), [closeSitting]);
 
-  const { awayMessage, dismissAway, requestFullscreen } = useProctor({
+  // Clipboard accommodation set by an administrator on this student's
+  // assignment (server-side, audited). The server applies the same flag.
+  const isPasteAllowed = data?.accommodations?.allowClipboard === true;
+
+  // Proctoring runs for the whole open sitting -- including while the question
+  // on screen has already been submitted -- and stops once it closes.
+  const sittingOpen = Boolean(data) && !expired && !closing;
+
+  const onClipboardBlocked = React.useCallback(
+    (action: 'COPY' | 'CUT' | 'PASTE' | 'CONTEXT_MENU') => {
+      if (action === 'PASTE') return; // a recorded violation: the warning modal explains it
+      toast.push(
+        action === 'CONTEXT_MENU'
+          ? 'The right-click menu is disabled during this test.'
+          : 'Copy/Paste Blocked: copying and pasting are disabled during this test.',
+        'error',
+      );
+    },
+    [toast],
+  );
+
+  const { alert, dismissAlert, isFullscreen, requestFullscreen, report } = useProctor({
     examId,
     attemptId: attempt?.id ?? null,
-    enabled: Boolean(data) && !locked,
+    enabled: sittingOpen,
     allowClipboard: isPasteAllowed,
     onCountChange: setViolationCount,
+    onTerminated: onServerClosed,
+    onClipboardBlocked,
   });
 
-  const handleAcknowledgeAway = React.useCallback(async () => {
-    try {
-      if (!document.fullscreenElement) {
-        await requestFullscreen();
-      }
-    } catch {
-      /* browser gesture fallback */
+  const handleAcknowledgeAlert = React.useCallback(async () => {
+    // The click is a user gesture, so fullscreen can be restored in the same step.
+    if (!document.fullscreenElement) await requestFullscreen();
+    dismissAlert();
+  }, [requestFullscreen, dismissAlert]);
+
+  /* --------------------------------------------------------------- camera */
+
+  // Only transitions are reported (one event per interruption): the stream
+  // itself never leaves this browser.
+  const cameraLive = useCameraMonitor(camera, sittingOpen, (live) => {
+    void report(live ? 'CAMERA_RESTORED' : 'CAMERA_STREAM_STOPPED');
+  });
+  const [cameraError, setCameraError] = React.useState<string | null>(null);
+  const [cameraBusy, setCameraBusy] = React.useState(false);
+
+  // The sitting is open and the camera is on: record that once per page load.
+  const grantReported = React.useRef(false);
+  React.useEffect(() => {
+    if (!sittingOpen || !cameraLive || grantReported.current) return;
+    grantReported.current = true;
+    void report('CAMERA_PERMISSION_GRANTED');
+  }, [sittingOpen, cameraLive, report]);
+
+  const reenableCamera = React.useCallback(async () => {
+    setCameraBusy(true);
+    const result = await requestCamera();
+    setCameraBusy(false);
+    if (result.ok) {
+      setCameraError(null);
+      onCameraChange?.(result.stream); // the monitor reports CAMERA_RESTORED once it is live
+      return;
     }
-    dismissAway();
-  }, [requestFullscreen, dismissAway]);
+    setCameraError(cameraFailureMessage(result.reason));
+    void report(result.reason === 'DENIED' ? 'CAMERA_PERMISSION_DENIED' : 'CAMERA_UNAVAILABLE', {
+      metadata: { reason: result.reason },
+    });
+  }, [onCameraChange, report]);
+
+  // The sitting is over: release the camera now rather than on navigation.
+  React.useEffect(() => {
+    if (closing?.phase === 'done') onClosed?.();
+  }, [closing, onClosed]);
 
   const handlePasteAttempt = React.useCallback(() => {
     if (isPasteAllowed) return;
-    toast.push('Pasting code is disabled during this exam to ensure academic integrity.', 'error');
+    toast.push('Pasting code is disabled during this test to ensure academic integrity.', 'error');
   }, [isPasteAllowed, toast]);
 
-  React.useEffect(() => {
-    if (!data) return;
-    // Fullscreen must be requested from a gesture; the Start Exam click on the
-    // dashboard is the gesture, so we try once and ignore a rejection.
-    void requestFullscreen();
-  }, [data, requestFullscreen]);
-
+  // The violation limit is enforced by the server (proctor-events and
+  // heartbeat close the sitting and grade it). The page only reacts to the
+  // server's verdict; it never submits on its own count.
   const maxViolations = data?.exam.maxViolations ?? 0;
   React.useEffect(() => {
-    if (maxViolations > 0 && violationCount >= maxViolations && !locked) {
-      toast.push('Violation limit reached. Submitting your work…', 'error');
-      void (async () => {
-        if (!attempt) return;
-        try {
-          await apiPost(`/api/attempts/${attempt.id}/submit`, code);
-        } finally {
-          finish();
-        }
-      })();
+    if (maxViolations > 0 && violationCount >= maxViolations && !closingRef.current) {
+      void closeSitting();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [violationCount, maxViolations]);
+  }, [violationCount, maxViolations, closeSitting]);
 
   /* -------------------------------------------------------- question swap */
 
@@ -299,11 +489,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
       const target = data.questions[next];
       if (!target) return;
       setIndex(next);
-      setCode({
-        html: target.attempt.html || target.question.starterHtml,
-        css: target.attempt.css || target.question.starterCss,
-        js: target.attempt.js || target.question.starterJs,
-      });
+      setCode(codeOf(target));
       setOutcome(null);
       setRunError(null);
       setConsoleLines([]);
@@ -348,11 +534,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
     setConfirmSubmit(false);
     try {
       await flush();
-      const res = await apiPost<RunOutcome & { alreadySubmitted: boolean }>(
-        `/api/attempts/${attempt.id}/submit`,
-        code,
-      );
-      setOutcome({ ...res, graded: true });
+      const res = await apiPost<SubmitResponse>(`/api/attempts/${attempt.id}/submit`, code);
       setBottomTab('tests');
       setData((prev) => {
         if (!prev) return prev;
@@ -361,12 +543,29 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
         if (current) {
           questions[index] = {
             ...current,
-            attempt: { ...current.attempt, status: 'SUBMITTED', score: res.score, maxScore: res.maxScore },
+            attempt: {
+              ...current.attempt,
+              status: 'SUBMITTED',
+              score: res.score,
+              maxScore: res.maxScore,
+              gradingPending: res.gradingPending,
+              resultStatus: res.questionStatus,
+            },
           };
         }
         return { ...prev, questions };
       });
-      toast.push(`Submitted. Score ${res.score}/${res.maxScore}.`, 'success');
+      if (res.gradingPending || res.score === null) {
+        // Recorded, but the grader could not run: no score is invented.
+        const message =
+          'Your answer was submitted, but automatic grading is temporarily unavailable. It will be graded later; you do not need to resubmit.';
+        setOutcome(null);
+        setRunError(message);
+        toast.push(message, 'info');
+      } else {
+        setOutcome({ ...res, score: res.score, graded: true });
+        toast.push(`Submitted. Score ${res.score}/${res.maxScore}.`, 'success');
+      }
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Submission failed. Please try again.';
       setRunError(message);
@@ -378,19 +577,29 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
   }, [attempt, submitting, locked, code, index, flush, toast]);
 
   const handleEndExam = React.useCallback(async () => {
-    if (endingExam || expired) return;
+    if (endingExam || expired || closingRef.current) return;
     setEndingExam(true);
+    closingRef.current = true; // the timer must not start a second close
     try {
       await flush();
-      await apiPost(`/api/exams/${examId}/end`);
-      toast.push('Test submitted successfully! Redirecting…', 'success');
+      const res = await apiPost<EndExamResponse>(`/api/exams/${examId}/end`);
+      toast.push(
+        res.pendingCount > 0
+          ? `Test submitted. Grading is delayed for ${res.pendingCount} question(s) and will be completed by your mentor. Redirecting…`
+          : 'Test submitted successfully! Redirecting…',
+        'success',
+      );
       setConfirmEndExam(false);
-      setTimeout(() => router.push('/dashboard'), 1200);
+      setExpired(true);
+      setTimeout(() => router.push('/dashboard'), res.pendingCount > 0 ? 4000 : 1200);
     } catch (err) {
       toast.push(err instanceof ApiError ? err.message : 'Failed to end test. Please try again.', 'error');
+      closingRef.current = false;
       setEndingExam(false);
     }
   }, [examId, endingExam, expired, flush, router, toast]);
+
+  const onTimerExpire = React.useCallback(() => void closeSitting(undefined, 'timer'), [closeSitting]);
 
   const resetStarter = React.useCallback(() => {
     if (!slot || locked) return;
@@ -412,7 +621,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
   if (loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-ink-950 text-slate-400">
-        <Spinner className="mr-2 h-5 w-5" /> Preparing your exam…
+        <Spinner className="mr-2 h-5 w-5" /> Preparing your test…
       </div>
     );
   }
@@ -420,7 +629,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
   if (fatal || !data || !slot || !attempt) {
     return (
       <div className="flex h-screen flex-col items-center justify-center gap-4 bg-ink-950 px-6 text-center">
-        <p className="text-sm text-rose-300">{fatal ?? 'This exam is not available.'}</p>
+        <p className="text-sm text-rose-300">{fatal ?? 'This test is not available.'}</p>
         <Button variant="secondary" onClick={() => router.push('/dashboard')}>
           Back to dashboard
         </Button>
@@ -450,24 +659,33 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
             </div>
             <span className="text-slate-300">|</span>
             <h1 className="max-w-xs truncate text-xs font-semibold text-slate-800 sm:text-[13px] md:max-w-md">
-              {data.exam.title || 'Web Dev 101 Mid Term Exam 2029 Batch'}
+              {data.exam.title || 'Test'}
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-6">
+        <div className="flex flex-shrink-0 items-center gap-2 sm:gap-6">
           {/* Circular Attempted Progress */}
           <div className="flex select-none items-center gap-2 text-xs font-medium text-slate-700">
-            <span className="inline-block h-3.5 w-3.5 flex-shrink-0 rounded-full border border-blue-600" />
+            <span className="hidden h-3.5 w-3.5 flex-shrink-0 rounded-full border border-blue-600 sm:inline-block" />
             <span>
-              {attemptedCount} / {data.questions.length} Attempted
+              {attemptedCount} / {data.questions.length}
+              <span className="hidden sm:inline"> Attempted</span>
             </span>
           </div>
 
-          {/* Hidden Background Timer for Proctoring Auto-Submit */}
-          <div className="sr-only">
-            <ExamTimer serverMsRemaining={clock.msRemaining} syncedAt={clock.syncedAt} onExpire={finish} />
-          </div>
+          {/* The student's own camera, local preview only (never recorded or uploaded). */}
+          <CameraPreview stream={camera} live={cameraLive} compact className="hidden sm:flex" />
+
+          {/* Visible countdown; it also triggers the server-side close at zero. */}
+          <ExamTimer
+            serverMsRemaining={clock.msRemaining}
+            syncedAt={clock.syncedAt}
+            onExpire={onTimerExpire}
+            stoppedLabel={
+              closing ? (closing.phase === 'done' ? 'Submitted' : 'Submitting…') : expired ? 'Ended' : null
+            }
+          />
 
           {violationCount > 0 ? (
             <span className="flex items-center gap-1 rounded border border-amber-200 bg-amber-50 px-2 py-0.5 text-[11px] text-amber-700">
@@ -504,7 +722,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
           {/* Info button */}
           <button
             type="button"
-            title="Exam Info"
+            title="Test info"
             className="mb-2 flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 text-slate-500 transition hover:border-slate-300 hover:text-slate-800"
           >
             <Info className="h-3.5 w-3.5 stroke-[1.75]" />
@@ -536,7 +754,6 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
           <div className="flex w-full flex-col items-center">
             {data.questions.map((q, i) => {
               const isCurrent = currentView === 'workspace' && i === index;
-              const isCompleted = q.attempt.status !== 'IN_PROGRESS';
               return (
                 <button
                   key={q.question.id}
@@ -555,16 +772,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
                 >
                   {isCurrent && <span className="absolute bottom-0 left-0 top-0 w-0.5 bg-blue-600" />}
                   <span className="text-[11px] font-medium">Q {i + 1}</span>
-                  {isCompleted ? (
-                    <span
-                      className="shadow-xs flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 text-white"
-                      title="Answered"
-                    >
-                      <Check className="h-2.5 w-2.5 stroke-[3]" />
-                    </span>
-                  ) : (
-                    <span className="h-3 w-3 rounded-full border border-slate-300" />
-                  )}
+                  <QuestionStatusDot state={questionState(q.attempt)} />
                 </button>
               );
             })}
@@ -622,7 +830,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                       {data.questions.map((q, i) => {
-                        const isCompleted = q.attempt.status !== 'IN_PROGRESS';
+                        const state = questionState(q.attempt);
                         return (
                           <tr key={q.question.id} className="transition hover:bg-slate-50/80">
                             <td className="px-4 py-3 font-mono text-slate-500">{i + 1}</td>
@@ -633,18 +841,13 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
                                 Frontend
                               </span>
                             </td>
-                            <td className="px-4 py-3 font-mono text-slate-700">{q.points}</td>
+                            <td className="px-4 py-3 font-mono text-slate-700">
+                              {q.attempt.score !== null && state !== 'PENDING' && state !== 'NOT_SUBMITTED'
+                                ? `${q.attempt.score}/${q.points}`
+                                : q.points}
+                            </td>
                             <td className="px-4 py-3">
-                              {isCompleted ? (
-                                <span className="inline-flex items-center gap-1.5 font-medium text-emerald-600">
-                                  <span className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-                                    <Check className="h-2.5 w-2.5 stroke-[3]" />
-                                  </span>
-                                  Answered Successfully
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">Not Attempted</span>
-                              )}
+                              <QuestionStatusLabel state={state} />
                             </td>
                             <td className="px-4 py-3 text-right">
                               <button
@@ -786,26 +989,25 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
                       />
                       <span>style.css</span>
                     </button>
-                    {slot.question.starterJs ? (
-                      <button
-                        type="button"
-                        onClick={() => setPane('js')}
-                        className={cn(
-                          'flex h-full items-center gap-1.5 border-t-2 px-3 text-xs font-medium transition',
-                          pane === 'js'
-                            ? 'border-blue-500 bg-[#1b3456] text-white'
-                            : 'border-transparent text-slate-400 hover:text-slate-200',
-                        )}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={getLanguageIcon('js')}
-                          alt="JavaScript"
-                          className="h-3.5 w-3.5 shrink-0 object-contain"
-                        />
-                        <span>script.js</span>
-                      </button>
-                    ) : null}
+                    {/* Always offered: a question may need JavaScript even with no starter JS. */}
+                    <button
+                      type="button"
+                      onClick={() => setPane('js')}
+                      className={cn(
+                        'flex h-full items-center gap-1.5 border-t-2 px-3 text-xs font-medium transition',
+                        pane === 'js'
+                          ? 'border-blue-500 bg-[#1b3456] text-white'
+                          : 'border-transparent text-slate-400 hover:text-slate-200',
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={getLanguageIcon('js')}
+                        alt="JavaScript"
+                        className="h-3.5 w-3.5 shrink-0 object-contain"
+                      />
+                      <span>script.js</span>
+                    </button>
                   </div>
 
                   {/* Hide/Show Preview button */}
@@ -912,9 +1114,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
                         (
                         {outcome
                           ? `${outcome.passedCount}/${outcome.totalCount}`
-                          : slot.question.publicTests.length > 0
-                            ? `0/${slot.question.publicTests.length}`
-                            : '1/1'}
+                          : `0/${slot.question.tests.length}`}
                         )
                       </span>
                     </button>
@@ -966,7 +1166,7 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
                         outcome={outcome}
                         running={running || submitting}
                         error={runError}
-                        expectedTests={slot.question.publicTests}
+                        expectedTests={slot.question.tests}
                         theme="light"
                       />
                     </div>
@@ -1016,12 +1216,22 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
       ) : null}
 
       <TabSwitchModal
-        open={Boolean(awayMessage)}
-        message={awayMessage}
+        alert={sittingOpen ? alert : null}
         violationCount={violationCount}
         maxViolations={maxViolations}
-        onAcknowledge={handleAcknowledgeAway}
+        onAcknowledge={() => void handleAcknowledgeAlert()}
       />
+
+      {sittingOpen && (!isFullscreen || !cameraLive) ? (
+        <ProctorGate
+          fullscreen={isFullscreen}
+          camera={cameraLive}
+          cameraError={cameraError}
+          busy={cameraBusy}
+          onFullscreen={() => void requestFullscreen()}
+          onCamera={() => void reenableCamera()}
+        />
+      ) : null}
 
       <ConfirmDialog
         open={confirmSubmit}
@@ -1036,13 +1246,47 @@ export function ExamWorkspace({ examId, userEmail }: { examId: string; userEmail
       <ConfirmDialog
         open={confirmEndExam}
         title="End Test?"
-        message={`You have attempted ${attemptedCount} of ${data.questions.length} questions. Are you sure you want to end your test? Once submitted, your exam will finish and you cannot make further changes.`}
+        message={`You have attempted ${attemptedCount} of ${data.questions.length} questions. Are you sure you want to end your test? Once submitted, your test will finish and you cannot make further changes.`}
         confirmLabel={endingExam ? 'Ending Test…' : 'Yes, End Test'}
         danger
         busy={endingExam}
         onConfirm={() => void handleEndExam()}
         onCancel={() => setConfirmEndExam(false)}
       />
+
+      {closing ? (
+        <div
+          role="alertdialog"
+          aria-modal="true"
+          aria-labelledby="closing-title"
+          aria-describedby="closing-message"
+          className="fixed inset-0 z-[60] flex items-center justify-center bg-slate-900/60 px-4"
+        >
+          <div className="w-full max-w-md rounded-lg bg-white p-6 text-center shadow-xl">
+            <h2 id="closing-title" className="text-base font-semibold text-slate-900">
+              {closing.phase === 'finalizing'
+                ? 'Submitting your test'
+                : closing.phase === 'done'
+                  ? 'Test submitted'
+                  : 'Submission not yet confirmed'}
+            </h2>
+            <p id="closing-message" aria-live="polite" className="mt-2 text-sm text-slate-600">
+              {closing.phase === 'finalizing' ? (
+                <span className="inline-flex items-center gap-2">
+                  <Spinner className="h-4 w-4" /> {closing.message}
+                </span>
+              ) : (
+                closing.message
+              )}
+            </p>
+            {closing.phase !== 'finalizing' ? (
+              <Button className="mt-5" variant="secondary" onClick={() => router.push('/dashboard')}>
+                Go to dashboard
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

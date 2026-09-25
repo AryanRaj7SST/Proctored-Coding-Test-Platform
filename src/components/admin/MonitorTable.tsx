@@ -6,6 +6,7 @@ import { Badge, Card, CardBody, CardHeader, EmptyState, Select, Table, Td, Th } 
 import { useSSE } from '@/hooks/useSSE';
 import { formatClock, formatDateTime, statusTone } from '@/lib/utils';
 import type { MonitorRow } from '@/server/services/monitor';
+import { eventLabel } from '@/lib/proctor';
 
 interface Snapshot {
   rows: MonitorRow[];
@@ -54,7 +55,7 @@ export function MonitorTable({
               {connected ? 'live' : (error ?? 'connecting…')}
             </span>
             <Select value={examId} onChange={(e) => setExamId(e.target.value)} className="w-56">
-              <option value="">All exams</option>
+              <option value="">All tests</option>
               {exams.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.title}
@@ -68,7 +69,7 @@ export function MonitorTable({
         {rows.length === 0 ? (
           <div className="p-4">
             <EmptyState
-              title="Nobody is sitting an exam right now"
+              title="Nobody is taking a test right now"
               description="Sessions appear here the moment a student presses Start."
             />
           </div>
@@ -77,11 +78,12 @@ export function MonitorTable({
             <thead>
               <tr>
                 <Th>Student</Th>
-                <Th>Exam</Th>
+                <Th>Test</Th>
                 <Th>Status</Th>
                 <Th>Remaining</Th>
                 <Th>Progress</Th>
                 <Th>Violations</Th>
+                <Th>Camera</Th>
                 <Th>Last event</Th>
                 <Th>Last seen</Th>
               </tr>
@@ -98,7 +100,13 @@ export function MonitorTable({
                     <Badge tone={statusTone(r.status)}>{r.status.toLowerCase()}</Badge>
                   </Td>
                   <Td className="font-mono text-xs tabular-nums text-slate-300">
-                    {formatClock(r.msRemaining)}
+                    {r.msRemaining === null ? (
+                      <span className="font-sans text-slate-500" title={formatDateTime(r.endedAt)}>
+                        Ended {formatDateTime(r.endedAt)}
+                      </span>
+                    ) : (
+                      formatClock(r.msRemaining)
+                    )}
                   </Td>
                   <Td className="text-slate-400">
                     {r.submittedCount}/{r.questionCount}
@@ -106,8 +114,17 @@ export function MonitorTable({
                   <Td>
                     <Badge tone={r.violationCount > 0 ? 'bad' : 'neutral'}>{r.violationCount}</Badge>
                   </Td>
+                  <Td>
+                    {r.camera ? (
+                      <Badge tone={r.camera === 'ON' ? 'ok' : 'bad'}>
+                        {r.camera === 'ON' ? 'on' : 'off'}
+                      </Badge>
+                    ) : (
+                      <span className="text-xs text-slate-600">—</span>
+                    )}
+                  </Td>
                   <Td className="text-xs text-slate-500">
-                    {r.lastEventType ? r.lastEventType.replace(/_/g, ' ').toLowerCase() : '—'}
+                    {r.lastEventType ? eventLabel(r.lastEventType) : '—'}
                   </Td>
                   <Td className="text-xs text-slate-500">{formatDateTime(r.lastHeartbeat)}</Td>
                 </tr>

@@ -2,6 +2,7 @@ import { chromium, type Browser, type BrowserContext, type Page } from 'playwrig
 import {
   DEFAULT_VIEWPORT,
   describeAssertion,
+  expectedValue,
   type Assertion,
   type RunnerRunResult,
   type RunnerSpec,
@@ -128,6 +129,15 @@ async function applyStep(page: Page, step: Step, timeout: number): Promise<void>
     case 'scrollTo':
       await page.locator(step.selector).first().scrollIntoViewIfNeeded({ timeout });
       return;
+    case 'check':
+      await page.locator(step.selector).first().check({ timeout });
+      return;
+    case 'uncheck':
+      await page.locator(step.selector).first().uncheck({ timeout });
+      return;
+    case 'select':
+      await page.locator(step.selector).first().selectOption(step.value, { timeout });
+      return;
     default:
       return;
   }
@@ -219,6 +229,7 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
       consoleErrors.length = 0;
       let passed = false;
       let message: string | undefined;
+      let failedCheck: { expected: string; actual: string } | undefined;
 
       try {
         await withTimeout(
@@ -233,9 +244,9 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
             for (const assertion of test.assertions) {
               const outcome = await evaluateAssertion(page, assertion, consoleErrors);
               if (!outcome.passed) {
-                message =
-                  test.failureMessage ??
-                  `${describeAssertion(assertion)} Found: ${outcome.actual || 'nothing'}.`;
+                const actual = (outcome.actual || 'nothing').slice(0, 300);
+                failedCheck = { expected: expectedValue(assertion).slice(0, 300), actual };
+                message = test.failureMessage ?? `${describeAssertion(assertion)} Found: ${actual}.`;
                 return;
               }
             }
@@ -257,7 +268,7 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
         id: test.id,
         testName: test.name,
         passed,
-        ...(passed ? {} : { message: message ?? 'This test did not pass.' }),
+        ...(passed ? {} : { message: message ?? 'This test did not pass.', ...failedCheck }),
         durationMs: Date.now() - testStarted,
       });
     }

@@ -1,52 +1,53 @@
 import { prisma } from '@/lib/prisma';
-import { conflict, notFound } from '@/lib/http';
+import { conflict, notFound } from '@/lib/errors';
 import { normalizeEmail, isValidEmail } from '@/lib/email';
 import { parseAllowedEmailCsv, toCsv } from '@/lib/csv';
 
-export async function addAllowedEmail(input: {
-  email: string;
-  role: 'STUDENT' | 'ADMIN';
-  batch?: string | null;
-  note?: string | null;
-}) {
+/**
+ * The student roster (AllowedEmail): addresses pre-registered with a batch so
+ * tests can be assigned by batch before those students first sign in.
+ *
+ * It is NOT an access list. Any Google-verified address may sign in, whether or
+ * not it is on the roster, and the roster never sets a role or account state --
+ * those live on the user account (services/users.ts). The table's legacy
+ * `role` and `active` columns are no longer read or written.
+ */
+
+export async function addAllowedEmail(input: { email: string; batch?: string | null; note?: string | null }) {
   const email = normalizeEmail(input.email);
   const existing = await prisma.allowedEmail.findUnique({ where: { email } });
-  if (existing) throw conflict('That email is already on the allowlist.');
+  if (existing) throw conflict('That email is already on the roster.');
   return prisma.allowedEmail.create({
-    data: { email, role: input.role, batch: input.batch ?? null, note: input.note ?? null },
+    data: { email, batch: input.batch ?? null, note: input.note ?? null },
   });
 }
 
-export async function updateAllowedEmail(
-  id: string,
-  input: { role?: 'STUDENT' | 'ADMIN'; batch?: string | null; active?: boolean; note?: string | null },
-) {
+export async function getAllowedEmail(id: string) {
+  const entry = await prisma.allowedEmail.findUnique({ where: { id } });
+  if (!entry) throw notFound('Roster entry not found.');
+  return entry;
+}
+
+export async function updateAllowedEmail(id: string, input: { batch?: string | null; note?: string | null }) {
   const existing = await prisma.allowedEmail.findUnique({ where: { id } });
-  if (!existing) throw notFound('Allowlist entry not found.');
+  if (!existing) throw notFound('Roster entry not found.');
 
   return prisma.$transaction(async (tx) => {
     const updated = await tx.allowedEmail.update({ where: { id }, data: input });
-    // Keep the User row consistent: a deactivated allowlist entry immediately
-    // deactivates the account, and a role change applies on the next token refresh.
-    await tx.user.updateMany({
-      where: { email: updated.email },
-      data: {
-        ...(input.role ? { role: input.role } : {}),
-        ...(input.batch !== undefined ? { batch: input.batch } : {}),
-        ...(input.active !== undefined ? { active: input.active } : {}),
-      },
-    });
+    // The roster is where a batch is managed: keep a signed-in student's account in step.
+    if (input.batch !== undefined) {
+      await tx.user.updateMany({ where: { email: updated.email }, data: { batch: input.batch } });
+    }
     return updated;
   });
 }
 
-export async function removeAllowedEmail(id: string): Promise<void> {
+/** Take an address off the roster. The person's account (if any) is not affected. */
+export async function removeAllowedEmail(id: string) {
   const existing = await prisma.allowedEmail.findUnique({ where: { id } });
-  if (!existing) throw notFound('Allowlist entry not found.');
-  await prisma.$transaction([
-    prisma.allowedEmail.delete({ where: { id } }),
-    prisma.user.updateMany({ where: { email: existing.email }, data: { active: false } }),
-  ]);
+  if (!existing) throw notFound('Roster entry not found.');
+  await prisma.allowedEmail.delete({ where: { id } });
+  return existing;
 }
 
 export interface ImportSummary {
@@ -70,8 +71,8 @@ export async function importAllowedEmails(csv: string): Promise<ImportSummary> {
       chunk.map((row) =>
         prisma.allowedEmail.upsert({
           where: { email: row.email },
-          create: { email: row.email, role: row.role, batch: row.batch, active: true },
-          update: { role: row.role, batch: row.batch, active: true },
+          create: { email: row.email, batch: row.batch },
+          update: { batch: row.batch },
         }),
       ),
     );
@@ -99,7 +100,7 @@ export async function importAllowedEmails(csv: string): Promise<ImportSummary> {
 export async function exportAllowedEmailsCsv(): Promise<string> {
   const rows = await prisma.allowedEmail.findMany({ orderBy: [{ batch: 'asc' }, { email: 'asc' }] });
   return toCsv(
-    ['email', 'role', 'batch', 'active', 'createdAt'],
-    rows.map((r) => [r.email, r.role, r.batch ?? '', r.active ? 'true' : 'false', r.createdAt.toISOString()]),
+    ['email', 'batch', 'note', 'createdAt'],
+    rows.map((r) => [r.email, r.batch ?? '', r.note ?? '', r.createdAt.toISOString()]),
   );
 }

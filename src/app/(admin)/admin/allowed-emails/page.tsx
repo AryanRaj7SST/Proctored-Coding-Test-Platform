@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
 import { AllowedEmailsManager } from '@/components/admin/AllowedEmailsManager';
@@ -18,19 +19,22 @@ export default async function AllowedEmailsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Allowlist</h1>
+        <h1 className="text-xl font-semibold text-slate-50">Student roster</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Only these exact Google addresses can sign in. Revoking an entry deactivates the account
-          immediately.
+          Anyone with a Google account can sign in and becomes a student. The roster is optional: it
+          pre-registers students with a batch so tests can be assigned to them before their first sign-in.
+          Roles and account access are managed on the{' '}
+          <Link href="/admin/students" className="text-brand-300 hover:underline">
+            Students
+          </Link>{' '}
+          page.
         </p>
       </div>
       <AllowedEmailsManager
         rows={entries.map((e) => ({
           id: e.id,
           email: e.email,
-          role: e.role,
           batch: e.batch,
-          active: e.active,
           note: e.note,
           createdAt: e.createdAt.toISOString(),
           hasAccount: accounts.has(e.email),

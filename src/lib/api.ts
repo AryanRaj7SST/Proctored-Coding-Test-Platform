@@ -1,9 +1,11 @@
+import type { ApiErrorBody } from './errors';
+
 /**
  * Tiny client-side fetch wrapper.
  *
- * Surfaces the server's user-facing `error` message (the API never returns
- * stack traces or internals) and keeps every call same-origin so the session
- * cookie is sent and CSRF surface stays minimal.
+ * Surfaces the server's user-facing `message` (the API never returns stack
+ * traces or internals) and keeps every call same-origin so the session cookie
+ * is sent and CSRF surface stays minimal.
  */
 
 export class ApiError extends Error {
@@ -11,7 +13,7 @@ export class ApiError extends Error {
   code: string;
   details?: Record<string, string>;
 
-  constructor(status: number, message: string, code = 'error', details?: Record<string, string>) {
+  constructor(status: number, message: string, code = 'INTERNAL_ERROR', details?: Record<string, string>) {
     super(message);
     this.name = 'ApiError';
     this.status = status;
@@ -40,16 +42,18 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
     payload = null;
   }
 
-  if (!res.ok) {
-    const body = (payload ?? {}) as { error?: string; code?: string; details?: Record<string, string> };
-    throw new ApiError(
-      res.status,
-      body.error ?? 'Something went wrong. Please try again.',
-      body.code,
-      body.details,
-    );
-  }
+  if (!res.ok) throw apiErrorFrom(res.status, payload);
   return payload as T;
+}
+
+/** Build an ApiError from a non-2xx response body in the standard error shape. */
+export function apiErrorFrom(
+  status: number,
+  payload: unknown,
+  fallback = 'Something went wrong. Please try again.',
+) {
+  const body = (payload ?? {}) as Partial<ApiErrorBody>;
+  return new ApiError(status, body.message ?? fallback, body.code, body.details);
 }
 
 export const apiGet = <T>(path: string) => api<T>(path);

@@ -76,8 +76,11 @@ app.post('/run', async (req: Request, res: Response) => {
   };
 
   try {
+    // Each test has its own timeout, so a run's budget grows with its size: a
+    // slow or broken student page fails its tests instead of timing the run out.
+    const runBudgetMs = config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs;
     const result = await queue.run(async () =>
-      config.isolation === 'docker' ? executeInDocker(input, config.runTimeoutMs) : executeRun(input),
+      config.isolation === 'docker' ? executeInDocker(input, runBudgetMs) : executeRun(input),
     );
     log.info('run.completed', {
       runId,

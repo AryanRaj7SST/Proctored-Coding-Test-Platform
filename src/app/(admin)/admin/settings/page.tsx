@@ -34,7 +34,16 @@ export default async function SettingsPage() {
     { label: 'Proctor event limit', value: `${env.proctorRateLimitPerMin}/min per student` },
     { label: 'Heartbeat interval', value: `${env.heartbeatIntervalSeconds}s` },
     { label: 'Session considered stale after', value: `${env.sessionStaleSeconds}s without a heartbeat` },
-    { label: 'Test log retention', value: `${env.testLogRetentionDays} days` },
+    {
+      label: 'Test log retention',
+      value: `${env.testLogRetentionDays} days`,
+      note: 'Applied by the scheduled maintenance job',
+    },
+    {
+      label: 'Scheduled maintenance',
+      value: env.cronSecret ? 'Enabled (/api/cron/maintenance)' : 'Disabled: set CRON_SECRET',
+      note: 'Grades abandoned sittings, retries stalled grading, applies log retention',
+    },
     { label: 'Log level', value: env.logLevel },
     { label: 'Environment', value: env.isProduction ? 'production' : 'development' },
   ];

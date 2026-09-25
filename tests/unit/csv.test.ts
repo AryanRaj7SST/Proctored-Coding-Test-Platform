@@ -44,18 +44,36 @@ describe('toCsv', () => {
 describe('parseAllowedEmailCsv', () => {
   it('accepts a header row and normalises addresses', () => {
     const report = parseAllowedEmailCsv('email,role,batch\n  Student@Example.COM ,STUDENT,2029\n', helpers);
-    expect(report.valid).toEqual([{ email: 'student@example.com', role: 'STUDENT', batch: '2029' }]);
+    expect(report.valid).toEqual([{ email: 'student@example.com', batch: '2029' }]);
     expect(report.errors).toHaveLength(0);
   });
 
-  it('works without a header row', () => {
-    const report = parseAllowedEmailCsv('a@b.com\n', helpers);
-    expect(report.valid[0]?.email).toBe('a@b.com');
-    expect(report.valid[0]?.role).toBe('STUDENT');
+  it('finds columns by header name, so an exported roster re-imports as-is', () => {
+    const report = parseAllowedEmailCsv('email,batch,note,createdAt\na@b.com,2029,,2026-01-01\n', helpers);
+    expect(report.valid).toEqual([{ email: 'a@b.com', batch: '2029' }]);
+  });
+
+  it('works without a header row (legacy email,role,batch layout)', () => {
+    const report = parseAllowedEmailCsv('a@b.com\nc@d.com,STUDENT,B1\n', helpers);
+    expect(report.valid).toEqual([
+      { email: 'a@b.com', batch: null },
+      { email: 'c@d.com', batch: 'B1' },
+    ]);
+  });
+
+  it('never imports a role: rows asking for ADMIN are reported, not granted', () => {
+    const report = parseAllowedEmailCsv('email,role\nboss@example.com,ADMIN\nok@example.com,\n', helpers);
+    expect(report.valid).toEqual([{ email: 'ok@example.com', batch: null }]);
+    expect(report.errors).toHaveLength(1);
+    expect(report.errors[0]?.message).toMatch(/cannot grant administrator access/i);
+    expect(parseAllowedEmailCsv('boss@example.com,admin\n', helpers).valid).toHaveLength(0);
   });
 
   it('reports the line number of each bad row and keeps the good ones', () => {
-    const report = parseAllowedEmailCsv('email\ngood@example.com\nnot-an-email\nx@y.com,WIZARD\n', helpers);
+    const report = parseAllowedEmailCsv(
+      'email,role\ngood@example.com\nnot-an-email\nx@y.com,WIZARD\n',
+      helpers,
+    );
     expect(report.valid.map((v) => v.email)).toEqual(['good@example.com']);
     expect(report.errors).toHaveLength(2);
     expect(report.errors[0]?.line).toBe(3);

@@ -34,6 +34,8 @@ export interface AttemptRow {
   submittedAt: string | null;
   manuallyGraded: boolean;
   manualFeedback: string | null;
+  /** Submitted, but grading was deferred (runner failure) -- no score yet. */
+  gradingPending: boolean;
 }
 
 export function AttemptsTable({
@@ -90,7 +92,9 @@ export function AttemptsTable({
   const submittedCount = filtered.filter(
     (a) => a.status === 'SUBMITTED' || a.status === 'AUTO_SUBMITTED',
   ).length;
-  const gradedWithMax = filtered.filter((a) => a.maxScore > 0 && a.status !== 'IN_PROGRESS');
+  const gradedWithMax = filtered.filter(
+    (a) => a.maxScore > 0 && a.status !== 'IN_PROGRESS' && !a.gradingPending,
+  );
   const avgScore =
     gradedWithMax.length > 0
       ? Math.round(
@@ -146,7 +150,7 @@ export function AttemptsTable({
             </div>
 
             <Select value={examId} onChange={(e) => setExamId(e.target.value)}>
-              <option value="">All exams</option>
+              <option value="">All tests</option>
               {exams.map((e) => (
                 <option key={e.id} value={e.id}>
                   {e.title}
@@ -224,7 +228,7 @@ export function AttemptsTable({
                 <tr>
                   <Th>Student</Th>
                   <Th>Question</Th>
-                  <Th>Exam</Th>
+                  <Th>Test</Th>
                   <Th>Status</Th>
                   <Th>Score</Th>
                   <Th>Submitted</Th>
@@ -260,6 +264,8 @@ export function AttemptsTable({
                       <Td>
                         {a.status === 'IN_PROGRESS' ? (
                           <span className="text-slate-500">—</span>
+                        ) : a.gradingPending ? (
+                          <Badge tone="warn">grading pending</Badge>
                         ) : (
                           <div>
                             <span className="font-semibold text-slate-100">

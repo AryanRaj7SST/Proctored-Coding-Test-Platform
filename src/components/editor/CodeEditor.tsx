@@ -129,8 +129,18 @@ export function CodeEditor({
         EditorView.updateListener.of((update) => {
           if (update.docChanged) onChangeRef.current(update.state.doc.toString());
         }),
+        // A second line of defence: during a test the page-level proctor guard
+        // already stops these events before they reach the editor.
         EditorView.domEventHandlers({
           paste(event) {
+            if (preventPasteRef.current) {
+              event.preventDefault();
+              pasteAttemptRef.current?.();
+              return true;
+            }
+            return false;
+          },
+          drop(event) {
             if (preventPasteRef.current) {
               event.preventDefault();
               pasteAttemptRef.current?.();

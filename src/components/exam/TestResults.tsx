@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { cn, formatDuration } from '@/lib/utils';
+import { cn, displayMarks, formatDuration } from '@/lib/utils';
 
 export interface StudentTestResult {
   testName: string;
@@ -9,8 +9,10 @@ export interface StudentTestResult {
   points: number;
   pointsAwarded: number;
   durationMs: number;
-  hidden: boolean;
   message?: string;
+  /** For a failed check: what it expected, and what the page had. */
+  expected?: string;
+  actual?: string;
 }
 
 export interface RunOutcome {
@@ -25,11 +27,15 @@ export interface RunOutcome {
   graded?: boolean;
 }
 
+/** A test case's readable definition, shown before and alongside its result. */
 export interface ExpectedTest {
   id: string;
   name: string;
   description?: string | null;
+  expectedBehavior?: string | null;
   points: number;
+  steps?: string[];
+  checks?: string[];
 }
 
 export type DotStatus = 'idle' | 'running' | 'passed' | 'failed';
@@ -89,29 +95,34 @@ export function TestResults({
 }) {
   const isLight = theme === 'light';
 
-  // Determine which tests to display
+  // Results when there are any, otherwise the definitions; each row carries
+  // its test's readable definition (test names are unique per question).
   const testList = React.useMemo(() => {
+    const definitionByName = new Map(expectedTests.map((t) => [t.name, t]));
     if (outcome && outcome.results.length > 0) {
       return outcome.results.map((r, i) => ({
         id: `result-${i}`,
         name: r.testName,
         points: r.points,
         pointsAwarded: r.pointsAwarded,
-        passed: r.passed,
+        passed: r.passed as boolean | null,
         message: r.message,
+        expected: r.expected,
+        actual: r.actual,
+        definition: definitionByName.get(r.testName),
       }));
     }
-    if (expectedTests.length > 0) {
-      return expectedTests.map((t) => ({
-        id: t.id,
-        name: t.name,
-        points: t.points,
-        pointsAwarded: 0,
-        passed: null as boolean | null,
-        message: undefined as string | undefined,
-      }));
-    }
-    return [];
+    return expectedTests.map((t) => ({
+      id: t.id,
+      name: t.name,
+      points: t.points,
+      pointsAwarded: 0,
+      passed: null as boolean | null,
+      message: undefined as string | undefined,
+      expected: undefined as string | undefined,
+      actual: undefined as string | undefined,
+      definition: t as ExpectedTest | undefined,
+    }));
   }, [outcome, expectedTests]);
 
   return (
@@ -142,7 +153,8 @@ export function TestResults({
             {outcome.passedCount}/{outcome.totalCount} passed
           </span>
           <span className={isLight ? 'text-slate-600' : 'text-slate-300'}>
-            • Score: {outcome.score}/{outcome.maxScore} ({outcome.percentage}%)
+            • Score: {displayMarks(outcome.score)}/{displayMarks(outcome.maxScore)} (
+            {displayMarks(outcome.percentage)}%)
           </span>
           <span className="ml-auto font-mono text-[11px] text-slate-400">
             {formatDuration(outcome.durationMs)}
@@ -199,6 +211,7 @@ export function TestResults({
                       >
                         {t.name}
                       </p>
+                      {t.definition ? <TestDefinition test={t.definition} isLight={isLight} /> : null}
                       {!running && t.message ? (
                         <p
                           className={cn(
@@ -211,11 +224,35 @@ export function TestResults({
                           {t.message}
                         </p>
                       ) : null}
+                      {!running && t.passed === false && (t.expected || t.actual) ? (
+                        <dl
+                          className={cn(
+                            'mt-1 grid grid-cols-[auto_1fr] gap-x-2 text-[11px]',
+                            isLight ? 'text-slate-600' : 'text-slate-300',
+                          )}
+                        >
+                          {t.expected ? (
+                            <>
+                              <dt className="text-slate-400">Expected</dt>
+                              <dd className="font-mono">{t.expected}</dd>
+                            </>
+                          ) : null}
+                          {t.actual ? (
+                            <>
+                              <dt className="text-slate-400">Actual</dt>
+                              <dd className="font-mono">{t.actual}</dd>
+                            </>
+                          ) : null}
+                        </dl>
+                      ) : null}
                     </div>
 
                     {/* Points */}
                     <span className="shrink-0 whitespace-nowrap font-mono text-xs text-slate-400">
-                      {!running && t.passed !== null ? `${t.pointsAwarded}/${t.points}` : `${t.points}`} pts
+                      {!running && t.passed !== null
+                        ? `${displayMarks(t.pointsAwarded)}/${displayMarks(t.points)}`
+                        : displayMarks(t.points)}{' '}
+                      pts
                     </span>
                   </div>
                 </li>
@@ -230,5 +267,48 @@ export function TestResults({
         )}
       </div>
     </div>
+  );
+}
+
+/** What a test does and checks, in words -- collapsed by default to keep the list scannable. */
+function TestDefinition({ test, isLight }: { test: ExpectedTest; isLight: boolean }) {
+  const steps = test.steps ?? [];
+  const checks = test.checks ?? [];
+  if (!test.expectedBehavior && !test.description && steps.length === 0 && checks.length === 0) return null;
+  return (
+    <details className="group mt-1">
+      <summary
+        className={cn(
+          'cursor-pointer select-none text-[11px]',
+          isLight ? 'text-slate-500 hover:text-slate-700' : 'text-slate-400 hover:text-slate-200',
+        )}
+      >
+        What this test checks
+      </summary>
+      <div
+        className={cn(
+          'mt-1 space-y-1 text-[11px] leading-relaxed',
+          isLight ? 'text-slate-600' : 'text-slate-300',
+        )}
+      >
+        {test.expectedBehavior || test.description ? (
+          <p>{test.expectedBehavior || test.description}</p>
+        ) : null}
+        {steps.length > 0 ? (
+          <ol className="list-decimal space-y-0.5 pl-4">
+            {steps.map((step, i) => (
+              <li key={i}>{step}</li>
+            ))}
+          </ol>
+        ) : null}
+        {checks.length > 0 ? (
+          <ul className="list-disc space-y-0.5 pl-4">
+            {checks.map((check, i) => (
+              <li key={i}>{check}</li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+    </details>
   );
 }

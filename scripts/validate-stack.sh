@@ -61,6 +61,8 @@ for i in $(seq 1 30); do
   sleep 2
 done
 [ "$status" = "healthy" ] || fail 4 "database"
+# Loops 4-5 migrate and seed $DATABASE_URL; never let that be a shared database.
+node scripts/assert-local-db.mjs || fail 4 "database is not local"
 npm run db:deploy
 pass 4 "database + migrate"
 

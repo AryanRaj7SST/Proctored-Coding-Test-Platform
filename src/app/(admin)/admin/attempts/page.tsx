@@ -1,6 +1,9 @@
 import { prisma } from '@/lib/prisma';
+import { marksToNumber } from '@/server/grading/marks';
 import { requireAdmin } from '@/lib/authz';
 import { AttemptsTable, type AttemptRow } from '@/components/admin/AttemptsTable';
+import { RegradeButton } from '@/components/admin/RegradeButton';
+import { finalizeOverdueSittings } from '@/server/services/finalization';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +14,8 @@ export default async function AttemptsPage({
 }) {
   await requireAdmin();
   const { examId, userId } = await searchParams;
+  // Grade sittings students abandoned (throttled per process).
+  await finalizeOverdueSittings();
 
   const [rawAttempts, exams, questions, batchRows] = await Promise.all([
     prisma.attempt.findMany({
@@ -31,7 +36,7 @@ export default async function AttemptsPage({
       select: { id: true, title: true },
     }),
     prisma.question.findMany({
-      where: { active: true },
+      where: { status: { not: 'ARCHIVED' } },
       orderBy: { title: 'asc' },
       select: { id: true, title: true },
     }),
@@ -44,13 +49,6 @@ export default async function AttemptsPage({
   ]);
 
   const attempts: AttemptRow[] = rawAttempts.map((a) => {
-    const snapshot =
-      a.snapshot && typeof a.snapshot === 'object' ? (a.snapshot as Record<string, unknown>) : {};
-    const manualReview =
-      snapshot.manualReview && typeof snapshot.manualReview === 'object'
-        ? (snapshot.manualReview as Record<string, unknown>)
-        : null;
-
     return {
       id: a.id,
       userId: a.user.id,
@@ -62,14 +60,16 @@ export default async function AttemptsPage({
       questionId: a.question.id,
       questionTitle: a.question.title,
       status: a.status,
-      score: a.score,
-      maxScore: a.maxScore,
+      score: marksToNumber(a.score),
+      maxScore: marksToNumber(a.maxScore),
       updatedAt: a.updatedAt.toISOString(),
       submittedAt: a.submittedAt?.toISOString() ?? null,
-      manuallyGraded: Boolean(manualReview),
-      manualFeedback: (manualReview?.feedback as string) ?? null,
+      manuallyGraded: false,
+      manualFeedback: a.reviewFeedback,
+      gradingPending: a.status !== 'IN_PROGRESS' && !a.gradedAt,
     };
   });
+  const pendingCount = attempts.filter((a) => a.gradingPending).length;
 
   return (
     <div className="space-y-4">
@@ -80,6 +80,19 @@ export default async function AttemptsPage({
           adjust scores or give feedback.
         </p>
       </div>
+
+      {pendingCount > 0 ? (
+        <div
+          role="status"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+        >
+          <span>
+            {pendingCount} submitted attempt(s) are awaiting grading because the test runner was unavailable.
+            Their code is saved; no score has been recorded yet.
+          </span>
+          <RegradeButton examId={examId} label="Grade pending attempts" />
+        </div>
+      ) : null}
 
       <AttemptsTable
         attempts={attempts}

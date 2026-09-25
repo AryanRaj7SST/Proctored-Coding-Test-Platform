@@ -5,11 +5,15 @@ import { LoginButton } from './LoginButton';
 
 export const dynamic = 'force-dynamic';
 
+/**
+ * Sign-in failures we can explain. Anyone Google authenticates may sign in;
+ * these are the only reasons the application itself refuses (lib/auth-callbacks).
+ * Unknown codes fall back to AccessDenied.
+ */
 const ERRORS: Record<string, string> = {
-  NotAllowlisted:
-    'That Google account is not on the invite list for this platform. Ask your mentor to add your exact email address.',
   EmailNotVerified: 'Google has not verified that email address. Verify it with Google and try again.',
-  AccessDenied: 'Sign-in was refused. Use the Google account your mentor invited.',
+  AccountDisabled: 'This account has been deactivated. Contact your mentor if you think this is a mistake.',
+  AccessDenied: 'Sign-in was refused. Please try again with your Google account.',
   Configuration: 'Sign-in is not configured correctly. Please contact your mentor.',
   Verification: 'That sign-in link is no longer valid. Please try again.',
 };
@@ -43,7 +47,7 @@ export default async function LoginPage({
             &lt;/&gt;
           </div>
           <h1 className="text-lg font-semibold text-slate-50">Coding Assessment Platform</h1>
-          <p className="mt-1 text-xs text-slate-400">Sign in with the Google account your mentor invited.</p>
+          <p className="mt-1 text-xs text-slate-400">Sign in with your Google account to continue.</p>
         </div>
 
         {message ? (
@@ -60,8 +64,8 @@ export default async function LoginPage({
         </form>
 
         <p className="mt-6 text-center text-[11px] leading-5 text-slate-500">
-          Access is limited to individually invited addresses. Exam sessions are proctored: tab switches,
-          focus loss and clipboard activity are recorded.
+          Any Google account can sign in. Test sessions are proctored: tab switches, focus loss and clipboard
+          activity are recorded.
         </p>
       </div>
     </main>

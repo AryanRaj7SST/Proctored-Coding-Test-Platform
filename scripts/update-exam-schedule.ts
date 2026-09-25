@@ -52,6 +52,7 @@ async function main() {
     data: students.map((s) => ({
       examId: 'lab-quiz-1',
       userId: s.id,
+      email: s.email,
     })),
     skipDuplicates: true,
   });

@@ -1,23 +1,13 @@
-import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
-import { ExamForm } from '@/components/admin/ExamForm';
+import { TestBuilder } from '@/components/admin/tests/TestBuilder';
 
 export const dynamic = 'force-dynamic';
 
-export default async function NewExamPage() {
+/**
+ * Create a test. Only the first step is available here: the first save
+ * creates a DRAFT and continues at /admin/exams/[id]?step=questions.
+ */
+export default async function NewTestPage() {
   await requireAdmin();
-  const [questions, students] = await Promise.all([
-    prisma.question.findMany({
-      where: { active: true },
-      orderBy: { title: 'asc' },
-      select: { id: true, title: true, points: true, difficulty: true, validation: true },
-    }),
-    prisma.user.findMany({
-      where: { role: 'STUDENT', active: true },
-      orderBy: { email: 'asc' },
-      select: { id: true, name: true, email: true, batch: true },
-    }),
-  ]);
-
-  return <ExamForm questions={questions} students={students} />;
+  return <TestBuilder initial={null} categories={[]} tags={[]} />;
 }

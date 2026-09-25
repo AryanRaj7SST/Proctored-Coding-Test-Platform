@@ -54,9 +54,7 @@ Your task is to style the layout using CSS Grid to ensure the following:
     {
       name: 'Styles the grid container correctly',
       description: 'Sets display to grid, 2 equal columns of 50px, 2 equal rows of 50px, and gap of 10px.',
-      points: 10,
       order: 0,
-      hidden: false,
       body: {
         assertions: [
           { type: 'css', selector: '#grid-container', property: 'display', equals: 'grid' },
@@ -80,9 +78,7 @@ Your task is to style the layout using CSS Grid to ensure the following:
       name: 'Styles the grid items correctly',
       description:
         'Sets background-color to rgb(173, 216, 230), border to 2px solid rgb(0, 0, 0), centered text, line-height: 50px.',
-      points: 10,
       order: 1,
-      hidden: false,
       body: {
         assertions: [
           {
@@ -101,9 +97,7 @@ Your task is to style the layout using CSS Grid to ensure the following:
     {
       name: 'Applies grid-row to item1 correctly',
       description: 'Item1 spans 2 rows using grid-row.',
-      points: 10,
       order: 2,
-      hidden: false,
       body: {
         assertions: [{ type: 'css', selector: '#item1', property: 'grid-row', equals: 'span 2' }],
       },
@@ -124,8 +118,7 @@ Your task is to style the layout using CSS Grid to ensure the following:
       referenceCss: q1ReferenceCss,
       referenceJs: '',
       difficulty: 'EASY',
-      points: 30,
-      active: true,
+      marks: 30,
       validation: 'PASSED',
     },
     update: {
@@ -138,8 +131,7 @@ Your task is to style the layout using CSS Grid to ensure the following:
       referenceCss: q1ReferenceCss,
       referenceJs: '',
       difficulty: 'EASY',
-      points: 30,
-      active: true,
+      marks: 30,
       validation: 'PASSED',
     },
   });
@@ -153,9 +145,7 @@ Your task is to style the layout using CSS Grid to ensure the following:
         description: t.description,
         testType: 'DECLARATIVE',
         testCode: spec(t.body),
-        points: t.points,
         order: t.order,
-        hidden: t.hidden,
       },
     });
   }
@@ -223,25 +213,19 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
     {
       name: 'Verify Grid Container Exists',
       description: 'Check that .grid-container exists in the DOM',
-      points: 5,
       order: 0,
-      hidden: false,
       body: { assertions: [{ type: 'exists', selector: '.grid-container' }] },
     },
     {
       name: 'Verify Number of Boxes',
       description: 'Check that exactly 8 boxes exist',
-      points: 5,
       order: 1,
-      hidden: false,
       body: { assertions: [{ type: 'count', selector: '.box', equals: 8 }] },
     },
     {
       name: 'Verify Box Text Sequence',
       description: 'Check that boxes contain Box 1 through Box 8',
-      points: 5,
       order: 2,
-      hidden: false,
       body: {
         assertions: [
           { type: 'text', selector: '.box:nth-child(1)', equals: 'Box 1' },
@@ -252,9 +236,7 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
     {
       name: 'Verify Grid Display Property',
       description: 'Check display: grid on .grid-container',
-      points: 5,
       order: 3,
-      hidden: false,
       body: {
         assertions: [{ type: 'css', selector: '.grid-container', property: 'display', equals: 'grid' }],
       },
@@ -262,25 +244,19 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
     {
       name: 'Verify Grid Columns Count',
       description: 'Check 4 columns on .grid-container',
-      points: 5,
       order: 4,
-      hidden: false,
       body: { assertions: [{ type: 'gridColumns', selector: '.grid-container', equals: 4 }] },
     },
     {
       name: 'Verify Gap Between Boxes',
       description: 'Check gap: 10px on .grid-container',
-      points: 5,
       order: 5,
-      hidden: false,
       body: { assertions: [{ type: 'gap', selector: '.grid-container', equals: 10 }] },
     },
     {
       name: 'Verify Box Square Shape',
       description: 'Check box dimensions are 100px width and 100px height',
-      points: 5,
       order: 6,
-      hidden: false,
       body: {
         assertions: [
           { type: 'size', selector: '.box', dimension: 'width', op: 'eq', value: 100, tolerance: 2 },
@@ -304,8 +280,7 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
       referenceCss: q2ReferenceCss,
       referenceJs: '',
       difficulty: 'MEDIUM',
-      points: 35,
-      active: true,
+      marks: 35,
       validation: 'PASSED',
     },
     update: {
@@ -318,8 +293,7 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
       referenceCss: q2ReferenceCss,
       referenceJs: '',
       difficulty: 'MEDIUM',
-      points: 35,
-      active: true,
+      marks: 35,
       validation: 'PASSED',
     },
   });
@@ -333,9 +307,7 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
         description: t.description,
         testType: 'DECLARATIVE',
         testCode: spec(t.body),
-        points: t.points,
         order: t.order,
-        hidden: t.hidden,
       },
     });
   }
@@ -372,8 +344,8 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
   await prisma.examQuestion.deleteMany({ where: { examId: exam.id } });
   await prisma.examQuestion.createMany({
     data: [
-      { examId: exam.id, questionId: q1.id, order: 0 },
-      { examId: exam.id, questionId: q2.id, order: 1 },
+      { examId: exam.id, questionId: q1.id, order: 0, marks: q1.marks },
+      { examId: exam.id, questionId: q2.id, order: 1, marks: q2.marks },
     ],
   });
   console.log(`Configured contest "${exam.title}" (${exam.id}) with 2 questions.`);
@@ -398,7 +370,7 @@ Your task is to write the CSS for .grid-container using CSS Grid.`;
   });
 
   const assignmentCount = await prisma.examAssignment.createMany({
-    data: students.map((s) => ({ examId: exam.id, userId: s.id })),
+    data: students.map((s) => ({ examId: exam.id, userId: s.id, email: s.email })),
     skipDuplicates: true,
   });
 

@@ -10,7 +10,7 @@ export default async function MonitorPage() {
   const [rows, exams] = await Promise.all([
     monitorSnapshot(),
     prisma.exam.findMany({
-      where: { status: { in: ['PUBLISHED', 'ACTIVE', 'ENDED'] } },
+      where: { status: { in: ['PUBLISHED', 'ENDED'] } },
       orderBy: { createdAt: 'desc' },
       select: { id: true, title: true },
     }),

@@ -39,7 +39,8 @@ or requires **OS-level software** outside a normal webpage's reach.
 | Heartbeat / liveness ping                   | Detection                 | Regular ping proves the tab stayed open; gaps flag "away" time                       |
 | Auto-submit on time expiry                  | Hard restriction          | Server-side cutoff, never trusts the client clock                                    |
 | IP address logging / geofencing             | Detection (or hard block) | Log IP per session; optionally restrict to expected ranges (e.g. campus network)     |
-| Invite-only / allowlisted accounts          | Hard restriction          | Exact-match email allowlist, no self-registration                                    |
+| Open sign-in, role-based access             | Hard restriction          | Any verified Google account signs in as STUDENT; ADMIN only set server-side          |
+| Per-test access control                     | Hard restriction          | Tests open by default or assigned-only; admins can revoke one student's access       |
 | Role re-verified server-side every request  | Hard restriction          | Client-reported role/permissions are never trusted                                   |
 
 ## 3. Content & question protection
@@ -87,12 +88,12 @@ or requires **OS-level software** outside a normal webpage's reach.
 
 ## 7. Auditing & accountability
 
-| Restriction                                                   | Type             | Notes                                                                                                |
-| ------------------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------- |
-| Full event audit log (every violation, admin action, sign-in) | Detection aid    | Timestamped, attributable, never silently dropped                                                    |
-| Errors never leak internals to the client                     | Hard restriction | No stack traces, SQL, or file paths in API error responses                                           |
-| Rate-limited admin actions (e.g. CSV import)                  | Hard restriction | Prevents abuse of privileged endpoints                                                               |
-| Immutable audit trail for admin mutations                     | Hard restriction | create/update/delete on exams, questions, allowlist all logged independently of the action's success |
+| Restriction                                                   | Type             | Notes                                                                                                                    |
+| ------------------------------------------------------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Full event audit log (every violation, admin action, sign-in) | Detection aid    | Timestamped, attributable, never silently dropped                                                                        |
+| Errors never leak internals to the client                     | Hard restriction | No stack traces, SQL, or file paths in API error responses                                                               |
+| Rate-limited admin actions (e.g. CSV import)                  | Hard restriction | Prevents abuse of privileged endpoints                                                                                   |
+| Immutable audit trail for admin mutations                     | Hard restriction | create/update/delete on exams, questions, roster, roles and test access all logged independently of the action's success |
 
 ## 8. Honest limits — things a browser-based platform cannot actually do
 

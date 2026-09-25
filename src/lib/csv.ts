@@ -58,7 +58,6 @@ export function toCsv(headers: string[], rows: (string | number | boolean | null
 
 export interface AllowedEmailRow {
   email: string;
-  role: 'STUDENT' | 'ADMIN';
   batch: string | null;
 }
 
@@ -69,8 +68,13 @@ export interface CsvImportReport {
 }
 
 /**
- * Parse an allowlist CSV: `email,role,batch`.
- * A header row is optional and detected case-insensitively.
+ * Parse a student roster CSV.
+ *
+ * With a header row (first cell `email`, case-insensitive), columns are found
+ * by name: `email`, optional `batch`, and an optional legacy `role`. Without a
+ * header the legacy layout `email,role,batch` is assumed. The roster never
+ * grants a role: a `role` cell may be blank or STUDENT, and a row asking for
+ * ADMIN is reported as an error instead of being imported.
  */
 export function parseAllowedEmailCsv(
   input: string,
@@ -84,22 +88,27 @@ export function parseAllowedEmailCsv(
     return report;
   }
   let start = 0;
-  const first = rows[0] as string[];
-  if ((first[0] ?? '').trim().toLowerCase() === 'email') start = 1;
+  let columns = { email: 0, role: 1, batch: 2 };
+  const header = (rows[0] as string[]).map((c) => c.trim().toLowerCase());
+  if (header[0] === 'email') {
+    start = 1;
+    columns = { email: 0, role: header.indexOf('role'), batch: header.indexOf('batch') };
+  }
 
   if (rows.length - start > maxRows) {
     report.errors.push({ line: 0, message: `Too many rows (limit ${maxRows}).`, raw: '' });
     return report;
   }
 
+  const cell = (cells: string[], index: number) => (index >= 0 ? (cells[index] ?? '') : '').trim();
   const seen = new Set<string>();
   for (let i = start; i < rows.length; i += 1) {
     const cells = rows[i] as string[];
     const lineNo = i + 1;
     const raw = cells.join(',');
-    const email = helpers.normalizeEmail(cells[0]);
-    const roleRaw = (cells[1] ?? 'STUDENT').trim().toUpperCase();
-    const batch = (cells[2] ?? '').trim();
+    const email = helpers.normalizeEmail(cells[columns.email]);
+    const roleRaw = cell(cells, columns.role).toUpperCase();
+    const batch = cell(cells, columns.batch);
 
     if (!email) {
       report.errors.push({ line: lineNo, message: 'Missing email.', raw });
@@ -109,8 +118,16 @@ export function parseAllowedEmailCsv(
       report.errors.push({ line: lineNo, message: `Invalid email address "${email}".`, raw });
       continue;
     }
-    if (roleRaw !== 'STUDENT' && roleRaw !== 'ADMIN') {
-      report.errors.push({ line: lineNo, message: `Invalid role "${roleRaw}" (use STUDENT or ADMIN).`, raw });
+    if (roleRaw === 'ADMIN') {
+      report.errors.push({
+        line: lineNo,
+        message: 'The roster cannot grant administrator access. Change roles on the Students page.',
+        raw,
+      });
+      continue;
+    }
+    if (roleRaw !== '' && roleRaw !== 'STUDENT') {
+      report.errors.push({ line: lineNo, message: `Invalid role "${roleRaw}" (leave it blank).`, raw });
       continue;
     }
     if (batch.length > 64) {
@@ -122,7 +139,7 @@ export function parseAllowedEmailCsv(
       continue;
     }
     seen.add(email);
-    report.valid.push({ email, role: roleRaw, batch: batch || null });
+    report.valid.push({ email, batch: batch || null });
   }
   return report;
 }

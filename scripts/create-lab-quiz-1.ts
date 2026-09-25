@@ -1595,8 +1595,7 @@ async function main() {
         referenceCss: q.referenceCss,
         referenceJs: q.referenceJs,
         difficulty: 'MEDIUM',
-        points: totalPoints,
-        active: true,
+        marks: totalPoints,
         tags: ['html', 'css', 'practical'],
       },
       update: {
@@ -1610,8 +1609,7 @@ async function main() {
         referenceHtml: q.referenceHtml,
         referenceCss: q.referenceCss,
         referenceJs: q.referenceJs,
-        points: totalPoints,
-        active: true,
+        marks: totalPoints,
       },
     });
 
@@ -1627,9 +1625,7 @@ async function main() {
           description: t.description,
           testType: 'DECLARATIVE',
           testCode: spec(t.body),
-          points: t.points,
           order: t.order,
-          hidden: t.hidden,
         },
       });
     }
@@ -1687,11 +1683,16 @@ async function main() {
   for (let i = 0; i < questionIds.length; i++) {
     const qId = questionIds[i];
     if (!qId) continue;
+    const { marks } = await prisma.question.findUniqueOrThrow({
+      where: { id: qId },
+      select: { marks: true },
+    });
     await prisma.examQuestion.create({
       data: {
         examId: exam.id,
         questionId: qId,
         order: i,
+        marks,
       },
     });
   }
@@ -1700,7 +1701,7 @@ async function main() {
   // Assign to all students
   const students = await prisma.user.findMany({ where: { role: 'STUDENT' } });
   await prisma.examAssignment.createMany({
-    data: students.map((s) => ({ examId: exam.id, userId: s.id })),
+    data: students.map((s) => ({ examId: exam.id, userId: s.id, email: s.email })),
     skipDuplicates: true,
   });
   console.log(`  ✓ Assigned exam to all ${students.length} students.`);

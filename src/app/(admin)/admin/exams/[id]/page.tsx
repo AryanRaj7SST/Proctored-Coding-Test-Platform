@@ -1,43 +1,33 @@
-import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
-import { ExamForm } from '@/components/admin/ExamForm';
-import { examValuesFrom } from '@/components/admin/exam-types';
+import { getExamForAdmin } from '@/server/services/exams';
+import { isStepId } from '@/components/admin/tests/builder-state';
+import { TestBuilder } from '@/components/admin/tests/TestBuilder';
+import type { TestDetail } from '@/components/admin/tests/types';
+import { asJson, loadQuestionFacets, orNotFound } from '../_lib/data';
 
 export const dynamic = 'force-dynamic';
 
-export default async function EditExamPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EditTestPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ step?: string }>;
+}) {
   await requireAdmin();
-  const { id } = await params;
+  const [{ id }, { step }] = await Promise.all([params, searchParams]);
 
-  const exam = await prisma.exam.findUnique({
-    where: { id },
-    include: {
-      questions: { orderBy: { order: 'asc' }, select: { questionId: true } },
-      assignments: { select: { userId: true } },
-    },
-  });
-  if (!exam) notFound();
-
-  const [questions, students] = await Promise.all([
-    prisma.question.findMany({
-      where: { OR: [{ active: true }, { id: { in: exam.questions.map((q) => q.questionId) } }] },
-      orderBy: { title: 'asc' },
-      select: { id: true, title: true, points: true, difficulty: true, validation: true },
-    }),
-    prisma.user.findMany({
-      where: { role: 'STUDENT', active: true },
-      orderBy: { email: 'asc' },
-      select: { id: true, name: true, email: true, batch: true },
-    }),
-  ]);
+  const [detail, facets] = await Promise.all([orNotFound(() => getExamForAdmin(id)), loadQuestionFacets()]);
 
   return (
-    <ExamForm
-      initial={examValuesFrom({ ...exam, questionIds: exam.questions.map((q) => q.questionId) })}
-      questions={questions}
-      students={students}
-      assignedIds={exam.assignments.map((a) => a.userId)}
+    <TestBuilder
+      // Remount with fresh state if the admin navigates between tests.
+      key={id}
+      initial={asJson<TestDetail>(detail)}
+      initialStep={isStepId(step) ? step : 'basics'}
+      assignedCount={detail.assignedCount}
+      categories={facets.categories}
+      tags={facets.tags}
     />
   );
 }

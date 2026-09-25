@@ -82,7 +82,8 @@ export function AttemptCodeViewer({
     }
   };
 
-  const hasStarterDiff = Boolean(starterCode && starterCode.trim() !== (submittedCode || '').trim());
+  // An empty starter file that the student filled in is a modification too.
+  const hasStarterDiff = starterCode.trim() !== (submittedCode || '').trim();
 
   return (
     <Card className="flex flex-col">

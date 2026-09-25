@@ -16,15 +16,21 @@ test.describe('unauthenticated surface', () => {
     expect(text).not.toMatch(/postgres:\/\/|AUTH_SECRET|RUNNER_SECRET/);
   });
 
-  test('the login page explains the invite-only rule', async ({ page }) => {
+  test('the login page offers Google sign-in with no invite requirement', async ({ page }) => {
     await page.goto('/login');
     await expect(page.getByRole('button', { name: /continue with google/i })).toBeVisible();
-    await expect(page.getByText(/individually invited/i)).toBeVisible();
+    await expect(page.getByText(/any google account can sign in/i)).toBeVisible();
+    await expect(page.getByText(/invite/i)).toHaveCount(0);
   });
 
   test('a rejected sign-in shows a specific, non-technical reason', async ({ page }) => {
+    await page.goto('/login?error=AccountDisabled');
+    await expect(page.getByRole('alert').filter({ hasText: /has been deactivated/i })).toBeVisible();
+    // The retired invite-list code falls back to the generic message.
     await page.goto('/login?error=NotAllowlisted');
-    await expect(page.getByRole('alert').filter({ hasText: /not on the invite list/i })).toBeVisible();
+    const generic = page.getByRole('alert').filter({ hasText: /sign-in was refused/i });
+    await expect(generic).toBeVisible();
+    await expect(generic).not.toContainText(/invite/i);
   });
 
   test('protected routes redirect to login instead of rendering', async ({ page }) => {
@@ -38,7 +44,8 @@ test.describe('unauthenticated surface', () => {
     const res = await request.get('/api/exams');
     expect(res.status()).toBe(401);
     const body = await res.json();
-    expect(body.error).toBeTruthy();
+    expect(body).toMatchObject({ code: 'UNAUTHORIZED' });
+    expect(body.message).toBeTruthy();
     expect(JSON.stringify(body)).not.toMatch(/at .*\.ts:|node_modules/);
   });
 

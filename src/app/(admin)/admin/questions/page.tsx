@@ -1,19 +1,80 @@
 import Link from 'next/link';
+import { Plus } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
-import { Badge, Card, CardBody, CardHeader, EmptyState, Table, Td, Th } from '@/components/ui';
-import { formatDateTime } from '@/lib/utils';
+import { listQuestions } from '@/server/services/questions';
+import { Badge, Card, CardBody, EmptyState, StatusBadge, Table, Td, Th } from '@/components/ui';
+import { QuestionFilters } from '@/components/admin/questions/QuestionFilters';
+import { questionListHref, type QuestionListFilters } from '@/components/admin/questions/list-href';
+import { formatMarks } from '@/components/admin/questions/marks';
+import {
+  DIFFICULTIES,
+  QUESTION_STATUSES,
+  type Difficulty,
+  type QuestionStatus,
+} from '@/components/admin/questions/types';
+import { cn, formatDateTime } from '@/lib/utils';
+import { loadQuestionTaxonomy } from './_lib/taxonomy';
 
 export const dynamic = 'force-dynamic';
 
-const VALIDATION_TONE = { PASSED: 'ok', FAILED: 'bad', NOT_VALIDATED: 'warn' } as const;
+const PAGE_SIZE = 20;
 
-export default async function QuestionsPage() {
+const STATUS_TABS: { value: QuestionStatus | ''; label: string }[] = [
+  { value: '', label: 'All' },
+  { value: 'DRAFT', label: 'Drafts' },
+  { value: 'VALIDATED', label: 'Validated' },
+  { value: 'PUBLISHED', label: 'Published' },
+  { value: 'ARCHIVED', label: 'Archived' },
+];
+
+type SearchParams = Record<string, string | string[] | undefined>;
+
+const one = (v: string | string[] | undefined): string | undefined => {
+  const value = Array.isArray(v) ? v[0] : v;
+  return value?.trim() ? value.trim() : undefined;
+};
+
+/** Untrusted query string -> safe filters (unknown values are dropped, lengths capped). */
+function parseFilters(sp: SearchParams) {
+  const status = one(sp.status);
+  const difficulty = one(sp.difficulty);
+  const page = Number(one(sp.page) ?? '1');
+  return {
+    status: QUESTION_STATUSES.includes(status as QuestionStatus) ? (status as QuestionStatus) : undefined,
+    difficulty: DIFFICULTIES.some((d) => d.value === difficulty) ? (difficulty as Difficulty) : undefined,
+    q: one(sp.q)?.slice(0, 120),
+    category: one(sp.category)?.slice(0, 60),
+    tag: one(sp.tag)?.slice(0, 30),
+    page: Number.isInteger(page) && page >= 1 && page <= 10_000 ? page : 1,
+  };
+}
+
+export default async function QuestionsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await requireAdmin();
-  const questions = await prisma.question.findMany({
-    orderBy: { updatedAt: 'desc' },
-    include: { _count: { select: { tests: true, examQuestions: true, attempts: true } } },
-  });
+  const filters = parseFilters(await searchParams);
+  const [list, statusCounts, taxonomy] = await Promise.all([
+    listQuestions({ ...filters, pageSize: PAGE_SIZE }),
+    prisma.question.groupBy({ by: ['status'], _count: { _all: true } }),
+    loadQuestionTaxonomy(),
+  ]);
+
+  const countOf = (status: QuestionStatus | '') =>
+    statusCounts
+      .filter((row) => status === '' || row.status === status)
+      .reduce((sum, row) => sum + row._count._all, 0);
+  const bankSize = countOf('');
+  const linkFilters: QuestionListFilters = {
+    status: filters.status,
+    q: filters.q,
+    difficulty: filters.difficulty,
+    category: filters.category,
+    tag: filters.tag,
+  };
+  const hasFilters = Boolean(filters.q || filters.difficulty || filters.category || filters.tag);
+  const totalPages = Math.max(1, Math.ceil(list.total / PAGE_SIZE));
+  const first = list.total === 0 ? 0 : (filters.page - 1) * PAGE_SIZE + 1;
+  const last = Math.min(list.total, filters.page * PAGE_SIZE);
 
   return (
     <div className="space-y-4">
@@ -21,83 +82,170 @@ export default async function QuestionsPage() {
         <div>
           <h1 className="text-xl font-semibold text-slate-50">Questions</h1>
           <p className="mt-1 text-sm text-slate-400">
-            A question must pass validation against its reference solution before it can go into a published
-            exam.
+            Draft → validate against a reference solution → publish. Only published questions can be added to
+            tests.
           </p>
         </div>
         <Link
           href="/admin/questions/new"
-          className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
         >
-          New question
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Create question
         </Link>
       </div>
 
+      <nav aria-label="Question status" className="overflow-x-auto">
+        <ul className="flex min-w-max items-center gap-1 border-b border-ink-700">
+          {STATUS_TABS.map((tab) => {
+            const active = (filters.status ?? '') === tab.value;
+            return (
+              <li key={tab.value || 'all'}>
+                <Link
+                  href={questionListHref({ ...linkFilters, status: tab.value })}
+                  aria-current={active ? 'page' : undefined}
+                  className={cn(
+                    '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition',
+                    active
+                      ? 'border-brand-500 font-medium text-white'
+                      : 'border-transparent text-slate-400 hover:text-slate-200',
+                  )}
+                >
+                  {tab.label}
+                  <span
+                    className={cn(
+                      'rounded px-1.5 text-[11px]',
+                      active ? 'bg-brand-500/20 text-brand-100' : 'bg-ink-800 text-slate-400',
+                    )}
+                  >
+                    {countOf(tab.value)}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </nav>
+
       <Card>
-        <CardHeader title="All questions" subtitle={`${questions.length} total`} />
-        <CardBody className="p-0">
-          {questions.length === 0 ? (
+        <CardBody className="space-y-3">
+          <QuestionFilters filters={linkFilters} categories={taxonomy.categories} tags={taxonomy.tags} />
+        </CardBody>
+        <div className="border-t border-ink-700">
+          {list.items.length === 0 ? (
             <div className="p-4">
-              <EmptyState
-                title="No questions yet"
-                description="Create your first question, add behaviour tests, then validate it against a reference solution."
-              />
+              {bankSize === 0 ? (
+                <EmptyState
+                  title="No questions yet"
+                  description="Create a question, add behaviour test cases, validate it against a reference solution, then publish it."
+                  action={
+                    <Link
+                      href="/admin/questions/new"
+                      className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                    >
+                      Create question
+                    </Link>
+                  }
+                />
+              ) : (
+                <EmptyState
+                  title={filters.page > totalPages ? 'This page is empty' : 'No questions match'}
+                  description={
+                    hasFilters || filters.status
+                      ? 'Try a different status, search or filter.'
+                      : 'There is nothing on this page.'
+                  }
+                  action={
+                    <Link href="/admin/questions" className="text-sm text-brand-300 hover:underline">
+                      Show all questions
+                    </Link>
+                  }
+                />
+              )}
             </div>
           ) : (
             <Table>
               <thead>
                 <tr>
                   <Th>Title</Th>
+                  <Th>Status</Th>
+                  <Th className="text-right">Marks</Th>
+                  <Th className="text-right">Enabled tests</Th>
                   <Th>Difficulty</Th>
-                  <Th>Tests</Th>
-                  <Th>Points</Th>
-                  <Th>Validation</Th>
-                  <Th>Used by</Th>
+                  <Th>Category / tags</Th>
+                  <Th className="text-right">Used in</Th>
                   <Th>Updated</Th>
-                  <Th />
+                  <Th>
+                    <span className="sr-only">Actions</span>
+                  </Th>
                 </tr>
               </thead>
               <tbody>
-                {questions.map((q) => (
-                  <tr key={q.id}>
-                    <Td>
+                {list.items.map((q) => (
+                  <tr key={q.id} className="hover:bg-ink-800/40">
+                    <Td className="max-w-[18rem]">
                       <Link
                         href={`/admin/questions/${q.id}/edit`}
-                        className="font-medium text-slate-100 hover:underline"
+                        className="block truncate font-medium text-slate-100 hover:underline"
                       >
                         {q.title}
                       </Link>
-                      <p className="text-xs text-slate-500">
+                      <p className="truncate font-mono text-xs text-slate-500">
                         /{q.slug} · v{q.version}
-                        {q.active ? '' : ' · inactive'}
                       </p>
                     </Td>
+                    <Td>
+                      <div className="flex flex-col items-start gap-1">
+                        <StatusBadge status={q.status} />
+                        {q.validation === 'FAILED' ? (
+                          <span className="text-[11px] text-bad">validation failed</span>
+                        ) : q.validation === 'NOT_VALIDATED' && q.status !== 'ARCHIVED' ? (
+                          <span className="text-[11px] text-slate-500">not validated</span>
+                        ) : null}
+                      </div>
+                    </Td>
+                    <Td className="text-right font-mono text-slate-300">{formatMarks(q.marks)}</Td>
+                    <Td className={cn('text-right', q.enabledTests === 0 ? 'text-warn' : 'text-slate-300')}>
+                      {q.enabledTests}
+                    </Td>
                     <Td className="text-slate-400">{q.difficulty.toLowerCase()}</Td>
-                    <Td className="text-slate-400">{q._count.tests}</Td>
-                    <Td className="text-slate-400">{q.points}</Td>
                     <Td>
-                      <Badge tone={VALIDATION_TONE[q.validation as keyof typeof VALIDATION_TONE] ?? 'warn'}>
-                        {q.validation.replace('_', ' ').toLowerCase()}
-                      </Badge>
+                      <div className="flex max-w-[14rem] flex-wrap items-center gap-1">
+                        {q.category ? (
+                          <span className="mr-1 text-xs text-slate-300">{q.category}</span>
+                        ) : null}
+                        {q.tags.slice(0, 3).map((t) => (
+                          <Badge key={t} className="px-1.5 text-[11px]">
+                            {t}
+                          </Badge>
+                        ))}
+                        {q.tags.length > 3 ? (
+                          <span className="text-[11px] text-slate-500">+{q.tags.length - 3}</span>
+                        ) : null}
+                        {!q.category && q.tags.length === 0 ? (
+                          <span className="text-slate-600">—</span>
+                        ) : null}
+                      </div>
                     </Td>
-                    <Td className="text-slate-400">
-                      {q._count.examQuestions} exam{q._count.examQuestions === 1 ? '' : 's'} ·{' '}
-                      {q._count.attempts} attempt{q._count.attempts === 1 ? '' : 's'}
+                    <Td className="whitespace-nowrap text-right text-slate-400">
+                      {q.usedInTests > 0 ? `${q.usedInTests} test${q.usedInTests === 1 ? '' : 's'}` : '—'}
                     </Td>
-                    <Td className="text-slate-500">{formatDateTime(q.updatedAt)}</Td>
+                    <Td className="whitespace-nowrap text-xs text-slate-500">
+                      {formatDateTime(q.updatedAt)}
+                    </Td>
                     <Td>
-                      <div className="flex gap-2 text-xs">
-                        <Link
-                          href={`/admin/questions/${q.id}/preview`}
-                          className="text-brand-300 hover:underline"
-                        >
-                          Preview
-                        </Link>
+                      <div className="flex justify-end gap-3 whitespace-nowrap text-xs">
                         <Link
                           href={`/admin/questions/${q.id}/edit`}
                           className="text-brand-300 hover:underline"
                         >
                           Edit
+                        </Link>
+                        <Link
+                          href={`/admin/questions/${q.id}/preview`}
+                          className="text-brand-300 hover:underline"
+                        >
+                          Preview
                         </Link>
                       </div>
                     </Td>
@@ -106,8 +254,56 @@ export default async function QuestionsPage() {
               </tbody>
             </Table>
           )}
-        </CardBody>
+        </div>
+        {list.total > 0 ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-700 px-4 py-3 text-xs text-slate-400">
+            <span>
+              {list.items.length > 0 ? `Showing ${first}–${last} of ${list.total}` : `${list.total} in total`}
+            </span>
+            <div className="flex items-center gap-2">
+              <PageLink
+                href={questionListHref({ ...linkFilters, page: filters.page - 1 })}
+                disabled={filters.page <= 1}
+              >
+                Previous
+              </PageLink>
+              <span>
+                Page {Math.min(filters.page, totalPages)} of {totalPages}
+              </span>
+              <PageLink
+                href={questionListHref({ ...linkFilters, page: filters.page + 1 })}
+                disabled={filters.page >= totalPages}
+              >
+                Next
+              </PageLink>
+            </div>
+          </div>
+        ) : null}
       </Card>
     </div>
+  );
+}
+
+function PageLink({
+  href,
+  disabled,
+  children,
+}: {
+  href: string;
+  disabled: boolean;
+  children: React.ReactNode;
+}) {
+  const className = 'rounded-md px-3 py-1.5 ring-1 ring-inset ring-ink-600';
+  if (disabled) {
+    return (
+      <span aria-disabled="true" className={cn(className, 'cursor-not-allowed opacity-40')}>
+        {children}
+      </span>
+    );
+  }
+  return (
+    <Link href={href} className={cn(className, 'text-slate-200 hover:bg-ink-800')}>
+      {children}
+    </Link>
   );
 }

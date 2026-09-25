@@ -1,13 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { toStudentOutcome, type ExecutionOutcome } from '@/lib/outcome';
+import { MAX_STUDENT_MESSAGE, toStudentOutcome, type ExecutionOutcome } from '@/lib/outcome';
 
 /**
- * Guards the single most security-relevant projection in the product: what a
- * student's browser is allowed to learn about the hidden test suite.
+ * What a student's browser learns about a run. Every test and its failure
+ * message are visible; runner-internal data (errors, logs, anything else a
+ * row happens to carry) never is.
  */
 const outcome: ExecutionOutcome = {
   runId: 'run_1',
   status: 'COMPLETED',
+  questionStatus: 'PARTIAL',
   score: 10,
   maxScore: 30,
   percentage: 33.3,
@@ -15,18 +17,18 @@ const outcome: ExecutionOutcome = {
   failedCount: 2,
   totalCount: 3,
   durationMs: 1234,
+  error: 'Error: page.goto: net::ERR_ABORTED at /app/runner/dist/executor.js:227',
   results: [
-    { testName: 'visible pass', passed: true, points: 10, pointsAwarded: 10, durationMs: 5, hidden: false },
+    { testName: 'button exists', passed: true, points: 10, pointsAwarded: 10, durationMs: 5 },
     {
-      testName: 'hidden fail',
+      testName: 'gap is 25px',
       passed: false,
       points: 10,
       pointsAwarded: 0,
       durationMs: 7,
-      hidden: true,
-      message: 'Expected .card gap to be 25px but it was 10px',
+      message: 'Expected ".card" to use a 25px gap. Found: 10px.',
     },
-    { testName: 'silent fail', passed: false, points: 10, pointsAwarded: 0, durationMs: 9, hidden: true },
+    { testName: 'silent fail', passed: false, points: 10, pointsAwarded: 0, durationMs: 9 },
   ],
 };
 
@@ -40,23 +42,51 @@ describe('toStudentOutcome', () => {
     expect(projected.failedCount).toBe(2);
   });
 
+  it('shows every test by name', () => {
+    expect(projected.results.map((r) => r.testName)).toEqual(['button exists', 'gap is 25px', 'silent fail']);
+  });
+
   it('never attaches a message to a passing test', () => {
     expect(projected.results[0]?.message).toBeUndefined();
+  });
+
+  it('shows the failure message with expected and actual values', () => {
+    expect(projected.results[1]?.message).toBe('Expected ".card" to use a 25px gap. Found: 10px.');
   });
 
   it('always gives a failing test something actionable to read', () => {
     expect(projected.results[2]?.message).toBe('This test did not pass.');
   });
 
-  it('does not expose internal spec fields', () => {
-    const serialised = JSON.stringify(projected);
-    expect(serialised).not.toContain('testCode');
-    expect(serialised).not.toContain('assertions');
-    expect(serialised).not.toContain('selector');
+  it('never exposes runner-internal errors, paths or unknown fields', () => {
+    const leaky = {
+      ...outcome,
+      results: outcome.results.map((r) => ({ ...r, stack: 'at executor.ts:1', env: 'RUNNER_SECRET=x' })),
+    } as ExecutionOutcome;
+    const serialised = JSON.stringify(toStudentOutcome(leaky));
+    expect(serialised).not.toContain('ERR_ABORTED');
+    expect(serialised).not.toContain('/app/runner');
+    expect(serialised).not.toContain('executor');
+    expect(serialised).not.toContain('RUNNER_SECRET');
+    expect(Object.keys(toStudentOutcome(leaky).results[0] ?? {}).sort()).toEqual(
+      ['actual', 'durationMs', 'expected', 'message', 'passed', 'points', 'pointsAwarded', 'testName'].sort(),
+    );
   });
 
-  it('reports the number of tests so a student can see the suite size', () => {
-    expect(projected.totalCount).toBe(3);
-    expect(projected.results).toHaveLength(3);
+  it('caps an oversized failure message', () => {
+    const long = toStudentOutcome({
+      ...outcome,
+      results: [
+        {
+          testName: 't',
+          passed: false,
+          points: 1,
+          pointsAwarded: 0,
+          durationMs: 1,
+          message: 'x'.repeat(5000),
+        },
+      ],
+    });
+    expect(long.results[0]?.message).toHaveLength(MAX_STUDENT_MESSAGE);
   });
 });

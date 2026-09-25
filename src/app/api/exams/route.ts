@@ -1,26 +1,21 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireAdmin, requireUser } from '@/lib/authz';
+import { requireAdmin, requireAuth } from '@/lib/authz';
 import { created, handler, ok, readJson } from '@/lib/http';
-import { examCreateInput, parseOrThrow } from '@/lib/validation';
-import { createExam, listStudentExams } from '@/server/services/exams';
+import { examCreateInput, examListInput, parseOrThrow } from '@/lib/validation';
+import { createExam, listExamsForAdmin, listStudentExams } from '@/server/services/exams';
 import { recordAudit } from '@/server/services/audit';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Admins list every exam; students list only the exams assigned to them.
- * The role is read from the server session, never from the request.
+ * Admins list every test (filterable by phase); students list the tests open
+ * to them. The role is read from the server session, never from the request.
  */
-export const GET = handler(async (): Promise<NextResponse> => {
-  const user = await requireUser();
+export const GET = handler(async (req: Request): Promise<NextResponse> => {
+  const user = await requireAuth();
   if (user.role !== 'ADMIN') return ok({ items: await listStudentExams(user.id) });
-
-  const items = await prisma.exam.findMany({
-    orderBy: { createdAt: 'desc' },
-    include: { _count: { select: { questions: true, assignments: true } } },
-  });
-  return ok({ items });
+  const filter = parseOrThrow(examListInput, Object.fromEntries(new URL(req.url).searchParams));
+  return ok(await listExamsForAdmin(filter));
 });
 
 export const POST = handler(async (req: Request): Promise<NextResponse> => {
@@ -32,7 +27,7 @@ export const POST = handler(async (req: Request): Promise<NextResponse> => {
     action: 'exam.created',
     entity: 'Exam',
     entityId: exam.id,
-    metadata: { title: exam.title },
+    metadata: { title: exam.title, questions: body.questions.length, accessMode: exam.accessMode },
   });
   return created(exam);
 });

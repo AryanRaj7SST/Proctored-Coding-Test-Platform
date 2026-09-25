@@ -9,7 +9,8 @@ export const dynamic = 'force-dynamic';
 export const maxDuration = 60;
 
 /**
- * Bulk CSV import: `email,role,batch`.
+ * Bulk roster import: `email,batch` by header name (legacy `email,role,batch`
+ * still accepted; the roster never grants a role).
  * Accepts either a raw text/csv body or a multipart upload from the browser.
  */
 export const POST = handler(async (req: Request): Promise<NextResponse> => {

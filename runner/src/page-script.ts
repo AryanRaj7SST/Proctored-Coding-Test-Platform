@@ -254,6 +254,48 @@ export const EVALUATOR_SOURCE = String.raw`
         else result.passed = Math.abs(rowGap - a.equals) <= tolg && Math.abs(colGap - a.equals) <= tolg;
         break;
       }
+      case 'hasClass':
+      case 'notHasClass': {
+        if (!el) { result.actual = 'missing'; break; }
+        var has = el.classList.contains(a.className);
+        result.actual = el.className ? 'classes: ' + String(el.className).trim() : 'no classes';
+        result.passed = a.type === 'hasClass' ? has : !has;
+        break;
+      }
+      case 'value': {
+        if (!el) { result.actual = 'missing'; break; }
+        var val = 'value' in el ? String(el.value) : '';
+        result.actual = val === '' ? 'empty' : val;
+        if (typeof a.equals === 'string') result.passed = val.trim() === a.equals.trim();
+        else if (typeof a.contains === 'string') result.passed = val.indexOf(a.contains) !== -1;
+        break;
+      }
+      case 'checked': {
+        if (!el) { result.actual = 'missing'; break; }
+        var isChecked = Boolean(el.checked);
+        result.actual = isChecked ? 'checked' : 'unchecked';
+        result.passed = isChecked === a.equals;
+        break;
+      }
+      case 'validity': {
+        if (!el) { result.actual = 'missing'; break; }
+        if (typeof el.checkValidity !== 'function') { result.actual = 'not a form control'; break; }
+        var valid = el.checkValidity();
+        result.actual = valid ? 'valid' : 'invalid' + (el.validationMessage ? ': ' + el.validationMessage : '');
+        result.passed = valid === a.valid;
+        break;
+      }
+      case 'js': {
+        // An admin-authored expression, run in the page like the student's own code.
+        var value = (new Function('"use strict"; return (' + a.expression + ');'))();
+        var shown;
+        try { shown = typeof value === 'string' ? value : JSON.stringify(value); } catch (e2) { shown = String(value); }
+        result.actual = shown === undefined ? String(value) : String(shown).slice(0, 200);
+        if (a.equals === undefined) result.passed = Boolean(value);
+        else if (typeof a.equals === 'string') result.passed = String(value).trim() === a.equals.trim();
+        else result.passed = value === a.equals;
+        break;
+      }
       case 'boxesPerRow': {
         var rows2 = rowsOf(list);
         var perRow2 = rows2.length ? rows2[0].items.length : 0;

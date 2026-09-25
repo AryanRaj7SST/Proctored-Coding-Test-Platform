@@ -20,7 +20,20 @@ export default defineConfig({
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        // Full Chromium (the headless shell has no camera support) with a FAKE
+        // camera: tests never touch the machine's real one. Camera permission
+        // is granted by default; tests that need a denial make their own context.
+        channel: 'chromium',
+        launchOptions: { args: ['--use-fake-device-for-media-stream'] },
+        permissions: ['camera'],
+      },
+    },
+  ],
   webServer: {
     command: 'npm run start',
     url: 'http://localhost:3000/login',

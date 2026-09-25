@@ -1,12 +1,16 @@
 import Link from 'next/link';
+import { marksToNumber } from '@/server/grading/marks';
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
 import { eventTimeline } from '@/server/services/proctoring';
+import { eventLabel } from '@/lib/proctor';
 import { Badge, Card, CardBody, CardHeader, StatCard, Table, Td, Th } from '@/components/ui';
 import { formatDateTime, formatDuration, percentage, statusTone } from '@/lib/utils';
 import { AttemptCodeViewer } from './AttemptCodeViewer';
-import { ManualGradingCard } from './ManualGradingCard';
+import { FeedbackCard } from './FeedbackCard';
+import { feedbackOf } from '@/server/services/attempt-review';
+import { RegradeButton } from '@/components/admin/RegradeButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,27 +31,18 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
   if (!attempt) notFound();
 
   const [session, timeline] = await Promise.all([
-    prisma.examSession.findUnique({
-      where: { userId_examId: { userId: attempt.userId, examId: attempt.examId } },
-    }),
-    eventTimeline(attempt.userId, attempt.examId, 100),
+    prisma.examSession.findUnique({ where: { id: attempt.sessionId } }),
+    eventTimeline(attempt.userId, attempt.examId, { sessionId: attempt.sessionId, limit: 100 }),
   ]);
+  const score = marksToNumber(attempt.score);
+  const maxScore = marksToNumber(attempt.maxScore);
 
   const snapshot =
     attempt.snapshot && typeof attempt.snapshot === 'object'
       ? (attempt.snapshot as Record<string, unknown>)
       : {};
 
-  const manualReview =
-    snapshot.manualReview && typeof snapshot.manualReview === 'object'
-      ? (snapshot.manualReview as {
-          feedback?: string;
-          reviewedAt?: string;
-          reviewerName?: string;
-          reviewerEmail?: string;
-          previousScore?: number;
-        })
-      : null;
+  const review = feedbackOf(attempt);
 
   const starter = {
     html: (snapshot.starterHtml as string) ?? attempt.question.starterHtml,
@@ -75,11 +70,6 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-semibold text-slate-50">{attempt.question.title}</h1>
-            {manualReview ? (
-              <Badge tone="info" className="text-xs">
-                Manually Graded
-              </Badge>
-            ) : null}
           </div>
           <p className="mt-1 text-sm text-slate-400">
             <strong className="text-slate-200">{attempt.user.name ?? attempt.user.email}</strong>
@@ -96,11 +86,18 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
       </div>
 
       <div className="grid gap-3 sm:grid-cols-4">
-        <StatCard
-          label="Score"
-          value={`${attempt.score}/${attempt.maxScore}`}
-          hint={`${percentage(attempt.score, attempt.maxScore)}% ${manualReview ? '(adjusted)' : ''}`}
-        />
+        {attempt.status !== 'IN_PROGRESS' && !attempt.gradedAt ? (
+          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+            <p className="text-xs uppercase tracking-wide text-amber-200">Score</p>
+            <p className="mt-1 text-sm font-semibold text-amber-100">Grading pending</p>
+            <p className="mt-1 text-xs text-amber-200/80">The runner failed; code is saved.</p>
+            <div className="mt-2">
+              <RegradeButton attemptId={attempt.id} />
+            </div>
+          </div>
+        ) : (
+          <StatCard label="Score" value={`${score}/${maxScore}`} hint={`${percentage(score, maxScore)}%`} />
+        )}
         <StatCard
           label="Tests passed"
           value={`${attempt.testResults.filter((r) => r.passed).length}/${attempt.testResults.length}`}
@@ -113,21 +110,6 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
         />
       </div>
 
-      {manualReview?.feedback ? (
-        <Card className="bg-brand-950/20 border-brand-500/40">
-          <CardBody className="space-y-1">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold text-brand-300">Instructor Review Feedback</span>
-              <span className="text-xs text-slate-400">
-                {manualReview.reviewedAt ? formatDateTime(manualReview.reviewedAt) : ''}
-                {manualReview.reviewerName ? ` by ${manualReview.reviewerName}` : ''}
-              </span>
-            </div>
-            <p className="whitespace-pre-wrap text-sm text-slate-200">{manualReview.feedback}</p>
-          </CardBody>
-        </Card>
-      ) : null}
-
       <div className="grid gap-4 lg:grid-cols-2">
         <AttemptCodeViewer
           html={attempt.html}
@@ -138,22 +120,12 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
         />
 
         <div className="space-y-4">
-          <ManualGradingCard
+          <FeedbackCard
             attemptId={attempt.id}
-            currentScore={attempt.score}
-            maxScore={attempt.maxScore}
-            initialFeedback={manualReview?.feedback ?? ''}
-            reviewedAt={manualReview?.reviewedAt}
-            reviewerName={manualReview?.reviewerName}
-            originalScore={manualReview?.previousScore}
-            testResults={attempt.testResults.map((r) => ({
-              id: r.id,
-              testName: r.testName,
-              passed: r.passed,
-              points: r.points,
-              pointsAwarded: r.pointsAwarded,
-              message: r.message,
-            }))}
+            submitted={attempt.status !== 'IN_PROGRESS'}
+            initialFeedback={review?.feedback ?? ''}
+            reviewedAt={review?.reviewedAt}
+            reviewerName={review?.reviewerName}
           />
 
           <Card>
@@ -178,7 +150,7 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
                         <Badge tone={r.passed ? 'ok' : 'bad'}>{r.passed ? 'passed' : 'failed'}</Badge>
                       </Td>
                       <Td className="font-mono text-xs text-slate-300">
-                        {r.pointsAwarded}/{r.points}
+                        {marksToNumber(r.pointsAwarded)}/{marksToNumber(r.points)}
                       </Td>
                     </tr>
                   ))}
@@ -232,9 +204,7 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
               <ul className="divide-y divide-ink-800">
                 {timeline.map((e) => (
                   <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs">
-                    <Badge tone={e.violation ? 'bad' : 'neutral'}>
-                      {e.type.replace(/_/g, ' ').toLowerCase()}
-                    </Badge>
+                    <Badge tone={e.violation ? 'bad' : 'neutral'}>{eventLabel(e.type)}</Badge>
                     {e.durationMs ? (
                       <span className="text-slate-500">away {formatDuration(e.durationMs)}</span>
                     ) : null}

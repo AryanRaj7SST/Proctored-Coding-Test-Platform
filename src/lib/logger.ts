@@ -20,7 +20,7 @@ const SECRET_KEYS = [
   'js',
 ];
 
-/** Strip anything that could carry secrets, student code, or hidden test bodies. */
+/** Strip anything that could carry secrets, student code, or test bodies. */
 export function sanitize(value: unknown, depth = 0): unknown {
   if (depth > 4) return '[truncated]';
   if (value === null || value === undefined) return value;

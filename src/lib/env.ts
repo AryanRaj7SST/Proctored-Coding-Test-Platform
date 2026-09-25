@@ -1,13 +1,16 @@
-/** Centralised, validated environment access (server-side only). */
+/**
+ * Centralised, validated environment access. SERVER-SIDE ONLY: nothing here
+ * may be imported by a client component (secrets would ship to the browser).
+ *
+ * Values are read once. Missing required values do not throw at import time
+ * (`next build` evaluates modules without a full environment); instead
+ * `assertServerEnv()` runs at server start (src/instrumentation.ts) and
+ * `requireEnv()` guards each use, both failing with a clear message.
+ */
 
-function required(name: string, fallback?: string): string {
-  const value = process.env[name] ?? fallback;
-  if (value === undefined || value === '') {
-    // Do not throw at import time during `next build`, which evaluates modules
-    // without a full environment; throw when the value is actually used.
-    return '';
-  }
-  return value;
+function str(name: string, fallback = ''): string {
+  const value = process.env[name];
+  return value === undefined || value === '' ? fallback : value;
 }
 
 function int(name: string, fallback: number): number {
@@ -16,14 +19,22 @@ function int(name: string, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? Math.floor(n) : fallback;
 }
 
+const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const;
+type LogLevel = (typeof LOG_LEVELS)[number];
+
 export const env = {
-  databaseUrl: required('DATABASE_URL'),
-  authSecret: required('AUTH_SECRET'),
-  googleId: required('AUTH_GOOGLE_ID'),
-  googleSecret: required('AUTH_GOOGLE_SECRET'),
-  runnerUrl: required('RUNNER_URL', 'http://127.0.0.1:4000'),
-  runnerSecret: required('RUNNER_SECRET'),
+  databaseUrl: str('DATABASE_URL'),
+  authSecret: str('AUTH_SECRET'),
+  googleId: str('AUTH_GOOGLE_ID'),
+  googleSecret: str('AUTH_GOOGLE_SECRET'),
+  authTrustHost: str('AUTH_TRUST_HOST') === 'true',
+  runnerUrl: str('RUNNER_URL', 'http://127.0.0.1:4000'),
+  /** False when RUNNER_URL was left unset and the local default above is in use. */
+  runnerUrlConfigured: str('RUNNER_URL') !== '',
+  runnerSecret: str('RUNNER_SECRET'),
   runnerTimeoutMs: int('RUNNER_TIMEOUT_MS', 30_000),
+  /** Must match the runner's TEST_TIMEOUT_MS: the per-test allowance added to the wait. */
+  runnerTestTimeoutMs: int('RUNNER_TEST_TIMEOUT_MS', 6_000),
   maxCodeBytes: int('MAX_CODE_BYTES', 200_000),
   runRateLimitPerMin: int('RUN_RATE_LIMIT_PER_MIN', 12),
   submitRateLimitPerMin: int('SUBMIT_RATE_LIMIT_PER_MIN', 6),
@@ -31,15 +42,79 @@ export const env = {
   heartbeatIntervalSeconds: int('HEARTBEAT_INTERVAL_SECONDS', 12),
   sessionStaleSeconds: int('SESSION_STALE_SECONDS', 45),
   testLogRetentionDays: int('TEST_LOG_RETENTION_DAYS', 90),
-  logLevel: (process.env.LOG_LEVEL ?? 'info') as 'debug' | 'info' | 'warn' | 'error',
+  /** Bearer token Vercel Cron sends to /api/cron/maintenance; unset disables the endpoint. */
+  cronSecret: str('CRON_SECRET'),
+  logLevel: (LOG_LEVELS as readonly string[]).includes(str('LOG_LEVEL'))
+    ? (str('LOG_LEVEL') as LogLevel)
+    : 'info',
   isProduction: process.env.NODE_ENV === 'production',
 } as const;
 
+type StringKey = { [K in keyof typeof env]: (typeof env)[K] extends string ? K : never }[keyof typeof env];
+
+/** Settings the server cannot work without, with the variable that provides each. */
+const REQUIRED: Partial<Record<StringKey, string>> = {
+  databaseUrl: 'DATABASE_URL',
+  authSecret: 'AUTH_SECRET',
+  googleId: 'AUTH_GOOGLE_ID',
+  googleSecret: 'AUTH_GOOGLE_SECRET',
+  runnerSecret: 'RUNNER_SECRET',
+};
+
+/** Hosts reachable only inside a private network, where plain http to the runner is acceptable. */
+export function isPrivateHost(hostname: string): boolean {
+  const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
+  if (h === 'localhost' || h === '::1' || /^127\./.test(h)) return true;
+  if (/^10\./.test(h) || /^192\.168\./.test(h) || /^172\.(1[6-9]|2\d|3[01])\./.test(h)) return true;
+  if (h.endsWith('.internal') || h.endsWith('.local')) return true;
+  return !h.includes('.') && !h.includes(':'); // a bare service name, e.g. "runner" on a Docker network
+}
+
+/**
+ * Names of required variables that are missing, too weak, or unsafe. The
+ * stricter rules apply in production only, so local development and tests
+ * keep working with short throwaway values.
+ */
+export function missingServerEnv(source: typeof env = env): string[] {
+  const missing = Object.entries(REQUIRED)
+    .filter(([key]) => !source[key as StringKey])
+    .map(([, name]) => name as string);
+  if (source.runnerSecret && source.runnerSecret.length < 16) missing.push('RUNNER_SECRET (min 16 chars)');
+  if (!source.isProduction) return missing;
+
+  if (source.authSecret && source.authSecret.length < 32)
+    missing.push('AUTH_SECRET (min 32 chars in production)');
+  if (source.runnerSecret && source.runnerSecret.length < 32) {
+    missing.push('RUNNER_SECRET (min 32 chars in production)');
+  }
+  if (source.cronSecret && source.cronSecret.length < 16) missing.push('CRON_SECRET (min 16 chars)');
+  if (!source.runnerUrlConfigured) missing.push('RUNNER_URL (must be set in production)');
+  // Student code and test specs travel to the runner: over the internet that must be https.
+  let runner: URL | null = null;
+  try {
+    runner = new URL(source.runnerUrl);
+  } catch {
+    missing.push('RUNNER_URL (not a valid URL)');
+  }
+  if (runner && runner.protocol !== 'https:' && !isPrivateHost(runner.hostname)) {
+    missing.push('RUNNER_URL (must be https:// unless the runner is on a private network)');
+  }
+  return missing;
+}
+
+/** Fail fast, with the exact variables to fix, when the server starts misconfigured. */
+export function assertServerEnv(): void {
+  const missing = missingServerEnv();
+  if (missing.length > 0) {
+    throw new Error(`Missing required environment variables: ${missing.join(', ')}. See .env.example.`);
+  }
+}
+
 /** Throw a clear error when a hard requirement is missing at request time. */
-export function requireEnv(name: keyof typeof env): string {
-  const value = env[name];
-  if (typeof value !== 'string' || value === '') {
-    throw new Error(`Missing required environment variable for "${String(name)}". See .env.example.`);
+export function requireEnv(key: StringKey): string {
+  const value = env[key];
+  if (!value) {
+    throw new Error(`Missing required environment variable for "${key}". See .env.example.`);
   }
   return value;
 }

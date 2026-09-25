@@ -9,7 +9,8 @@ import {
   validateRunnerSpec,
   validateTestSuiteShape,
   describeAssertion,
-  totalPoints,
+  describeStep,
+  expectedValue,
   SPEC_LIMITS,
   ASSERTION_TYPES,
 } from '@shared/test-spec';
@@ -185,9 +186,9 @@ describe('validateRunnerSpec', () => {
 });
 
 describe('validateTestSuiteShape', () => {
-  const t = (name: string, points = 10) => ({
+  const t = (name: string, enabled = true) => ({
     name,
-    points,
+    enabled,
     testType: 'DECLARATIVE',
     testCode: JSON.stringify({ assertions: [{ type: 'exists', selector: '#box' }] }),
   });
@@ -202,12 +203,17 @@ describe('validateTestSuiteShape', () => {
     expect(result.errors.join(' ')).toMatch(/duplicate/i);
   });
 
-  it('rejects a suite worth zero points', () => {
-    expect(validateTestSuiteShape([t('one', 0)]).ok).toBe(false);
+  it('rejects a suite with no enabled test case', () => {
+    expect(validateTestSuiteShape([t('one', false), t('two', false)]).ok).toBe(false);
+    expect(validateTestSuiteShape([t('one', false), t('two')]).ok).toBe(true);
+  });
+
+  it('rejects an empty suite', () => {
+    expect(validateTestSuiteShape([]).ok).toBe(false);
   });
 
   it('reports the offending test by name', () => {
-    const bad = { name: 'broken', points: 5, testType: 'DECLARATIVE', testCode: '{oops' };
+    const bad = { name: 'broken', testType: 'DECLARATIVE', testCode: '{oops' };
     expect(validateTestSuiteShape([bad]).errors.join(' ')).toContain('broken');
   });
 });
@@ -231,12 +237,50 @@ describe('describeAssertion', () => {
   });
 });
 
-describe('totalPoints', () => {
-  it('sums the suite', () => {
-    expect(totalPoints([{ points: 10 }, { points: 30 }])).toBe(40);
+describe('web-development checks: classes, values, forms, JavaScript behaviour', () => {
+  const body = (assertions: unknown[], steps: unknown[] = []) =>
+    validateTestCaseBody(JSON.stringify({ steps, assertions }));
+
+  it('accepts class, value, checked, validity and js checks', () => {
+    const result = body(
+      [
+        { type: 'hasClass', selector: '#box', className: 'active' },
+        { type: 'notHasClass', selector: '#box', className: 'hidden' },
+        { type: 'value', selector: '#name', equals: 'Ada' },
+        { type: 'checked', selector: '#agree', equals: true },
+        { type: 'validity', selector: '#signup', valid: false },
+        { type: 'js', expression: 'window.add(2, 3)', equals: 5 },
+      ],
+      [
+        { action: 'check', selector: '#agree' },
+        { action: 'select', selector: '#country', value: 'IN' },
+        { action: 'uncheck', selector: '#news' },
+      ],
+    );
+    expect(result.errors).toEqual([]);
+    expect(result.ok).toBe(true);
   });
 
-  it('is zero for an empty suite', () => {
-    expect(totalPoints([])).toBe(0);
+  it('rejects malformed checks with a readable reason', () => {
+    expect(body([{ type: 'hasClass', selector: '#box', className: 'two words' }]).ok).toBe(false);
+    expect(body([{ type: 'value', selector: '#name' }]).ok).toBe(false);
+    expect(body([{ type: 'js', expression: '' }]).ok).toBe(false);
+    expect(body([{ type: 'js', expression: 'x'.repeat(SPEC_LIMITS.maxExpressionLength + 1) }]).ok).toBe(
+      false,
+    );
+    expect(body([{ type: 'exists', selector: '#a' }], [{ action: 'select', selector: '#c' }]).ok).toBe(true);
+  });
+
+  it('describes every check and step for students, and states what it expects', () => {
+    expect(describeAssertion({ type: 'hasClass', selector: '#box', className: 'on' })).toMatch(/class "on"/);
+    expect(describeAssertion({ type: 'js', expression: 'add(2,3)', equals: 5 })).toContain('add(2,3)');
+    expect(expectedValue({ type: 'checked', selector: '#a', equals: false })).toBe('unchecked');
+    expect(expectedValue({ type: 'validity', selector: '#f', valid: true })).toBe('valid');
+    expect(expectedValue({ type: 'text', selector: '#t', equals: 'Hello' })).toBe('Hello');
+    expect(expectedValue({ type: 'size', selector: '#s', dimension: 'width', op: 'gte', value: 200 })).toBe(
+      '>= 200px',
+    );
+    expect(describeStep({ action: 'select', selector: '#c', value: 'IN' })).toBe('Choose "IN" in "#c".');
+    expect(describeStep({ action: 'check', selector: '#a' })).toBe('Tick "#a".');
   });
 });

@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server';
  * This middleware runs on the Edge runtime, where Prisma is unavailable, so it
  * deliberately does no database work and makes no authorisation decision beyond
  * "is there a session cookie at all". The real boundary is
- * `requireUser()` / `requireAdmin()`, which every protected page, layout and API
+ * `requireAuth()` / `requireAdmin()`, which every protected page, layout and API
  * route calls independently (see src/lib/authz.ts and docs/security.md).
  *
  * Never weaken a server-side check because this file already redirected.

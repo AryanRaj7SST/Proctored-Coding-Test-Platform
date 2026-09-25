@@ -2,20 +2,23 @@
 
 import * as React from 'react';
 import { cn } from '@/lib/utils';
+import type { ExpectedTest } from './TestResults';
 
 export interface StudentQuestion {
   id: string;
   title: string;
   description: string;
   instructions: string | null;
+  constraints?: string | null;
+  expectedBehavior?: string | null;
   mediaUrl: string | null;
   difficulty: string;
   points: number;
   starterHtml: string;
   starterCss: string;
   starterJs: string;
-  publicTests: { id: string; name: string; description: string | null; points: number }[];
-  hiddenTestCount: number;
+  /** Every test case, as a readable definition (see toStudentQuestion). */
+  tests: ExpectedTest[];
 }
 
 /**
@@ -296,6 +299,30 @@ export function QuestionPanel({
             <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-600">Requirements</p>
             <RichText text={question.instructions} />
           </div>
+        ) : null}
+
+        {question.expectedBehavior ? (
+          <div className="rounded-md border border-slate-200 bg-slate-50 p-3.5 text-xs leading-relaxed text-slate-700">
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-slate-600">
+              Expected behaviour
+            </p>
+            <RichText text={question.expectedBehavior} />
+          </div>
+        ) : null}
+
+        {question.constraints ? (
+          <div className="rounded-md border border-amber-200 bg-amber-50 p-3.5 text-xs leading-relaxed text-slate-700">
+            <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-amber-700">Constraints</p>
+            <RichText text={question.constraints} />
+          </div>
+        ) : null}
+
+        {question.tests.length > 0 ? (
+          <p className="text-[11px] text-slate-500">
+            {question.points} marks · {question.tests.length} test case
+            {question.tests.length === 1 ? '' : 's'}, each worth an equal share. The Test Cases tab shows
+            exactly what each one checks.
+          </p>
         ) : null}
 
         {question.mediaUrl ? (

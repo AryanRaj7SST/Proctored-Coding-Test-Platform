@@ -32,8 +32,7 @@ async function upsertQuestion(q: SeedQuestion): Promise<string> {
     referenceCss: q.referenceCss,
     referenceJs: q.referenceJs,
     difficulty: 'EASY' as const,
-    points,
-    active: true,
+    marks: points > 0 ? points : 10,
     tags: ['html', 'css', 'javascript'],
   };
 
@@ -50,9 +49,7 @@ async function upsertQuestion(q: SeedQuestion): Promise<string> {
         description: t.description,
         testType: 'DECLARATIVE',
         testCode: spec(t.body),
-        points: t.points,
         order: t.order,
-        hidden: t.hidden,
       },
     });
   }
@@ -60,26 +57,40 @@ async function upsertQuestion(q: SeedQuestion): Promise<string> {
   return question.id;
 }
 
+/** Demo data (fake students, a sample test) must never land in a real database by accident. */
+function assertDemoTarget(): void {
+  let host = '';
+  try {
+    host = new URL(process.env.DATABASE_URL ?? '').hostname;
+  } catch {
+    /* reported below */
+  }
+  const local = ['localhost', '127.0.0.1', '::1', '[::1]'].includes(host);
+  if (!local && process.env.ALLOW_REMOTE_DEMO_SEED !== '1') {
+    throw new Error(
+      `Refusing to write demo data to "${host || 'an unknown database'}". The demo seed is for local databases; ` +
+        'for administrators use `npm run db:seed-admins`. Set ALLOW_REMOTE_DEMO_SEED=1 to override.',
+    );
+  }
+}
+
 async function main(): Promise<void> {
+  assertDemoTarget();
   console.log('Seeding development data...');
 
-  // 1. Allowlist -------------------------------------------------------
-  await prisma.allowedEmail.upsert({
-    where: { email: ADMIN_EMAIL },
-    create: { email: ADMIN_EMAIL, role: 'ADMIN', batch: 'STAFF', active: true, note: 'Seeded administrator' },
-    update: { role: 'ADMIN', active: true },
-  });
+  // 1. Student roster (batches only -- the roster never controls sign-in or roles)
   for (const email of STUDENT_EMAILS) {
     await prisma.allowedEmail.upsert({
       where: { email },
-      create: { email, role: 'STUDENT', batch: BATCH, active: true, note: 'Seeded student' },
-      update: { role: 'STUDENT', batch: BATCH, active: true },
+      create: { email, batch: BATCH, note: 'Seeded student' },
+      update: { batch: BATCH },
     });
   }
-  console.log(`  allowlist: 1 admin + ${STUDENT_EMAILS.length} students`);
+  console.log(`  roster: ${STUDENT_EMAILS.length} students`);
 
   // 2. Local user rows so the exam can be assigned before first sign-in.
-  //    (Google sign-in refreshes name/image/role on first login.)
+  //    The administrator exists only as a user row with role ADMIN: signing in
+  //    never grants that role (Google sign-in refreshes name/image only).
   const admin = await prisma.user.upsert({
     where: { email: ADMIN_EMAIL },
     create: { email: ADMIN_EMAIL, name: 'Seed Administrator', role: 'ADMIN', batch: 'STAFF' },
@@ -121,15 +132,23 @@ async function main(): Promise<void> {
       });
 
   await prisma.examQuestion.deleteMany({ where: { examId: exam.id } });
+  const marks = new Map(
+    (
+      await prisma.question.findMany({
+        where: { id: { in: [boxId, gridId] } },
+        select: { id: true, marks: true },
+      })
+    ).map((q) => [q.id, q.marks]),
+  );
   await prisma.examQuestion.createMany({
     data: [
-      { examId: exam.id, questionId: boxId, order: 0 },
-      { examId: exam.id, questionId: gridId, order: 1 },
+      { examId: exam.id, questionId: boxId, order: 0, marks: marks.get(boxId) ?? 10 },
+      { examId: exam.id, questionId: gridId, order: 1, marks: marks.get(gridId) ?? 10 },
     ],
   });
 
   await prisma.examAssignment.createMany({
-    data: students.map((s) => ({ examId: exam.id, userId: s.id })),
+    data: students.map((s) => ({ examId: exam.id, userId: s.id, email: s.email })),
     skipDuplicates: true,
   });
   console.log(`  exam "${exam.title}" with 2 questions, assigned to ${students.length} students`);
@@ -146,7 +165,7 @@ async function main(): Promise<void> {
   console.log('\nSeed complete.');
   console.log(`  Admin login:   ${ADMIN_EMAIL}`);
   console.log(`  Student login: ${STUDENT_EMAILS.join(', ')}`);
-  console.log('\nNext: sign in with Google using an allowlisted address, then open /admin.');
+  console.log('\nNext: sign in with Google as the admin address above, then open /admin.');
   console.log('Questions are seeded as NOT_VALIDATED on purpose -- run "Validate Question"');
   console.log('in the admin UI so the reference solution proves the tests before you assign them.');
 }

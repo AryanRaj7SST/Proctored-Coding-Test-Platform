@@ -1,17 +1,20 @@
 import Link from 'next/link';
+import { marksToNumber } from '@/server/grading/marks';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
 import { Badge, Card, CardBody, CardHeader, EmptyState, Table, Td, Th } from '@/components/ui';
+import { UserAccessControls } from '@/components/admin/UserAccessControls';
 import { formatDateTime, percentage } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * Registered people — anyone who has actually signed in at least once.
- * Invitations that have never been used live on the allowlist page instead.
+ * Registered people — anyone who has signed in with Google at least once.
+ * This is where roles and account access are managed; the roster only holds
+ * batches for people who have not signed in yet.
  */
 export default async function StudentsPage() {
-  await requireAdmin();
+  const admin = await requireAdmin();
 
   const users = await prisma.user.findMany({
     orderBy: [{ role: 'asc' }, { email: 'asc' }],
@@ -35,9 +38,10 @@ export default async function StudentsPage() {
       <div>
         <h1 className="text-xl font-semibold text-slate-50">Students</h1>
         <p className="mt-1 text-sm text-slate-400">
-          People who have signed in. To invite someone new, add their address to the{' '}
+          Everyone who has signed in with Google. New accounts are students; only an administrator can change
+          a role or deactivate an account. To give someone a batch before they sign in, add them to the{' '}
           <Link href="/admin/allowed-emails" className="text-brand-300 hover:underline">
-            allowlist
+            student roster
           </Link>
           .
         </p>
@@ -50,7 +54,7 @@ export default async function StudentsPage() {
             <div className="p-4">
               <EmptyState
                 title="Nobody has signed in yet"
-                description="Accounts are created the first time an allowlisted address signs in with Google."
+                description="An account is created, as a student, the first time someone signs in with Google."
               />
             </div>
           ) : (
@@ -65,14 +69,16 @@ export default async function StudentsPage() {
                   <Th>Overall</Th>
                   <Th>Violations</Th>
                   <Th>Last sign-in</Th>
+                  <Th>Status</Th>
+                  <Th>Access</Th>
                   <Th />
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => {
                   const score = scores.find((s) => s.userId === u.id);
-                  const sum = score?._sum.score ?? 0;
-                  const max = score?._sum.maxScore ?? 0;
+                  const sum = marksToNumber(score?._sum.score ?? 0);
+                  const max = marksToNumber(score?._sum.maxScore ?? 0);
                   const v = violations.find((x) => x.userId === u.id)?._count._all ?? 0;
                   return (
                     <tr key={u.id}>
@@ -93,6 +99,15 @@ export default async function StudentsPage() {
                         <Badge tone={v > 0 ? 'bad' : 'neutral'}>{v}</Badge>
                       </Td>
                       <Td className="text-xs text-slate-500">{formatDateTime(u.lastLogin)}</Td>
+                      <Td>
+                        <Badge tone={u.active ? 'ok' : 'bad'}>{u.active ? 'active' : 'deactivated'}</Badge>
+                      </Td>
+                      <Td>
+                        <UserAccessControls
+                          user={{ id: u.id, email: u.email, role: u.role, active: u.active }}
+                          isSelf={u.id === admin.id}
+                        />
+                      </Td>
                       <Td>
                         {u._count.attempts > 0 ? (
                           <Link

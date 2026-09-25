@@ -1,56 +1,56 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Button, Card, CardBody, CardHeader, Tabs } from '@/components/ui';
+import { useRouter } from 'next/navigation';
+import { Play } from 'lucide-react';
+import { Button, Card, CardBody, CardHeader } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
-import { PreviewFrame } from '@/components/editor/PreviewFrame';
 import { apiPost, ApiError } from '@/lib/api';
-
-interface ValidationRunResult {
-  ok: boolean;
-  passedCount: number;
-  totalCount: number;
-  results: { testName: string; passed: boolean; message?: string }[];
-}
+import { Notice } from '@/components/admin/questions/bits';
+import { RenderedOutput } from '@/components/admin/questions/RenderedOutput';
+import { ValidationResults, isRunnerErrorCode } from '@/components/admin/questions/ValidationResults';
+import type { ValidationRun } from '@/components/admin/questions/types';
 
 type Source = { html: string; css: string; js: string };
 
 /**
- * Render the starter and reference solutions in the same sandbox students get,
- * and re-run validation without leaving the page.
+ * Render the saved starter and reference solutions in the same sandbox
+ * students get, and run "Validate Question" without leaving the page.
  */
 export function QuestionPreviewRunner({
   questionId,
-  hasReference,
+  canValidate,
+  cannotValidateReason,
   starter,
   reference,
 }: {
   questionId: string;
-  hasReference: boolean;
+  canValidate: boolean;
+  cannotValidateReason?: string;
   starter: Source;
   reference: Source;
 }) {
+  const router = useRouter();
   const toast = useToast();
-  const [which, setWhich] = React.useState<'starter' | 'reference'>(hasReference ? 'reference' : 'starter');
-  const [key, setKey] = React.useState(1);
   const [running, setRunning] = React.useState(false);
-  const [result, setResult] = React.useState<ValidationRunResult | null>(null);
+  const [run, setRun] = React.useState<ValidationRun | null>(null);
+  const [runnerNotice, setRunnerNotice] = React.useState<string | null>(null);
 
-  const source = which === 'reference' ? reference : starter;
-
-  const run = async () => {
+  const validate = async () => {
     setRunning(true);
+    setRunnerNotice(null);
     try {
-      const res = await apiPost<ValidationRunResult>(`/api/questions/${questionId}/validate`, {
-        useReference: true,
-      });
-      setResult(res);
+      const result = await apiPost<ValidationRun>(`/api/questions/${questionId}/validate`);
+      setRun(result);
       toast.push(
-        res.ok ? 'Reference solution passes every test.' : 'Validation failed.',
-        res.ok ? 'success' : 'error',
+        result.ok ? 'Validation passed: every enabled test case passes.' : 'Validation failed.',
+        result.ok ? 'success' : 'error',
       );
+      // Status, validation and publish blockers on this page come from the server.
+      router.refresh();
     } catch (err) {
-      toast.push(err instanceof ApiError ? err.message : 'Validation could not run.', 'error');
+      if (err instanceof ApiError && isRunnerErrorCode(err.code)) setRunnerNotice(err.message);
+      else toast.push(err instanceof ApiError ? err.message : 'Validation could not run.', 'error');
     } finally {
       setRunning(false);
     }
@@ -59,56 +59,36 @@ export function QuestionPreviewRunner({
   return (
     <Card>
       <CardHeader
-        title="Rendered output"
-        subtitle="Same sandbox as the student preview"
+        title="Rendered output & validation"
+        subtitle="Same sandbox as the student preview. Validation runs the saved question."
         action={
-          <Button size="sm" onClick={() => void run()} loading={running} disabled={!hasReference}>
-            Re-validate
+          <Button
+            size="sm"
+            onClick={() => void validate()}
+            loading={running}
+            disabled={!canValidate}
+            title={canValidate ? undefined : cannotValidateReason}
+          >
+            {!running ? <Play className="h-3.5 w-3.5" aria-hidden="true" /> : null}
+            Validate Question
           </Button>
         }
       />
-      <CardBody className="space-y-3">
-        <div className="flex items-center justify-between">
-          <Tabs
-            tabs={[
-              { id: 'starter', label: 'Starter' },
-              { id: 'reference', label: 'Reference' },
-            ]}
-            active={which}
-            onChange={(id) => {
-              setWhich(id as 'starter' | 'reference');
-              setKey((k) => k + 1);
-            }}
-          />
-          <button
-            type="button"
-            onClick={() => setKey((k) => k + 1)}
-            className="rounded px-2 py-1 text-xs text-slate-400 hover:bg-ink-800 hover:text-white"
-          >
-            Refresh
-          </button>
-        </div>
-
-        <div className="h-64 overflow-hidden rounded-md bg-white ring-1 ring-ink-700">
-          <PreviewFrame html={source.html} css={source.css} js={source.js} refreshKey={key} />
-        </div>
-
-        {result ? (
-          <div className="space-y-1.5">
-            <Badge tone={result.ok ? 'ok' : 'bad'}>
-              {result.passedCount}/{result.totalCount} passed
-            </Badge>
-            <ul className="space-y-1 text-xs">
-              {result.results.map((r, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className={r.passed ? 'text-ok' : 'text-bad'}>{r.passed ? '✓' : '✕'}</span>
-                  <span className="text-slate-300">{r.testName}</span>
-                  {r.message ? <span className="text-slate-500">— {r.message}</span> : null}
-                </li>
-              ))}
-            </ul>
-          </div>
+      <CardBody className="space-y-4">
+        {!canValidate && cannotValidateReason ? (
+          <p className="text-xs text-slate-400">{cannotValidateReason}</p>
         ) : null}
+        <RenderedOutput starter={starter} reference={reference} />
+        {runnerNotice ? (
+          <Notice tone="warn" title="The test runner is not available right now" role="alert">
+            <p>{runnerNotice}</p>
+            <p>
+              This is an infrastructure problem, not a verdict on the question: its validation state is
+              unchanged.
+            </p>
+          </Notice>
+        ) : null}
+        {run ? <ValidationResults run={run} /> : null}
       </CardBody>
     </Card>
   );

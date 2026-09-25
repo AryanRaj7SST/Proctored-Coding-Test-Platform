@@ -9,18 +9,20 @@ be exposed to the public internet directly (see below).
 
 ### App (`.env`, see `.env.example`)
 
-| Variable                                                                                                                                                                                             | Required       | Notes                                                             |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------------------- |
-| `DATABASE_URL`                                                                                                                                                                                       | yes            | PostgreSQL connection string                                      |
-| `AUTH_SECRET`                                                                                                                                                                                        | yes            | `openssl rand -base64 32`                                         |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`                                                                                                                                                              | yes            | Google Cloud Console → APIs & Services → Credentials              |
-| `AUTH_URL`                                                                                                                                                                                           | production     | Public base URL; needed for the OAuth callback                    |
-| `AUTH_TRUST_HOST`                                                                                                                                                                                    | behind a proxy | `"true"` on Vercel or behind any reverse proxy                    |
-| `RUNNER_URL`                                                                                                                                                                                         | yes            | Where the app reaches the runner                                  |
-| `RUNNER_SECRET`                                                                                                                                                                                      | yes            | `openssl rand -hex 32`. **Must match the runner's copy exactly.** |
-| `RUNNER_TIMEOUT_MS`                                                                                                                                                                                  | no             | App-side budget per run request (default 30000)                   |
-| `MAX_CODE_BYTES`, `RUN_RATE_LIMIT_PER_MIN`, `SUBMIT_RATE_LIMIT_PER_MIN`, `PROCTOR_RATE_LIMIT_PER_MIN`, `HEARTBEAT_INTERVAL_SECONDS`, `SESSION_STALE_SECONDS`, `TEST_LOG_RETENTION_DAYS`, `LOG_LEVEL` | no             | See `.env.example` for defaults                                   |
-| `SEED_ADMIN_EMAIL`, `SEED_STUDENT_EMAILS`, `SEED_BATCH`                                                                                                                                              | dev only       | Used only by `npm run db:seed`                                    |
+| Variable                                                                                                                                                                                             | Required       | Notes                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                                                                                                                                       | yes            | PostgreSQL connection string                                                           |
+| `AUTH_SECRET`                                                                                                                                                                                        | yes            | `openssl rand -base64 32`                                                              |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`                                                                                                                                                              | yes            | Google Cloud Console → APIs & Services → Credentials                                   |
+| `AUTH_URL`                                                                                                                                                                                           | production     | Public base URL; needed for the OAuth callback                                         |
+| `AUTH_TRUST_HOST`                                                                                                                                                                                    | behind a proxy | `"true"` on Vercel or behind any reverse proxy                                         |
+| `RUNNER_URL`                                                                                                                                                                                         | yes            | Where the app reaches the runner                                                       |
+| `RUNNER_SECRET`                                                                                                                                                                                      | yes            | `openssl rand -hex 32`. **Must match the runner's copy exactly.**                      |
+| `RUNNER_TIMEOUT_MS`                                                                                                                                                                                  | no             | App-side budget per run request (default 30000)                                        |
+| `MAX_CODE_BYTES`, `RUN_RATE_LIMIT_PER_MIN`, `SUBMIT_RATE_LIMIT_PER_MIN`, `PROCTOR_RATE_LIMIT_PER_MIN`, `HEARTBEAT_INTERVAL_SECONDS`, `SESSION_STALE_SECONDS`, `TEST_LOG_RETENTION_DAYS`, `LOG_LEVEL` | no             | See `.env.example` for defaults                                                        |
+| `CRON_SECRET`                                                                                                                                                                                        | production     | Bearer token for `/api/cron/maintenance` (Vercel Cron); unset disables it              |
+| `SEED_ADMIN_EMAIL`, `SEED_STUDENT_EMAILS`, `SEED_BATCH`                                                                                                                                              | dev only       | Used only by `npm run db:seed`                                                         |
+| `ADMIN_EMAILS`                                                                                                                                                                                       | no             | Comma-separated list for `npm run db:seed-admins` (defaults to the list in the script) |
 
 ### Runner (`runner/.env`, see `runner/.env.example`)
 
@@ -41,25 +43,30 @@ Neither `.env` should ever be committed; both are already in `.gitignore`.
 2. Authorised redirect URI: `https://<your-domain>/api/auth/callback/google`
    (and `http://localhost:3000/api/auth/callback/google` for local dev).
 3. Copy the client ID/secret into `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`.
-4. Add every mentor/student's exact address to `AllowedEmail` **before** they
-   try to sign in — see `docs/security.md#identity-and-access`. Signing in
-   with an address that isn't allowlisted yet fails with a specific,
-   non-technical message; it does not create an account.
+4. There is no allowlist step: any Google account with a verified email can
+   sign in and becomes a `STUDENT` (see `docs/security.md#identity-and-access`).
+   Grant administrators with `npm run db:seed-admins` (see below); after that,
+   roles can also be changed on the Students page. After any migration, restart
+   long-running app processes so their Prisma client matches the schema (a new
+   Vercel deployment always starts fresh).
 
-## The runner must not be public
+## Protecting the runner
 
 The runner authenticates the app, not the reverse — anyone who can reach
 `RUNNER_URL` and knows `RUNNER_SECRET` can ask it to execute HTML/CSS/JS.
-Put it behind:
+Every request carries an HMAC over `timestamp.body` and stale timestamps are
+rejected, so without the secret a request cannot be forged or replayed later.
+Prefer, in order:
 
 - a private network / VPC the app can reach but the internet cannot, or
 - an allowlist on the runner's ingress limited to the app's outbound IP(s), or
-- at minimum, treat `RUNNER_SECRET` with the same care as a database
-  password and rotate it if it ever leaks.
+- a public **https** URL with a long random `RUNNER_SECRET` (`openssl rand -hex 32`),
+  treated like a database password and rotated if it ever leaks.
 
-Do **not** deploy the runner to a platform that only offers a public URL with
-no network-level restriction unless you've added your own auth layer in
-front of it.
+On Vercel the third option is the practical one: its functions have no fixed
+outbound IPs, so the runner must accept connections from the internet. The
+app refuses to start in production with an `http://` runner URL unless the
+host is private.
 
 ## Suggested topology
 
@@ -78,7 +85,72 @@ a platform without persistent/long-running compute (most serverless function
 platforms, including Vercel's default runtime, are a poor fit for it — the
 app can live there, the runner should not).
 
-## First deploy, step by step
+## Deploying the app on Vercel
+
+1. **Runner first.** Deploy `runner/Dockerfile` to a host with long-running
+   containers (Render, Railway, Fly.io or a VPS) with `RUNNER_SECRET` set and
+   an https URL. Check `https://<runner>/health`.
+2. **Database migrations — from your machine, before the app deploy.** Take a
+   backup, then apply migrations over the **direct** (non-pooler) connection;
+   migrations through Neon's pooler can leave a stuck advisory lock (P1002).
+   Migrations are additive, so the old deployment keeps working meanwhile.
+
+   ```bash
+   pg_dump -Fc -d "$DIRECT_DATABASE_URL" -f backup-$(date +%F).dump
+   DATABASE_URL="$DIRECT_DATABASE_URL" npx prisma migrate deploy
+   ```
+
+   Do not run migrations in the Vercel build.
+
+3. **Vercel project.** Import the repository (framework: Next.js; the default
+   build command runs `npm run build` = `prisma generate && next build`). Set
+   these **Production** environment variables:
+
+   | Variable                                      | Value                                                                           |
+   | --------------------------------------------- | ------------------------------------------------------------------------------- |
+   | `DATABASE_URL`                                | the **pooled** connection string                                                |
+   | `AUTH_SECRET`                                 | `openssl rand -base64 32` (32+ characters)                                      |
+   | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`       | from Google Cloud                                                               |
+   | `AUTH_URL`                                    | `https://<your-domain>`                                                         |
+   | `AUTH_TRUST_HOST`                             | `true`                                                                          |
+   | `RUNNER_URL` / `RUNNER_SECRET`                | the runner's https URL / the same secret as the runner                          |
+   | `RUNNER_TIMEOUT_MS`, `RUNNER_TEST_TIMEOUT_MS` | optional; keep `RUNNER_TEST_TIMEOUT_MS` equal to the runner's `TEST_TIMEOUT_MS` |
+   | `CRON_SECRET`                                 | `openssl rand -hex 32` (enables scheduled maintenance)                          |
+
+   The server refuses to start with a missing or weak value and names the
+   variable in the function logs.
+
+4. **Region.** Project Settings → Functions → set the region closest to the
+   database (a Neon project in `us-east-2` → `cle1`, Cleveland).
+5. **Function duration.** Routes that wait on the runner declare
+   `maxDuration = 300` seconds, which needs Vercel's Fluid compute (the default
+   for new projects) or the Pro plan.
+6. **Scheduled maintenance.** `vercel.json` runs `/api/cron/maintenance` daily
+   (the Hobby-plan limit): it grades sittings abandoned by their students,
+   retries grading stalled by a runner outage, and applies
+   `TEST_LOG_RETENTION_DAYS`. On Pro, run it every 10 minutes
+   (`"schedule": "*/10 * * * *"`). Pages trigger the same sweeps as they load.
+7. **Google OAuth.** Add `https://<your-domain>/api/auth/callback/google` as an
+   authorised redirect URI and `https://<your-domain>` as a JavaScript origin.
+8. **Administrators.** Against the production database:
+
+   ```bash
+   DATABASE_URL="<production url>" npm run db:seed-admins -- --dry-run   # review
+   DATABASE_URL="<production url>" npm run db:seed-admins -- --yes       # apply
+   ```
+
+   The list is in `scripts/seed-admins.ts` (or pass addresses / `ADMIN_EMAILS`).
+   It only ever adds ADMIN; it never demotes anyone.
+
+9. **Smoke test.** `/api/health` returns `ok`; sign in with Google as an
+   administrator (lands on `/admin`) and as a new account (lands on the student
+   dashboard as a STUDENT); run a test with the camera — the camera needs the
+   https origin Vercel provides.
+
+Never run `npm run db:seed` against production: it writes demo data and
+refuses non-local databases unless `ALLOW_REMOTE_DEMO_SEED=1`.
+
+## First deploy on your own host, step by step
 
 ```bash
 # 1. Provision Postgres, get its connection string into DATABASE_URL.
@@ -94,8 +166,8 @@ docker run -d --name runner -p 4000:4000 \
 # 3. Apply the schema:
 npx prisma migrate deploy
 
-# 4. (Optional, first deploy only) seed an admin + worked examples:
-npm run db:seed
+# 4. Grant administrators (see scripts/seed-admins.ts); demo data is local-only:
+npm run db:seed-admins -- --yes
 
 # 5. Build and start the app:
 npm run build
@@ -122,9 +194,9 @@ bash scripts/validate-stack.sh
 
 Nothing in this repository backs up PostgreSQL for you — use your database
 provider's backup feature (point-in-time recovery if available). `Attempt`,
-`TestResult`, and `ProctorEvent` rows are the data that matters most; they
-are never deleted by any code path in this app except an explicit exam
-deletion, which itself refuses to run if the exam has attempts
+graded `TestResult`, and `ProctorEvent` rows are the data that matters most;
+they are never deleted by any code path in this app except an explicit exam
+deletion (the maintenance job removes only practice runs past retention), which itself refuses to run if the exam has attempts
 (`DELETE /api/exams/[id]`, see `src/app/api/exams/[id]/route.ts`) —
 archiving is the intended path for an exam with history.
 
@@ -134,7 +206,10 @@ Two things in this build assume a single app process and would need
 attention before running the app horizontally scaled:
 
 - **Rate limiting** (`src/lib/rate-limit.ts`) is in-memory per instance —
-  each instance would enforce its own limit independently. Swap in a
+  each instance would enforce its own limit independently. On Vercel this
+  already applies (each function instance counts separately); the runner's
+  bounded queue (`RUNNER_MAX_QUEUE`, answered with 503 when full) remains the
+  hard backstop. Swap in a
   Redis/Upstash-backed implementation behind the same `rateLimit(key, limit,
 windowMs)` interface.
 - **The SSE monitor stream** holds its poll loop in the serving instance's

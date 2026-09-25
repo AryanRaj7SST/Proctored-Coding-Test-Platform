@@ -51,9 +51,19 @@ export function runnerErrorMessage(code: RunnerError['code']): string {
   }
 }
 
+/**
+ * How long to wait for a run. Each test has its own time limit in the runner
+ * (TEST_TIMEOUT_MS), so the wait grows with the number of tests: a slow or
+ * broken student page must come back as failed tests, never as a runner
+ * timeout that would leave the attempt "grading pending" for ever.
+ */
+export function runTimeoutFor(testCount: number): number {
+  return env.runnerTimeoutMs + Math.max(0, testCount) * env.runnerTestTimeoutMs;
+}
+
 export async function runOnRunner(
   request: RunnerRequest,
-  timeoutMs = env.runnerTimeoutMs,
+  timeoutMs = runTimeoutFor(request.spec.tests.length),
 ): Promise<RunnerRunResult> {
   const baseUrl = requireEnv('runnerUrl').replace(/\/$/, '');
   const candidateUrls = [

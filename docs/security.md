@@ -6,24 +6,38 @@ source of truth — file an issue.
 
 ## Identity and access
 
-- **Sign-in is Google OAuth only**, gated by a five-step policy in
-  `src/lib/auth.ts`: (1) provider is Google, (2) an email is present, (3)
-  Google reports it verified, (4) the **normalised** (lowercased, trimmed)
-  address has an **exact match** in `AllowedEmail`, (5) that entry is
-  `active`. Anything else is rejected with a specific, non-technical reason
-  shown on `/login`.
-- **No domain wildcards.** The allowlist is exact-match on purpose — see the
-  comment in `src/lib/email.ts`. A `@gmail.com`-style suffix rule would let
-  anyone with a Gmail account in.
-- **Plus-addressing is not normalised away.** `a+tag@gmail.com` and
-  `a@gmail.com` are treated as different addresses, deliberately: collapsing
-  them would let one allowlisted student mint unlimited aliases.
-- **Role comes from the database, never the client.** `src/lib/auth.ts`'s
-  `jwt` callback re-reads role/batch/active from `AllowedEmail`/`User` on
-  every sign-in and session-update trigger. Revoking an allowlist entry
-  (`AllowedEmailsManager` → Revoke) deactivates the linked `User` row in the
-  same transaction (`updateAllowedEmail`), so access is cut immediately
-  rather than at next token expiry.
+- **Google authenticates; the application authorises by role.** Sign-in is
+  Google OAuth only (`src/lib/auth-callbacks.ts`, `src/server/services/accounts.ts`).
+  The application refuses only when (1) the provider is not Google, (2) the
+  email is missing or invalid, (3) Google has not verified it, or (4) the
+  account exists and an administrator deactivated it. Every other
+  Google-authenticated person is let in; there is no invite list.
+- **New accounts are STUDENTs; existing roles are preserved.** A first sign-in
+  creates an active `STUDENT`. Later sign-ins refresh name, picture and last
+  sign-in only — never the role or active state. Nothing from the Google
+  profile, a request body, a query string or a cookie can set a role.
+- **ADMIN is controlled server-side.** Roles and account access change only
+  through the administrator-only `PATCH /api/users/[id]` (the Students page),
+  which refuses self-demotion/deactivation and removing the last active
+  administrator, and is audited. The first administrator is bootstrapped by
+  the seed (`SEED_ADMIN_EMAIL`) or directly in the `users` table.
+- **Role comes from the database on every request.** The `jwt` callback
+  re-reads role, batch and active state from `User` each time the session is
+  read, so a role change or deactivation applies on the next request.
+- **The student roster (`AllowedEmail`) is optional** and does not control
+  authentication: it only pre-registers a batch for addresses that have not
+  signed in yet, so tests can be assigned by batch. It holds no role.
+- **Accounts are keyed by the exact, verified address.** Emails are
+  normalised (lowercased, trimmed) and never alias-collapsed: `a+tag@gmail.com`
+  and `a@gmail.com` are different accounts (see `src/lib/email.ts`). Google's
+  `email_verified` is required because an unverified address could claim
+  someone else's account.
+- **Test access is separate from authentication.** Tests are open to every
+  signed-in student by default (`ANY_AUTHENTICATED_USER`) or limited to
+  assigned students (`ASSIGNED_USERS_ONLY`). Either way an administrator can
+  revoke one student's access to one test (`ExamAssignment.revokedAt`,
+  Assignments page); `requireTestAccess` answers such a student with 404, a
+  sitting in progress is submitted, and the account is untouched.
 - **`src/middleware.ts` is a UX redirect, not the access boundary.** It only
   checks for the presence of a session cookie (Edge runtime, no database
   access) and redirects to `/login`. Every API route and server page calls
@@ -97,9 +111,10 @@ buffered. Code fields are additionally capped by `MAX_CODE_BYTES` (default
 
 ## CSV import/export
 
-- **Import** (`parseAllowedEmailCsv`, `src/lib/csv.ts`): validated row by
-  row, with per-line error reporting, a hard row-count ceiling, and a 2 MB
-  file-size ceiling at the route level.
+- **Import** (`parseAllowedEmailCsv`, `src/lib/csv.ts`): the student roster,
+  validated row by row, with per-line error reporting, a hard row-count
+  ceiling, and a 2 MB file-size ceiling at the route level. A row asking for
+  `ADMIN` is reported as an error: the roster never grants a role.
 - **Export** (`toCsv`): every cell is escaped, and any cell beginning with
   `= + - @` is prefixed with a leading `'` — this is the standard defence
   against spreadsheet **formula injection**, where a crafted CSV cell
@@ -129,7 +144,7 @@ they're written anywhere.
 
 ## Auditing
 
-Every admin mutation (question/exam create-update-delete, allowlist changes,
+Every admin mutation (question/exam create-update-delete, roster, account and role changes, per-test access changes,
 assignment, CSV export) calls `recordAudit` (`src/server/services/audit.ts`),
 which never lets an audit-log failure break the request it's describing.
 `/admin/settings` shows the last 25 entries.
@@ -137,9 +152,21 @@ which never lets an audit-log failure break the request it's describing.
 ## Honest limits
 
 - **Proctoring is browser-observable events only** — see
-  `docs/architecture.md#proctoring-honest-scope`. This product does not do
-  webcam capture, screen recording, keystroke biometrics, or lockdown-browser
-  style OS restrictions, and does not claim to.
+  `docs/architecture.md#proctoring-honest-scope`. This product does not record
+  or analyse the webcam, record the screen, do keystroke biometrics, or impose
+  lockdown-browser style OS restrictions, and does not claim to.
+- **The camera video never leaves the student's browser.** A live camera is
+  required during a test, but the `MediaStream` from `getUserMedia({ video:
+true, audio: false })` (`src/lib/camera.ts`, the only caller) is shown in a
+  local `<video>` and nothing else: no recording, no frames, no upload, no
+  storage, and it is stopped when the sitting ends. Only facts are stored, as
+  proctor events (camera enabled / denied / unavailable / stopped / restored).
+  `Permissions-Policy: camera=(self)` keeps every other origin — including
+  the sandboxed student-code previews — away from the camera, and
+  `tests/unit/camera-privacy.test.ts` fails the build if code that records,
+  captures or uploads video appears. Camera, fullscreen and clipboard state
+  are client reports: they are recorded and shown to administrators, never
+  used to authorise, time or grade anything.
 - **No plagiarism/similarity detection.** Two students submitting identical
   code will both simply get identical scores; nothing here compares
   submissions to each other.

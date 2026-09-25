@@ -26,3 +26,6 @@ e2e-admin-state.json
 scratch/
 runner/node_modules/
 .neon
+
+# Vercel CLI project link and local build output
+.vercel

@@ -54,8 +54,9 @@ export default async function TestLogsPage({
       <div>
         <h1 className="text-xl font-semibold text-slate-50">Test logs</h1>
         <p className="mt-1 text-sm text-slate-400">
-          Sandbox console output and errors from the last {runs.length} runs. Logs are pruned after{' '}
-          {env.testLogRetentionDays} days.
+          Sandbox console output and errors from the last {runs.length} runs. After {env.testLogRetentionDays}{' '}
+          days the daily maintenance job clears console output and removes practice runs; graded submissions
+          keep their results and code.
         </p>
       </div>
 

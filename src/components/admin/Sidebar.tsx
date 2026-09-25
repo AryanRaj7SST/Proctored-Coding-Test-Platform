@@ -1,47 +1,115 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { cn } from '@/lib/utils';
 
-const LINKS: { href: string; label: string; exact?: boolean }[] = [
-  { href: '/admin', label: 'Overview', exact: true },
-  { href: '/admin/monitor', label: 'Live monitor' },
-  { href: '/admin/exams', label: 'Exams' },
-  { href: '/admin/questions', label: 'Questions' },
-  { href: '/admin/attempts', label: 'Attempts' },
-  { href: '/admin/results', label: 'Results' },
-  { href: '/admin/students', label: 'Students' },
-  { href: '/admin/allowed-emails', label: 'Allowlist' },
-  { href: '/admin/test-logs', label: 'Test logs' },
-  { href: '/admin/settings', label: 'Settings' },
+interface NavLink {
+  href: string;
+  label: string;
+  /** Active only on this exact path (and query), not on sub-paths. */
+  exact?: boolean;
+}
+
+interface NavGroup {
+  label?: string;
+  links: NavLink[];
+}
+
+const NAV: NavGroup[] = [
+  { links: [{ href: '/admin', label: 'Dashboard', exact: true }] },
+  {
+    label: 'Questions',
+    links: [
+      { href: '/admin/questions', label: 'All questions', exact: true },
+      { href: '/admin/questions/new', label: 'Create question', exact: true },
+      { href: '/admin/questions?status=DRAFT', label: 'Drafts', exact: true },
+      { href: '/admin/questions?status=PUBLISHED', label: 'Published', exact: true },
+    ],
+  },
+  {
+    label: 'Tests',
+    links: [
+      { href: '/admin/exams', label: 'All tests', exact: true },
+      { href: '/admin/exams/new', label: 'Create test', exact: true },
+      { href: '/admin/exams?phase=UPCOMING', label: 'Upcoming', exact: true },
+      { href: '/admin/exams?phase=ACTIVE', label: 'Active', exact: true },
+      { href: '/admin/exams?phase=ENDED', label: 'Completed', exact: true },
+    ],
+  },
+  {
+    label: 'Grading',
+    links: [
+      { href: '/admin/attempts', label: 'Submissions' },
+      { href: '/admin/results', label: 'Results' },
+      { href: '/admin/monitor', label: 'Live monitor' },
+    ],
+  },
+  {
+    label: 'People',
+    links: [
+      { href: '/admin/students', label: 'Users' },
+      { href: '/admin/allowed-emails', label: 'Student roster' },
+      { href: '/admin/assignments', label: 'Assignments' },
+    ],
+  },
+  {
+    label: 'System',
+    links: [
+      { href: '/admin/settings', label: 'Settings' },
+      { href: '/admin/audit-logs', label: 'Audit logs' },
+      { href: '/admin/test-logs', label: 'Runner logs' },
+    ],
+  },
 ];
+
+function isActive(link: NavLink, pathname: string, search: URLSearchParams): boolean {
+  const [path, query] = link.href.split('?');
+  if (!link.exact) return pathname.startsWith(path!);
+  if (pathname !== path) return false;
+  const wanted = new URLSearchParams(query ?? '');
+  // "All" links are active only when no filter is applied.
+  if (!query) return !search.get('status') && !search.get('phase');
+  return [...wanted.entries()].every(([k, v]) => search.get(k) === v);
+}
 
 export function Sidebar() {
   const pathname = usePathname();
+  const search = useSearchParams();
 
   return (
     <nav aria-label="Admin sections" className="w-full shrink-0 lg:w-52">
-      <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:overflow-visible">
-        {LINKS.map((link) => {
-          const active = link.exact ? pathname === link.href : pathname.startsWith(link.href);
-          return (
-            <li key={link.href}>
-              <Link
-                href={link.href}
-                aria-current={active ? 'page' : undefined}
-                className={cn(
-                  'block whitespace-nowrap rounded-md px-3 py-2 text-sm transition',
-                  active
-                    ? 'bg-ink-800 font-medium text-white'
-                    : 'text-slate-400 hover:bg-ink-850 hover:text-slate-200',
-                )}
-              >
-                {link.label}
-              </Link>
-            </li>
-          );
-        })}
+      <ul className="flex gap-1 overflow-x-auto lg:flex-col lg:gap-4 lg:overflow-visible">
+        {NAV.map((group, g) => (
+          <li key={group.label ?? g} className="shrink-0">
+            {group.label ? (
+              <p className="hidden px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 lg:block">
+                {group.label}
+              </p>
+            ) : null}
+            <ul className="flex gap-1 lg:flex-col">
+              {group.links.map((link) => {
+                const active = isActive(link, pathname, search);
+                return (
+                  <li key={link.href}>
+                    <Link
+                      href={link.href}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'block whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition',
+                        active
+                          ? 'bg-ink-800 font-medium text-white'
+                          : 'text-slate-400 hover:bg-ink-850 hover:text-slate-200',
+                      )}
+                    >
+                      {link.label}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          </li>
+        ))}
       </ul>
     </nav>
   );

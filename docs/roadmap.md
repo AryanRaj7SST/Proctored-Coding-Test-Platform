@@ -8,8 +8,9 @@ natural next iteration would tackle first.
 
 ## Deliberately out of scope
 
-- **Proctoring beyond the browser tab.** No webcam capture, no screen
-  recording, no microphone, no lockdown-browser-style OS restriction, no
+- **Proctoring beyond the browser tab.** No webcam recording or analysis
+  (the required camera is a live preview on the student's own screen, never
+  recorded or uploaded), no screen recording, no microphone, no lockdown-browser-style OS restriction, no
   detection of a second device or monitor. See
   `docs/architecture.md#proctoring-honest-scope` for exactly what is and
   isn't observed, and why the honest answer matters more than a stronger
@@ -18,7 +19,7 @@ natural next iteration would tackle first.
   submission to another's. If this matters for your use case, an offline
   batch job over `Attempt.html/css/js` (e.g. via a similarity library) is a
   reasonable bolt-on that doesn't require changing the grading path itself.
-- **Multi-tenancy.** One `AllowedEmail` table, one set of admins. There is no
+- **Multi-tenancy.** One user base, one set of admins. There is no
   concept of separate organizations sharing one deployment.
 - **Billing/payments.** Not a product concern for a private tool.
 - **A native mobile app.** The exam workspace is a desktop-oriented IDE
@@ -75,7 +76,7 @@ natural next iteration would tackle first.
    `/admin/questions/[id]/preview` (which renders the question and lets the
    admin run the reference/starter code) — extending this to actually sit a
    mock timed exam as an admin would catch UX issues before students do.
-4. **Bulk question import** (CSV/JSON) — the allowlist already has this
+4. **Bulk question import** (CSV/JSON) — the student roster already has this
    pattern (`parseAllowedEmailCsv`); questions don't yet.
 5. **Configurable proctoring severity** — today `Exam.maxViolations` is a
    single number that auto-submits at the threshold; a mentor might want

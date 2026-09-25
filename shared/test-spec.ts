@@ -25,7 +25,10 @@ export type Step =
   | { action: 'hover'; selector: string }
   | { action: 'wait'; ms: number }
   | { action: 'waitFor'; selector: string; state?: 'visible' | 'hidden' | 'attached' }
-  | { action: 'scrollTo'; selector: string };
+  | { action: 'scrollTo'; selector: string }
+  | { action: 'check'; selector: string }
+  | { action: 'uncheck'; selector: string }
+  | { action: 'select'; selector: string; value: string };
 
 export type NumericOp = 'eq' | 'lt' | 'lte' | 'gt' | 'gte';
 
@@ -88,7 +91,14 @@ export type Assertion =
       message?: string;
     }
   | { type: 'boxesPerRow'; selector: string; equals: number; tolerance?: number; message?: string }
-  | { type: 'noConsoleErrors'; message?: string };
+  | { type: 'noConsoleErrors'; message?: string }
+  | { type: 'hasClass'; selector: string; className: string; message?: string }
+  | { type: 'notHasClass'; selector: string; className: string; message?: string }
+  | { type: 'value'; selector: string; equals?: string; contains?: string; message?: string }
+  | { type: 'checked'; selector: string; equals: boolean; message?: string }
+  | { type: 'validity'; selector: string; valid: boolean; message?: string }
+  /** An admin-written JavaScript expression evaluated in the student's page (e.g. calling their function). */
+  | { type: 'js'; expression: string; equals?: string | number | boolean; message?: string };
 
 /** What an admin authors for a single test case (stored in QuestionTest.testCode). */
 export interface TestCaseBody {
@@ -119,8 +129,11 @@ export interface RunnerTestResult {
   id: string;
   testName: string;
   passed: boolean;
-  /** Student-safe message. Never contains spec internals or stack traces. */
+  /** Student-visible message, built from the test definition and the page. Never runner internals. */
   message?: string;
+  /** For a failed check: what it expected, and what the student's page had. */
+  expected?: string;
+  actual?: string;
   durationMs: number;
 }
 
@@ -157,6 +170,12 @@ export const ASSERTION_TYPES = [
   'gap',
   'boxesPerRow',
   'noConsoleErrors',
+  'hasClass',
+  'notHasClass',
+  'value',
+  'checked',
+  'validity',
+  'js',
 ] as const;
 
 export const STEP_ACTIONS = [
@@ -169,6 +188,9 @@ export const STEP_ACTIONS = [
   'wait',
   'waitFor',
   'scrollTo',
+  'check',
+  'uncheck',
+  'select',
 ] as const;
 
 export const SPEC_LIMITS = {
@@ -180,6 +202,7 @@ export const SPEC_LIMITS = {
   minViewport: 200,
   maxViewport: 2560,
   maxTextLength: 500,
+  maxExpressionLength: 500,
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -443,7 +466,7 @@ function validateStep(raw: unknown, errors: string[], path: string): Step | null
     errors.push(`${path}: unknown step action "${action}"`);
     return null;
   }
-  const needsSelector = ['click', 'fill', 'hover', 'waitFor', 'scrollTo'];
+  const needsSelector = ['click', 'fill', 'hover', 'waitFor', 'scrollTo', 'check', 'uncheck', 'select'];
   if (needsSelector.includes(action) && !isSafeSelector(s.selector)) {
     errors.push(`${path}: step "${action}" requires a valid selector`);
     return null;
@@ -498,6 +521,17 @@ function validateStep(raw: unknown, errors: string[], path: string): Step | null
     }
     case 'scrollTo':
       return { action: 'scrollTo', selector: String(s.selector) };
+    case 'check':
+    case 'uncheck':
+      return { action, selector: String(s.selector) } as Step;
+    case 'select': {
+      const value = String(s.value ?? '');
+      if (value.length > SPEC_LIMITS.maxTextLength) {
+        errors.push(`${path}: select value is too long`);
+        return null;
+      }
+      return { action: 'select', selector: String(s.selector), value };
+    }
     default:
       return null;
   }
@@ -518,6 +552,20 @@ function validateAssertion(raw: unknown, errors: string[], path: string): Assert
     typeof a.message === 'string' && a.message.length <= SPEC_LIMITS.maxTextLength ? a.message : undefined;
   const withMsg = <T extends object>(o: T): T => (message ? { ...o, message } : o);
 
+  if (type === 'js') {
+    const expression = typeof a.expression === 'string' ? a.expression.trim() : '';
+    if (!expression || expression.length > SPEC_LIMITS.maxExpressionLength) {
+      errors.push(
+        `${path}: js assertion needs an expression of at most ${SPEC_LIMITS.maxExpressionLength} characters`,
+      );
+      return null;
+    }
+    const equals =
+      typeof a.equals === 'string' || typeof a.equals === 'number' || typeof a.equals === 'boolean'
+        ? a.equals
+        : undefined;
+    return withMsg({ type: 'js' as const, expression, ...(equals !== undefined ? { equals } : {}) });
+  }
   if (type !== 'noConsoleErrors' && !isSafeSelector(a.selector)) {
     errors.push(`${path}: assertion "${type}" requires a valid selector`);
     return null;
@@ -659,6 +707,33 @@ function validateAssertion(raw: unknown, errors: string[], path: string): Assert
         ...(tol() !== undefined ? { tolerance: tol() as number } : {}),
       });
     }
+    case 'hasClass':
+    case 'notHasClass': {
+      const className = String(a.className ?? '').trim();
+      if (!className || !/^[-_a-zA-Z0-9]+$/.test(className)) {
+        errors.push(`${path}: ${type} needs a single valid class name`);
+        return null;
+      }
+      return withMsg({ type, selector, className } as Assertion);
+    }
+    case 'value': {
+      const equals = typeof a.equals === 'string' ? a.equals : undefined;
+      const contains = typeof a.contains === 'string' ? a.contains : undefined;
+      if (equals === undefined && contains === undefined) {
+        errors.push(`${path}: value assertion needs "equals" or "contains"`);
+        return null;
+      }
+      return withMsg({
+        type: 'value' as const,
+        selector,
+        ...(equals !== undefined ? { equals } : {}),
+        ...(contains !== undefined ? { contains } : {}),
+      });
+    }
+    case 'checked':
+      return withMsg({ type: 'checked' as const, selector, equals: a.equals !== false });
+    case 'validity':
+      return withMsg({ type: 'validity' as const, selector, valid: a.valid !== false });
     case 'boxesPerRow': {
       const equals = num('equals');
       if (!Number.isInteger(equals) || equals < 1) {
@@ -800,6 +875,100 @@ export function validateRunnerSpec(raw: unknown): ValidationResult<RunnerSpec> {
   return { ok: true, errors: [], value: { version: 1, viewport, ...(setup.length ? { setup } : {}), tests } };
 }
 
+/** The value a check expects, in words ("visible", "3", "rgb(255, 0, 0)", ">= 200px"). */
+export function expectedValue(a: Assertion): string {
+  switch (a.type) {
+    case 'exists':
+      return 'present';
+    case 'notExists':
+      return 'absent';
+    case 'visible':
+      return 'visible';
+    case 'hidden':
+      return 'hidden';
+    case 'count':
+    case 'gridColumns':
+    case 'boxesPerRow':
+      return String(a.equals);
+    case 'text':
+    case 'attribute':
+      return a.equals !== undefined ? a.equals : `contains "${a.contains ?? ''}"`;
+    case 'css':
+      return a.equals ?? (a.oneOf ?? []).join(' or ');
+    case 'cssNumber':
+    case 'size':
+      return `${OP_WORDS[a.op]} ${a.value}${a.type === 'size' ? 'px' : ''}`;
+    case 'gap':
+      return `${a.equals}px`;
+    case 'noConsoleErrors':
+      return 'no console errors';
+    case 'hasClass':
+      return `class "${a.className}"`;
+    case 'notHasClass':
+      return `no class "${a.className}"`;
+    case 'value':
+      return a.equals !== undefined ? a.equals : `contains "${a.contains ?? ''}"`;
+    case 'checked':
+      return a.equals ? 'checked' : 'unchecked';
+    case 'validity':
+      return a.valid ? 'valid' : 'invalid';
+    case 'js':
+      return a.equals !== undefined ? JSON.stringify(a.equals) : 'true';
+    default:
+      return '';
+  }
+}
+
+const OP_WORDS: Record<NumericOp, string> = { eq: '=', lt: '<', lte: '<=', gt: '>', gte: '>=' };
+
+/** Human-readable description of one interaction step. */
+export function describeStep(step: Step): string {
+  switch (step.action) {
+    case 'setViewport':
+      return `Resize the page to ${step.viewport.width}x${step.viewport.height}.`;
+    case 'click':
+      return step.nth
+        ? `Click element #${step.nth + 1} matching "${step.selector}".`
+        : `Click "${step.selector}".`;
+    case 'clickText':
+      return `Click the ${step.role ?? 'element'} labelled "${step.text}".`;
+    case 'fill':
+      return `Type "${step.value}" into "${step.selector}".`;
+    case 'press':
+      return step.selector ? `Press ${step.key} in "${step.selector}".` : `Press ${step.key}.`;
+    case 'hover':
+      return `Hover over "${step.selector}".`;
+    case 'wait':
+      return `Wait ${step.ms}ms.`;
+    case 'waitFor':
+      return `Wait for "${step.selector}" to be ${step.state ?? 'visible'}.`;
+    case 'scrollTo':
+      return `Scroll to "${step.selector}".`;
+    case 'check':
+      return `Tick "${step.selector}".`;
+    case 'uncheck':
+      return `Untick "${step.selector}".`;
+    case 'select':
+      return `Choose "${step.value}" in "${step.selector}".`;
+    default:
+      return 'Interact with the page.';
+  }
+}
+
+/**
+ * The readable form of a test case: the interactions it performs and the
+ * checks it makes. This is what students see -- the whole definition, in words.
+ */
+export function describeTestCase(body: TestCaseBody): { steps: string[]; checks: string[] } {
+  return {
+    steps: [
+      ...(body.viewport ? [describeStep({ action: 'setViewport', viewport: body.viewport })] : []),
+      ...(body.steps ?? []).map(describeStep),
+    ],
+    checks: body.assertions.map(describeAssertion),
+  };
+}
+
 /** Human-readable, student-safe description of what an assertion expects. */
 export function describeAssertion(a: Assertion): string {
   if ('message' in a && a.message) return a.message;
@@ -834,36 +1003,48 @@ export function describeAssertion(a: Assertion): string {
       return `Expected ${a.equals} item(s) per row for "${a.selector}".`;
     case 'noConsoleErrors':
       return 'Expected the page to run without console errors.';
+    case 'hasClass':
+      return `Expected "${a.selector}" to have the class "${a.className}".`;
+    case 'notHasClass':
+      return `Expected "${a.selector}" not to have the class "${a.className}".`;
+    case 'value':
+      return a.equals !== undefined
+        ? `Expected the value of "${a.selector}" to be "${a.equals}".`
+        : `Expected the value of "${a.selector}" to contain "${a.contains}".`;
+    case 'checked':
+      return `Expected "${a.selector}" to be ${a.equals ? 'checked' : 'unchecked'}.`;
+    case 'validity':
+      return `Expected "${a.selector}" to be ${a.valid ? 'valid' : 'invalid'} according to its validation rules.`;
+    case 'js':
+      return a.equals !== undefined
+        ? `Expected \`${a.expression}\` to equal ${JSON.stringify(a.equals)}.`
+        : `Expected \`${a.expression}\` to be true.`;
     default:
       return 'Assertion failed.';
   }
 }
 
-export function totalPoints(tests: { points: number }[]): number {
-  return tests.reduce(
-    (sum, t) => sum + (Number.isFinite(t.points) ? Math.max(0, Math.round(t.points)) : 0),
-    0,
-  );
-}
-
 /** Question-authoring gate (product requirement #52). */
 export function validateTestSuiteShape(
-  tests: { name: string; points: number; testCode: string; testType?: string }[],
+  tests: { name: string; testCode: string; testType?: string; enabled?: boolean }[],
 ): ValidationResult<true> {
   const errors: string[] = [];
   if (tests.length === 0) errors.push('A question needs at least one test case.');
+  else if (!tests.some((t) => t.enabled !== false)) errors.push('At least one test case must be enabled.');
+  if (tests.length > SPEC_LIMITS.maxTests)
+    errors.push(`A question can have at most ${SPEC_LIMITS.maxTests} test cases.`);
   const names = new Set<string>();
   tests.forEach((t, i) => {
     const name = String(t.name ?? '').trim();
     if (!name) errors.push(`Test ${i + 1}: name is required.`);
     if (names.has(name.toLowerCase())) errors.push(`Test ${i + 1}: duplicate test name "${name}".`);
     names.add(name.toLowerCase());
-    if (!Number.isFinite(t.points) || t.points < 0) errors.push(`Test ${i + 1}: points must be >= 0.`);
-    if ((t.testType ?? 'DECLARATIVE') === 'DECLARATIVE') {
+    if ((t.testType ?? 'DECLARATIVE') !== 'DECLARATIVE') {
+      errors.push(`Test ${i + 1} ("${name}"): only declarative behaviour tests are supported.`);
+    } else {
       const body = validateTestCaseBody(t.testCode);
       if (!body.ok) body.errors.forEach((e) => errors.push(`Test ${i + 1} ("${name}"): ${e}`));
     }
   });
-  if (totalPoints(tests) <= 0) errors.push('Total points across tests must be greater than 0.');
   return errors.length ? { ok: false, errors } : { ok: true, errors: [], value: true };
 }

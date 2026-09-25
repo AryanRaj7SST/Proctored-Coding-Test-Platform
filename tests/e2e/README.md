@@ -15,18 +15,32 @@ There are therefore two tiers:
 | `public.spec.ts`    | no          | yes                                  |
 | `exam-flow.spec.ts` | yes         | only when `E2E_STORAGE_STATE` is set |
 
-## Running the authenticated tier
+## Running the authenticated tier (local only)
 
-1. Start the stack (`npm run validate:stack`, or `docker compose up` + `npm run dev`).
-2. Sign in once as a seeded student in a normal browser.
-3. Save that session:
+`scripts/e2e-session.ts` signs a person in without Google's page, using the
+same post-Google rule as a real sign-in (new address → STUDENT, existing role
+kept, deactivated refused), and writes a Playwright storage-state file. It
+refuses unless the database and app are local, `NODE_ENV` is not production,
+and it is given a throwaway secret that differs from the real `AUTH_SECRET`
+(start the local server with that throwaway secret as its `AUTH_SECRET`).
 
 ```bash
-npx playwright open --save-storage=e2e-state.json http://localhost:3000/login
-# complete the Google sign-in in the window that opens, then close it
-export E2E_STORAGE_STATE=$PWD/e2e-state.json
-npm run test:e2e
+export E2E_AUTH_SECRET="$(openssl rand -base64 48)"
+export DATABASE_URL=postgresql://localhost:5432/<disposable-db>
+AUTH_SECRET="$E2E_AUTH_SECRET" AUTH_URL=http://localhost:3100 npx next start -p 3100 &
+npm run e2e:session -- student@example.com --base-url http://localhost:3100 --out student.json
+npm run e2e:session -- admin@example.com   --base-url http://localhost:3100 --out admin.json
+E2E_BASE_URL=http://localhost:3100 E2E_STORAGE_STATE=student.json \
+  E2E_ADMIN_STORAGE_STATE=admin.json npm run test:e2e
 ```
 
-`e2e-state.json` contains a live session cookie — it is in `.gitignore` and must
-never be committed.
+The admin must already be an `ADMIN` in that database (seed with
+`SEED_ADMIN_EMAIL`); the script never sets a role. Session files contain live
+cookies — keep them out of the repository.
+
+## Manual check: real Google sign-in
+
+Google's OAuth page cannot be automated, so verify it by hand after changing
+auth configuration: open `/login`, choose **Continue with Google**, sign in
+with (1) a new Google account — it lands on the student dashboard as a
+STUDENT — and (2) the administrator's account — it lands on `/admin`.

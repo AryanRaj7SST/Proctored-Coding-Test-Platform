@@ -10,8 +10,7 @@ export const dynamic = 'force-dynamic';
  * Runner execution log index (product requirement #17).
  *
  * `logs` holds sanitized console output captured inside the sandbox and is
- * truncated at write time; no secrets, no environment and no hidden test source
- * ever reach this table. See TEST_LOG_RETENTION_DAYS in docs/security.md for
+ * truncated at write time; no secrets and no environment ever reach this table. See TEST_LOG_RETENTION_DAYS in docs/security.md for
  * the retention policy.
  */
 export const GET = handler(async (req: Request): Promise<NextResponse> => {

@@ -5,6 +5,39 @@ export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Marks for display: at most 2 decimals, trailing zeros dropped (2.3333 -> "2.33",
+ * 8 -> "8"). Display only -- stored scores keep 4 decimals and are never rounded.
+ */
+export function displayMarks(value: number | null | undefined): string {
+  if (value === null || value === undefined || !Number.isFinite(value)) return '—';
+  return String(Math.round(value * 100) / 100);
+}
+
+/**
+ * A date-time in an explicit IANA time zone, with the zone named, e.g.
+ * "25 Sep 2026, 10:00 am IST". Schedules are shown in the test's own zone so
+ * every reader sees the same wall-clock time.
+ */
+export function formatDateTimeInZone(value: Date | string | null | undefined, timeZone: string): string {
+  if (!value) return '--';
+  const d = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(d.getTime())) return '--';
+  try {
+    return d.toLocaleString('en-IN', {
+      timeZone,
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZoneName: 'short',
+    });
+  } catch {
+    return formatDateTime(d);
+  }
+}
+
 export function formatDateTime(value: Date | string | null | undefined): string {
   if (!value) return '--';
   const d = typeof value === 'string' ? new Date(value) : value;

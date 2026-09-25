@@ -1,9 +1,11 @@
-import type { Exam, ExamSession } from '@prisma/client';
+import { Prisma, type Exam, type ExamSession } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { computeExpiry, examAvailability, msRemaining, type ExamAvailability } from '@/lib/timing';
 import { env } from '@/lib/env';
 import { deriveSessionStatus } from '@/lib/proctor';
-import { conflict, forbidden } from '@/lib/http';
+import { refreshSittingTotals } from '@/server/grading/sitting-totals';
+import { conflict, forbidden } from '@/lib/errors';
+import { recordAudit } from './audit';
 
 export interface ExamTimeState {
   availability: ExamAvailability;
@@ -13,25 +15,37 @@ export interface ExamTimeState {
   serverTime: Date;
 }
 
+type SessionReader = Pick<Prisma.TransactionClient, 'examSession'>;
+
+/**
+ * The student's current sitting for a test: the highest-numbered one, open or
+ * closed. Every "what is this student doing in this test" question starts here.
+ */
+export function currentSession(examId: string, userId: string, db: SessionReader = prisma) {
+  return db.examSession.findFirst({ where: { examId, userId }, orderBy: { attemptNumber: 'desc' } });
+}
+
 export async function getExamTimeState(examId: string, userId: string, exam?: Exam): Promise<ExamTimeState> {
   const theExam = exam ?? (await prisma.exam.findUniqueOrThrow({ where: { id: examId } }));
-  const session = await prisma.examSession.findUnique({ where: { userId_examId: { userId, examId } } });
+  const session = await currentSession(examId, userId);
   const now = new Date();
-  let availability = examAvailability(
-    {
-      status: theExam.status,
-      startTime: theExam.startTime,
-      endTime: theExam.endTime,
-      durationMinutes: theExam.durationMinutes,
-    },
-    session ? { startedAt: session.startedAt, expiresAt: session.expiresAt, endedAt: session.endedAt } : null,
-    { now },
-  );
+  const window = {
+    status: theExam.status,
+    startTime: theExam.startTime,
+    endTime: theExam.endTime,
+    durationMinutes: theExam.durationMinutes,
+  };
+  const sitting = session
+    ? { startedAt: session.startedAt, expiresAt: session.expiresAt, endedAt: session.endedAt }
+    : null;
+  const attemptsRemaining = Math.max(0, theExam.maxAttempts - (session?.attemptNumber ?? 0));
+  let availability = examAvailability(window, sitting, { now, attemptsRemaining });
   if (availability === 'NOT_STARTED') {
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, role: true } });
-    if (user?.email === 'agnihotriaryan5361@gmail.com' || user?.role === 'ADMIN') {
-      availability = 'AVAILABLE';
-    }
+    // Administrators may dry-run an exam before it opens. This is a role rule,
+    // decided from the database; no student can be granted it.
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
+    if (user?.role === 'ADMIN')
+      availability = examAvailability(window, sitting, { now, allowEarlyStart: true, attemptsRemaining });
   }
   return {
     availability,
@@ -50,37 +64,70 @@ export async function startExamSession(
 ): Promise<ExamSession> {
   const state = await getExamTimeState(exam.id, userId, exam);
 
-  if (state.availability === 'NOT_STARTED') throw forbidden('This exam has not opened yet.');
-  if (state.availability === 'ENDED') throw forbidden('This exam has closed.');
-  if (state.availability === 'UNPUBLISHED') throw forbidden('This exam is not available.');
-  if (state.availability === 'SUBMITTED') throw conflict('You have already submitted this exam.');
-  if (state.availability === 'EXPIRED') throw conflict('Your time for this exam has expired.');
-  if (state.session) return state.session; // resume -- never extends the deadline
+  if (state.availability === 'NOT_STARTED') throw forbidden('This test has not opened yet.');
+  if (state.availability === 'ENDED') throw forbidden('This test has closed.');
+  if (state.availability === 'UNPUBLISHED') throw forbidden('This test is not available.');
+  if (state.availability === 'SUBMITTED') {
+    const closing = await prisma.proctorEvent.findFirst({
+      where: { userId, examId: exam.id, type: 'EXAM_SUBMITTED' },
+      orderBy: { occurredAt: 'desc' },
+      select: { metadata: true },
+    });
+    const reason = (closing?.metadata as { reason?: string } | null)?.reason;
+    if (reason === 'VIOLATION_LIMIT') {
+      throw conflict('This test was ended automatically because the proctoring violation limit was reached.');
+    }
+    if (reason === 'EXPIRED' || reason === 'EXAM_CLOSED') {
+      throw conflict('Your time for this test has expired. Your saved work was submitted.');
+    }
+    throw conflict(
+      exam.maxAttempts > 1
+        ? `You have used all ${exam.maxAttempts} attempts for this test.`
+        : 'You have already submitted this test.',
+    );
+  }
+  if (state.availability === 'EXPIRED') throw conflict('Your time for this test has expired.');
+  // Resume an open sitting -- never extends the deadline. A finished one is
+  // only followed by a new sitting when attempts remain (availability says so).
+  if (state.session && !state.session.endedAt) return state.session;
 
   const startedAt = new Date();
   const expiresAt = computeExpiry(startedAt, exam.durationMinutes, exam.endTime);
+  const attemptNumber = (state.session?.attemptNumber ?? 0) + 1;
 
-  return prisma.$transaction(async (tx) => {
-    const session = await tx.examSession.create({
-      data: {
-        userId,
-        examId: exam.id,
-        startedAt,
-        expiresAt,
-        lastHeartbeat: startedAt,
-        status: 'ACTIVE',
-        userAgent: userAgent?.slice(0, 300) ?? null,
-      },
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const marks = await tx.examQuestion.aggregate({ where: { examId: exam.id }, _sum: { marks: true } });
+      const session = await tx.examSession.create({
+        data: {
+          userId,
+          examId: exam.id,
+          attemptNumber,
+          startedAt,
+          expiresAt,
+          lastHeartbeat: startedAt,
+          status: 'ACTIVE',
+          userAgent: userAgent?.slice(0, 300) ?? null,
+          maxScore: marks._sum.marks ?? 0,
+        },
+      });
+      await tx.examAssignment.updateMany({
+        where: { examId: exam.id, userId, status: 'ASSIGNED' },
+        data: { status: 'STARTED' },
+      });
+      await tx.proctorEvent.create({
+        data: { userId, examId: exam.id, sessionId: session.id, type: 'EXAM_STARTED', violation: false },
+      });
+      return session;
     });
-    await tx.examAssignment.updateMany({
-      where: { examId: exam.id, userId, status: 'ASSIGNED' },
-      data: { status: 'STARTED' },
-    });
-    await tx.proctorEvent.create({
-      data: { userId, examId: exam.id, type: 'EXAM_STARTED', violation: false },
-    });
-    return session;
-  });
+  } catch (err) {
+    // A second tab started the same sitting a moment earlier: resume that one.
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      const raced = await currentSession(exam.id, userId);
+      if (raced && raced.attemptNumber === attemptNumber) return raced;
+    }
+    throw err;
+  }
 }
 
 export async function heartbeat(
@@ -88,7 +135,7 @@ export async function heartbeat(
   userId: string,
 ): Promise<{ status: string; msRemaining: number }> {
   const now = new Date();
-  const session = await prisma.examSession.findUnique({ where: { userId_examId: { userId, examId } } });
+  const session = await currentSession(examId, userId);
   if (!session) return { status: 'NONE', msRemaining: 0 };
 
   const expired = now.getTime() >= session.expiresAt.getTime();
@@ -132,6 +179,7 @@ export async function sweepStaleSessions(): Promise<number> {
       data: stale.map((s) => ({
         userId: s.userId,
         examId: s.examId,
+        sessionId: s.id,
         type: 'HEARTBEAT_LOST' as const,
         violation: true,
         durationMs: Date.now() - s.lastHeartbeat.getTime(),
@@ -152,4 +200,48 @@ export function sessionStatusFor(session: ExamSession, lastEventType?: string | 
     new Date(),
     env.sessionStaleSeconds,
   );
+}
+
+/** When every question of the current sitting is submitted, close the sitting. */
+export async function maybeFinishExam(examId: string, userId: string): Promise<void> {
+  const session = await currentSession(examId, userId);
+  if (!session || session.endedAt) return;
+  const [total, submitted] = await Promise.all([
+    prisma.examQuestion.count({ where: { examId } }),
+    prisma.attempt.count({
+      where: { sessionId: session.id, status: { in: ['SUBMITTED', 'AUTO_SUBMITTED'] } },
+    }),
+  ]);
+  if (total > 0 && submitted >= total) {
+    const ended = await prisma.examSession.updateMany({
+      where: { id: session.id, endedAt: null },
+      data: { endedAt: new Date(), status: 'SUBMITTED' },
+    });
+    await prisma.examAssignment.updateMany({ where: { examId, userId }, data: { status: 'SUBMITTED' } });
+    await refreshSittingTotals(session.id);
+    if (ended.count === 1) {
+      await prisma.proctorEvent.create({
+        data: {
+          userId,
+          examId,
+          sessionId: session.id,
+          type: 'EXAM_SUBMITTED',
+          violation: false,
+          metadata: { reason: 'STUDENT_ENDED' },
+        },
+      });
+      // Same audit trail as pressing End Test: the sitting ended because every answer is in.
+      await recordAudit({
+        userId,
+        action: 'exam.ended',
+        entity: 'Exam',
+        entityId: examId,
+        metadata: {
+          reason: 'ALL_SUBMITTED',
+          attemptNumber: session.attemptNumber,
+          submittedCount: submitted,
+        },
+      });
+    }
+  }
 }

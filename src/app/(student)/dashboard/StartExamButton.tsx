@@ -17,12 +17,14 @@ export function StartExamButton({
   durationMinutes,
   questionCount,
   resuming,
+  label,
 }: {
   examId: string;
   title: string;
   durationMinutes: number;
   questionCount: number;
   resuming: boolean;
+  label?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
@@ -41,7 +43,7 @@ export function StartExamButton({
   return (
     <>
       <Button size="sm" onClick={() => setOpen(true)}>
-        {resuming ? 'Resume exam' : 'Start exam'}
+        {label ?? (resuming ? 'Resume test' : 'Start test')}
       </Button>
 
       <Modal
@@ -70,12 +72,16 @@ export function StartExamButton({
             or reload the page{resuming ? ' — resuming does not give you more time' : ''}.
           </li>
           <li>
-            Leaving the exam window is recorded. Tab switches, focus loss, fullscreen exits and clipboard use
-            are all logged with timestamps and shown to your mentor.
+            The test runs in fullscreen with your camera on. The camera picture is shown only on your screen:
+            it is never recorded, uploaded or stored, and it turns off when the test ends.
           </li>
           <li>
-            Your work is saved automatically as you type, and graded against hidden test cases when you
-            submit.
+            Leaving the test window is recorded. Tab switches, focus loss, fullscreen exits and clipboard use
+            are all logged with timestamps and shown to your mentor. Copy and paste are disabled.
+          </li>
+          <li>
+            Your work is saved automatically as you type. Every question lists the test cases it is graded on;
+            each question&apos;s marks are shared equally between its test cases.
           </li>
           <li>When the time runs out, whatever you have written is submitted and graded automatically.</li>
         </ul>

@@ -1,39 +1,29 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
-import { handler, noContent, notFound, ok, readJson } from '@/lib/http';
+import { handler, noContent, ok, readJson } from '@/lib/http';
 import { parseOrThrow, questionUpdateInput } from '@/lib/validation';
-import { deleteQuestion, publishBlockers, updateQuestion } from '@/server/services/questions';
+import { deleteQuestion, getQuestionForAdmin, updateQuestion } from '@/server/services/questions';
+import { auditQuestionUpdate } from '@/server/services/question-audit';
 import { recordAudit } from '@/server/services/audit';
 
 export const dynamic = 'force-dynamic';
 
 type Ctx = { params: Promise<{ id: string }> };
 
+/** Full question for the editor: reference solution and test definitions are admin-only. */
 export const GET = handler(async (_req: Request, ctx: Ctx): Promise<NextResponse> => {
   await requireAdmin();
   const { id } = await ctx.params;
-  const question = await prisma.question.findUnique({
-    where: { id },
-    include: { tests: { orderBy: { order: 'asc' } } },
-  });
-  if (!question) throw notFound('Question not found.');
-  return ok({ ...question, blockers: publishBlockers(question) });
+  return ok(await getQuestionForAdmin(id));
 });
 
 export const PATCH = handler(async (req: Request, ctx: Ctx): Promise<NextResponse> => {
   const admin = await requireAdmin();
   const { id } = await ctx.params;
   const body = parseOrThrow(questionUpdateInput, await readJson(req));
-  const question = await updateQuestion(id, body);
-  await recordAudit({
-    userId: admin.id,
-    action: 'question.updated',
-    entity: 'Question',
-    entityId: id,
-    metadata: { version: question.version },
-  });
-  return ok(question);
+  const { question, impact } = await updateQuestion(id, body);
+  await auditQuestionUpdate(admin.id, question, impact);
+  return ok(await getQuestionForAdmin(question.id));
 });
 
 export const DELETE = handler(async (_req: Request, ctx: Ctx): Promise<NextResponse> => {

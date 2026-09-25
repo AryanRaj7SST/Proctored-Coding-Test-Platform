@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { seedQuestions, boxQuestion, gridQuestion } from '../../prisma/seed-data';
-import { validateTestCaseBody, validateTestSuiteShape, totalPoints } from '@shared/test-spec';
+import { validateTestCaseBody, validateTestSuiteShape } from '@shared/test-spec';
 
 /**
  * The seed is the first thing anyone runs, so a broken seed reads as a broken
@@ -30,7 +30,6 @@ describe('seed questions', () => {
         const result = validateTestSuiteShape(
           question.tests.map((t) => ({
             name: t.name,
-            points: t.points,
             testType: 'DECLARATIVE',
             testCode: JSON.stringify(t.body),
           })),
@@ -58,12 +57,8 @@ describe('seed questions', () => {
         expect(new Set(names).size).toBe(names.length);
       });
 
-      it('is worth a positive number of points', () => {
-        expect(totalPoints(question.tests)).toBeGreaterThan(0);
-      });
-
-      it('exposes at least one visible test so the student is not flying blind', () => {
-        expect(question.tests.some((t) => t.hidden === false)).toBe(true);
+      it('has at least one test case to grade on (marks are split equally between them)', () => {
+        expect(question.tests.length).toBeGreaterThan(0);
       });
     });
   }

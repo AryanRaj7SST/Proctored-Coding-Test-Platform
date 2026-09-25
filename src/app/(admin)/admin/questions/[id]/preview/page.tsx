@@ -1,104 +1,177 @@
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+import { ArrowLeft } from 'lucide-react';
 import { requireAdmin } from '@/lib/authz';
-import { toStudentQuestion, publishBlockers } from '@/server/services/questions';
-import { QuestionPanel } from '@/components/exam/QuestionPanel';
-import { Badge, Card, CardBody, CardHeader } from '@/components/ui';
+import { toStudentQuestion } from '@/server/services/questions';
+import { Badge, Card, CardBody, CardHeader, StatusBadge } from '@/components/ui';
+import { Notice } from '@/components/admin/questions/bits';
+import { normalizeQuestion } from '@/components/admin/questions/draft';
+import { formatMarks, marksWord, splitSummary, equalShare } from '@/components/admin/questions/marks';
+import { StudentPreview } from '@/components/admin/questions/StudentPreview';
+import { readableTest } from '@/components/admin/questions/student-view';
+import { loadAdminQuestion } from '../../_lib/load-question';
 import { QuestionPreviewRunner } from './QuestionPreviewRunner';
 
 export const dynamic = 'force-dynamic';
 
 /**
- * See the question exactly as a student will, next to the answer-key view that
- * only an admin gets. This is the "does my wording match my tests" check.
+ * The saved question exactly as a student will see it (built by the same
+ * server function the exam uses), next to the admin-only view of its test
+ * cases and reference solution.
  */
 export default async function QuestionPreviewPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
-  const question = await prisma.question.findUnique({
-    where: { id },
-    include: { tests: { orderBy: { order: 'asc' } } },
-  });
-  if (!question) notFound();
+  const raw = await loadAdminQuestion(id);
+  const question = normalizeQuestion(raw);
+  const studentView = toStudentQuestion(raw, raw.marks);
 
-  const studentView = toStudentQuestion(question);
-  const blockers = publishBlockers(question);
+  const enabledCount = question.tests.filter((t) => t.enabled).length;
+  const { share } = equalShare(question.marks, enabledCount);
+  const hasReference = Boolean(question.referenceHtml || question.referenceCss || question.referenceJs);
+  const cannotValidateReason =
+    question.status === 'ARCHIVED'
+      ? 'Restore this question before validating it.'
+      : !hasReference
+        ? 'Add a reference solution before validating.'
+        : enabledCount === 0
+          ? 'Enable at least one test case before validating.'
+          : undefined;
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-50">Preview: {question.title}</h1>
-          <p className="mt-1 text-sm text-slate-400">Left is the student view. Right is admin-only.</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 space-y-1.5">
+          <Link
+            href="/admin/questions"
+            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
+            Questions
+          </Link>
+          <h1 className="truncate text-xl font-semibold text-slate-50">Preview: {question.title}</h1>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+            <StatusBadge status={question.status} />
+            <Badge
+              tone={
+                question.validation === 'PASSED' ? 'ok' : question.validation === 'FAILED' ? 'bad' : 'warn'
+              }
+            >
+              validation {question.validation.replace('_', ' ').toLowerCase()}
+            </Badge>
+            <span>v{question.version}</span>
+            <span>Saved version · students see the left-hand panels</span>
+          </div>
         </div>
         <Link
           href={`/admin/questions/${question.id}/edit`}
-          className="rounded-md px-3 py-1.5 text-sm text-slate-300 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
+          className="inline-flex h-9 items-center rounded-md px-4 text-sm text-slate-200 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
         >
           Edit
         </Link>
       </div>
 
-      {blockers.length > 0 ? (
-        <div className="rounded-md bg-warn/10 p-3 text-xs text-amber-200 ring-1 ring-warn/30">
-          <p className="font-medium">Not ready for a published exam:</p>
-          <ul className="mt-1 list-disc pl-5">
-            {blockers.map((b, i) => (
+      {question.status === 'ARCHIVED' ? (
+        <Notice tone="warn">
+          <p>This question is archived: it cannot be edited or added to tests until it is restored.</p>
+        </Notice>
+      ) : question.status === 'PUBLISHED' ? (
+        <Notice tone="ok">
+          <p>Published: this question can be added to tests.</p>
+        </Notice>
+      ) : question.blockers.length > 0 ? (
+        <Notice tone="warn" title="Not ready to publish yet:">
+          <ul className="list-disc space-y-0.5 pl-4">
+            {question.blockers.map((b, i) => (
               <li key={i}>{b}</li>
             ))}
           </ul>
-        </div>
+        </Notice>
       ) : (
-        <div className="rounded-md bg-ok/10 p-3 text-xs text-emerald-200 ring-1 ring-ok/30">
-          This question is validated and ready to be added to an exam.
-        </div>
+        <Notice tone="ok">
+          <p>Validated and ready to publish from the editor’s Publish step.</p>
+        </Notice>
       )}
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card className="min-h-[520px] overflow-hidden">
-          <CardHeader title="Student view" subtitle="Exactly what the exam panel renders" />
-          <div className="h-[520px]">
-            <QuestionPanel question={studentView} earned={null} maxScore={question.points} />
-          </div>
+      <Card>
+        <CardHeader
+          title="Student view"
+          subtitle="Exactly what the test workspace renders for this question"
+        />
+        <CardBody>
+          <StudentPreview question={studentView} summary={splitSummary(question.marks, enabledCount)} />
+        </CardBody>
+      </Card>
+
+      <div className="grid gap-4 xl:grid-cols-2">
+        <Card>
+          <CardHeader
+            title={`Test cases (${question.tests.length})`}
+            subtitle="Admin view: includes disabled test cases and each body's JSON"
+          />
+          <CardBody className="space-y-2">
+            {question.tests.length === 0 ? (
+              <p className="text-xs text-slate-500">No test cases yet.</p>
+            ) : null}
+            {question.tests.map((t, i) => {
+              const readable = readableTest(t.testCode);
+              return (
+                <details key={t.id} className="rounded-md bg-ink-900 ring-1 ring-ink-700">
+                  <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-sm text-slate-200">
+                    <span className="text-xs text-slate-500">#{i + 1}</span>
+                    {t.name}
+                    {t.enabled ? (
+                      <span className="ml-auto font-mono text-xs text-slate-400">
+                        {formatMarks(share)} {marksWord(share)}
+                      </span>
+                    ) : (
+                      <Badge tone="neutral" className="ml-auto">
+                        disabled · not counted
+                      </Badge>
+                    )}
+                  </summary>
+                  <div className="space-y-2 border-t border-ink-700 px-3 py-2 text-xs">
+                    {t.expectedBehavior || t.description ? (
+                      <p className="text-slate-300">{t.expectedBehavior || t.description}</p>
+                    ) : null}
+                    {readable ? (
+                      <>
+                        {readable.steps.length ? (
+                          <ol className="list-decimal space-y-0.5 pl-4 text-slate-300">
+                            {readable.steps.map((s, si) => (
+                              <li key={si}>{s}</li>
+                            ))}
+                          </ol>
+                        ) : null}
+                        <ul className="list-disc space-y-0.5 pl-4 text-slate-300">
+                          {readable.checks.map((c, ci) => (
+                            <li key={ci}>{c}</li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : (
+                      <p className="text-bad">This test body is not a valid specification.</p>
+                    )}
+                    <pre className="max-h-64 overflow-auto rounded bg-ink-950 p-2 font-mono text-[11px] text-slate-400">
+                      {t.testCode}
+                    </pre>
+                  </div>
+                </details>
+              );
+            })}
+          </CardBody>
         </Card>
 
-        <div className="space-y-4">
-          <Card>
-            <CardHeader
-              title="Test suite (admin only)"
-              subtitle="Test bodies are never sent to a student's browser"
-            />
-            <CardBody className="space-y-2">
-              {question.tests.map((t) => (
-                <details key={t.id} className="rounded-md bg-ink-900 p-3 ring-1 ring-ink-700">
-                  <summary className="flex cursor-pointer flex-wrap items-center gap-2 text-sm text-slate-200">
-                    {t.name}
-                    <Badge tone={t.hidden ? 'neutral' : 'info'}>{t.hidden ? 'hidden' : 'visible'}</Badge>
-                    <span className="text-xs text-slate-500">{t.points} pts</span>
-                  </summary>
-                  <pre className="mt-2 max-h-64 overflow-auto font-mono text-[11px] text-slate-400">
-                    {t.testCode}
-                  </pre>
-                </details>
-              ))}
-              {question.tests.length === 0 ? (
-                <p className="text-xs text-slate-500">No tests defined.</p>
-              ) : null}
-            </CardBody>
-          </Card>
-
-          <QuestionPreviewRunner
-            questionId={question.id}
-            hasReference={Boolean(question.referenceHtml || question.referenceCss || question.referenceJs)}
-            starter={{ html: question.starterHtml, css: question.starterCss, js: question.starterJs }}
-            reference={{
-              html: question.referenceHtml ?? '',
-              css: question.referenceCss ?? '',
-              js: question.referenceJs ?? '',
-            }}
-          />
-        </div>
+        <QuestionPreviewRunner
+          questionId={question.id}
+          canValidate={cannotValidateReason === undefined}
+          cannotValidateReason={cannotValidateReason}
+          starter={{ html: question.starterHtml, css: question.starterCss, js: question.starterJs }}
+          reference={{
+            html: question.referenceHtml ?? '',
+            css: question.referenceCss ?? '',
+            js: question.referenceJs ?? '',
+          }}
+        />
       </div>
     </div>
   );

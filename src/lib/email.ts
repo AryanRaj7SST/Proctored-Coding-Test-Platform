@@ -1,10 +1,10 @@
 /**
  * Email normalisation + validation.
- * Allowlisting is EXACT-MATCH on the normalised address. We deliberately do NOT
- * strip gmail dots or +tags: two different Google accounts can own
- * `a.b@gmail.com` and `ab@gmail.com` is the same account, but treating them as
- * equal would let an allowlisted student mint unlimited aliases. Exact match on
- * the lowercase address is the safest rule for an allowlist. (docs/security.md)
+ * Accounts, assignments and the student roster match EXACT on the normalised
+ * address. We deliberately do NOT strip gmail dots or +tags: `a.b@gmail.com`
+ * and `ab@gmail.com` may be the same Google account, but treating aliases as
+ * equal is a guess about the provider; exact match on the lowercase address
+ * Google verified is the safest rule. (docs/security.md)
  */
 const EMAIL_RE = /^[^\s@,;<>"']+@[^\s@,;<>"'.]+(\.[^\s@,;<>"'.]+)+$/;
 

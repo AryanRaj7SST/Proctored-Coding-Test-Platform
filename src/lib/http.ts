@@ -1,30 +1,20 @@
 import { NextResponse } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { logger, sanitizeError } from './logger';
+import { AppError, badRequest, tooLarge, type ApiErrorBody } from './errors';
 
-export class HttpError extends Error {
-  status: number;
-  code: string;
-  details?: unknown;
-
-  constructor(status: number, message: string, code = 'error', details?: unknown) {
-    super(message);
-    this.name = 'HttpError';
-    this.status = status;
-    this.code = code;
-    this.details = details;
-  }
-}
-
-export const badRequest = (m = 'Invalid request.', d?: unknown) => new HttpError(400, m, 'bad_request', d);
-export const unauthorized = (m = 'You must sign in to continue.') => new HttpError(401, m, 'unauthorized');
-export const forbidden = (m = 'You do not have access to this resource.') =>
-  new HttpError(403, m, 'forbidden');
-export const notFound = (m = 'Not found.') => new HttpError(404, m, 'not_found');
-export const conflict = (m = 'This action conflicts with the current state.') =>
-  new HttpError(409, m, 'conflict');
-export const tooLarge = (m = 'Payload too large.') => new HttpError(413, m, 'payload_too_large');
-export const tooManyRequests = (m = 'Too many requests. Please slow down.') =>
-  new HttpError(429, m, 'rate_limited');
+// Route handlers import the error helpers from here alongside the responders.
+export {
+  AppError,
+  badRequest,
+  conflict,
+  forbidden,
+  notFound,
+  tooLarge,
+  tooManyRequests,
+  unauthorized,
+  validationError,
+} from './errors';
 
 export function ok<T>(data: T, init?: ResponseInit): NextResponse {
   return NextResponse.json(data as object, { status: 200, ...init });
@@ -38,44 +28,35 @@ export function noContent(): NextResponse {
   return new NextResponse(null, { status: 204 });
 }
 
+/** Map Prisma's known request errors to a safe client error; null for anything else. */
+function fromPrismaError(err: unknown): AppError | null {
+  if (!(err instanceof Prisma.PrismaClientKnownRequestError)) return null;
+  switch (err.code) {
+    case 'P2002':
+      return new AppError(409, 'A record with these details already exists.', 'CONFLICT');
+    case 'P2003':
+      return new AppError(409, 'This record is referenced by other data.', 'CONFLICT');
+    case 'P2025':
+      return new AppError(404, 'Not found.', 'NOT_FOUND');
+    default:
+      return null;
+  }
+}
+
 /**
- * Convert any thrown value into a safe JSON response.
- * Internal errors never leak stack traces, SQL, or filesystem paths.
+ * Convert any thrown value into a safe JSON response ({code, message, details?}).
+ * Internal errors never leak stack traces, SQL, Prisma internals or file paths.
  */
 export function errorResponse(err: unknown, context?: Record<string, unknown>): NextResponse {
-  if (err instanceof HttpError) {
-    if (err.status >= 500) logger.error(err.message, { ...context, code: err.code });
-    return NextResponse.json(
-      { error: err.message, code: err.code, ...(err.details ? { details: err.details } : {}) },
-      { status: err.status },
-    );
-  }
-  // Validation errors are thrown by src/lib/validation.ts, which deliberately
-  // does not import next/server so the schemas stay importable from client
-  // components. They carry {status, code, details} instead of being HttpErrors.
-  if (
-    err &&
-    typeof err === 'object' &&
-    'status' in err &&
-    typeof (err as { status?: unknown }).status === 'number' &&
-    (err as { status: number }).status < 500
-  ) {
-    const e = err as { status: number; message?: string; code?: string; details?: unknown };
-    return NextResponse.json(
-      {
-        error: e.message || 'Invalid request.',
-        code: e.code || 'bad_request',
-        ...(e.details ? { details: e.details } : {}),
-      },
-      { status: e.status },
-    );
+  const known = err instanceof AppError ? err : fromPrismaError(err);
+  if (known) {
+    if (known.status >= 500) logger.error(known.message, { ...context, code: known.code });
+    return NextResponse.json(known.toBody(), { status: known.status });
   }
 
   logger.error('Unhandled API error', { ...context, error: sanitizeError(err) });
-  return NextResponse.json(
-    { error: 'Something went wrong. Please try again.', code: 'internal_error' },
-    { status: 500 },
-  );
+  const body: ApiErrorBody = { code: 'INTERNAL_ERROR', message: 'Something went wrong. Please try again.' };
+  return NextResponse.json(body, { status: 500 });
 }
 
 /** Wrap a route handler so every thrown error becomes a safe response. */
@@ -93,10 +74,7 @@ export function handler<A extends unknown[]>(
 
 /** Read a JSON body with a hard size ceiling (defence against memory abuse). */
 export async function readJson(req: Request, maxBytes = 1_000_000): Promise<unknown> {
-  const declared = req.headers.get('content-length');
-  if (declared && Number(declared) > maxBytes) throw tooLarge();
-  const text = await req.text();
-  if (Buffer.byteLength(text, 'utf8') > maxBytes) throw tooLarge();
+  const text = await readText(req, maxBytes);
   if (!text) return {};
   try {
     return JSON.parse(text) as unknown;

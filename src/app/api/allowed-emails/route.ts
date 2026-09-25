@@ -18,7 +18,7 @@ export const GET = handler(async (req: Request): Promise<NextResponse> => {
       status: 200,
       headers: {
         'Content-Type': 'text/csv; charset=utf-8',
-        'Content-Disposition': 'attachment; filename="allowed-emails.csv"',
+        'Content-Disposition': 'attachment; filename="student-roster.csv"',
       },
     });
   }
@@ -64,7 +64,7 @@ export const POST = handler(async (req: Request): Promise<NextResponse> => {
     action: 'allowlist.added',
     entity: 'AllowedEmail',
     entityId: entry.id,
-    metadata: { role: entry.role, batch: entry.batch },
+    metadata: { email: entry.email, batch: entry.batch },
   });
   return created(entry);
 });

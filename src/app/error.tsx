@@ -22,7 +22,7 @@ export default function GlobalError({
     <main id="main" className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
       <h1 className="text-xl font-semibold text-slate-100">Something went wrong</h1>
       <p className="max-w-md text-sm text-slate-400">
-        The page could not be displayed. Any exam work you had saved is safe — autosave writes to the server,
+        The page could not be displayed. Any test work you had saved is safe — autosave writes to the server,
         not the browser.
       </p>
       {error?.digest ? (

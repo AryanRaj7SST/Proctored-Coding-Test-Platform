@@ -17,7 +17,7 @@ export interface ConsoleLine {
  * any application API (product requirement #13). Console output is forwarded
  * back over postMessage and nothing else crosses the boundary.
  *
- * Passing the preview is explicitly NOT the same as passing the hidden tests --
+ * Looking right in the preview is not the same as passing the tests --
  * grading only ever happens in the isolated runner.
  */
 export function PreviewFrame({

@@ -89,9 +89,17 @@ attempt auto-submitted once the deadline passes and they're next observed
 
 ## Proctoring: honest scope
 
+A test starts only after a system check (`src/components/proctor/SystemCheck.tsx`):
+camera granted and streaming, fullscreen on, browser capable, and the server
+saying the sitting can start or resume. During the test a gate
+(`ProctorGate`) covers the workspace while fullscreen is off or the camera has
+stopped, until the student restores it (a click, because browsers require a
+gesture); the server timer keeps running.
 `useProctor` (`src/hooks/useProctor.ts`) observes `visibilitychange`, `blur`/
-`focus`, `fullscreenchange`, `copy`/`cut`/`paste`, `contextmenu`, and
-`pagehide`. That is the _complete_ list of what a browser tab can see. It
+`focus`, `fullscreenchange`, `copy`/`cut`/`paste`, `drop`/`dragstart`,
+`contextmenu`, clipboard shortcuts, and `pagehide`, and blocks the clipboard
+ones in the capture phase; `useCameraMonitor` watches the camera track. That
+is the _complete_ list of what a browser tab can see. It
 cannot detect a second device, another monitor, a virtual machine, screen
 recording, or anything outside the tab — and a web page cannot pull itself
 back into focus, so `TabSwitchModal` is deliberately a "welcome back, that was
@@ -134,12 +142,11 @@ app is ever scaled to multiple instances — see `docs/deployment.md`.
 ## Sessions: JWT, not a database adapter table
 
 Auth.js is configured with `session: { strategy: 'jwt' }` rather than a
-database session adapter. `User` rows are upserted on sign-in
-(`src/lib/auth.ts`), and role/batch/active status are re-read from the
-database on every `jwt` callback trigger (`signIn` and `update`), so a
-revoked allowlist entry or a role change takes effect on the next session
-refresh rather than requiring the student to be looked up per-request from a
-sessions table.
+database session adapter. `User` rows are created (as `STUDENT`) or
+refreshed on sign-in (`src/server/services/accounts.ts`), and role/batch/active
+status are re-read from the database every time the `jwt` callback runs
+(`src/lib/auth-callbacks.ts`), so a deactivation or role change takes effect on
+the next request without a sessions table.
 
 ## Isolation modes
 

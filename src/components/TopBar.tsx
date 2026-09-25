@@ -14,6 +14,27 @@ export function TopBar({ user, title }: { user: SessionUser; title: string }) {
           <span className="text-sm font-semibold text-slate-100">{title}</span>
         </Link>
 
+        <nav aria-label="Main" className="flex items-center gap-1 text-sm">
+          {(user.role === 'ADMIN'
+            ? [
+                { href: '/admin', label: 'Admin' },
+                { href: '/dashboard', label: 'Student view' },
+              ]
+            : [
+                { href: '/dashboard', label: 'Dashboard' },
+                { href: '/exams', label: 'My results' },
+              ]
+          ).map((l) => (
+            <Link
+              key={l.href}
+              href={l.href}
+              className="rounded-md px-2.5 py-1.5 text-slate-400 hover:bg-ink-800 hover:text-white"
+            >
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+
         <div className="ml-auto flex items-center gap-3">
           <div className="hidden text-right sm:block">
             <p className="text-xs font-medium text-slate-200">{user.name ?? user.email}</p>

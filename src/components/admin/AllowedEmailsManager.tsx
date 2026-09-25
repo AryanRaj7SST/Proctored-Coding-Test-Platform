@@ -19,15 +19,13 @@ import {
   Th,
 } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
-import { apiDelete, apiPatch, apiPost, ApiError } from '@/lib/api';
+import { api, apiDelete, apiPost, ApiError } from '@/lib/api';
 import { formatDateTime } from '@/lib/utils';
 
 export interface AllowedEmailRowDto {
   id: string;
   email: string;
-  role: 'STUDENT' | 'ADMIN';
   batch: string | null;
-  active: boolean;
   note: string | null;
   createdAt: string;
   hasAccount: boolean;
@@ -42,11 +40,12 @@ interface ImportSummary {
 }
 
 /**
- * Allowlist management (product requirement #7).
+ * Student roster management.
  *
- * The allowlist is the only door into the platform: sign-in requires an EXACT
- * match on a normalised address. There is deliberately no domain-wildcard
- * option here, because "@gmail.com" would let the entire internet in.
+ * The roster pre-registers addresses with a batch so tests can be assigned by
+ * batch before those students first sign in. It does not control sign-in (any
+ * Google account may sign in) and never sets a role: roles and account access
+ * are managed on the Students page.
  */
 export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowDto[]; batches: string[] }) {
   const router = useRouter();
@@ -56,12 +55,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
   const [batchFilter, setBatchFilter] = React.useState('');
   const [adding, setAdding] = React.useState(false);
   const [addOpen, setAddOpen] = React.useState(false);
-  const [draft, setDraft] = React.useState({
-    email: '',
-    role: 'STUDENT' as 'STUDENT' | 'ADMIN',
-    batch: '',
-    note: '',
-  });
+  const [draft, setDraft] = React.useState({ email: '', batch: '', note: '' });
   const [importOpen, setImportOpen] = React.useState(false);
   const [importing, setImporting] = React.useState(false);
   const [importSummary, setImportSummary] = React.useState<ImportSummary | null>(null);
@@ -77,12 +71,11 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
     try {
       await apiPost('/api/allowed-emails', {
         email: draft.email,
-        role: draft.role,
         batch: draft.batch || null,
         note: draft.note || null,
       });
-      toast.push(`${draft.email.trim().toLowerCase()} can now sign in.`, 'success');
-      setDraft({ email: '', role: 'STUDENT', batch: '', note: '' });
+      toast.push(`${draft.email.trim().toLowerCase()} added to the roster.`, 'success');
+      setDraft({ email: '', batch: '', note: '' });
       setAddOpen(false);
       router.refresh();
     } catch (err) {
@@ -92,37 +85,12 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
     }
   };
 
-  const toggleActive = async (row: AllowedEmailRowDto) => {
-    try {
-      await apiPatch(`/api/allowed-emails/${row.id}`, { active: !row.active });
-      toast.push(
-        row.active
-          ? `${row.email} can no longer sign in. Any live session ends at its next refresh.`
-          : `${row.email} can sign in again.`,
-        'success',
-      );
-      router.refresh();
-    } catch (err) {
-      toast.push(err instanceof ApiError ? err.message : 'Could not update that entry.', 'error');
-    }
-  };
-
-  const changeRole = async (row: AllowedEmailRowDto, role: 'STUDENT' | 'ADMIN') => {
-    try {
-      await apiPatch(`/api/allowed-emails/${row.id}`, { role });
-      toast.push(`${row.email} is now ${role.toLowerCase()}.`, 'success');
-      router.refresh();
-    } catch (err) {
-      toast.push(err instanceof ApiError ? err.message : 'Could not change the role.', 'error');
-    }
-  };
-
   const remove = async () => {
     if (!pendingDelete) return;
     setDeleting(true);
     try {
       await apiDelete(`/api/allowed-emails/${pendingDelete.id}`);
-      toast.push(`${pendingDelete.email} removed from the allowlist.`, 'success');
+      toast.push(`${pendingDelete.email} removed from the roster.`, 'success');
       setPendingDelete(null);
       router.refresh();
     } catch (err) {
@@ -156,8 +124,8 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
     <>
       <Card>
         <CardHeader
-          title="Allowed email addresses"
-          subtitle={`${rows.length} entries · exact-match only, no domain wildcards`}
+          title="Roster"
+          subtitle={`${rows.length} ${rows.length === 1 ? 'address' : 'addresses'} · matched exactly, lowercased`}
           action={
             <div className="flex gap-2">
               <a
@@ -182,7 +150,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
               placeholder="Search address"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search allowlist"
+              aria-label="Search roster"
             />
             <Select
               value={batchFilter}
@@ -201,17 +169,16 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
           {filtered.length === 0 ? (
             <EmptyState
               title="No matching addresses"
-              description="Add the exact Google address each mentee signs in with."
+              description="Add a student's Google address to give them a batch before their first sign-in."
             />
           ) : (
             <Table>
               <thead>
                 <tr>
                   <Th>Email</Th>
-                  <Th>Role</Th>
                   <Th>Batch</Th>
                   <Th>Account</Th>
-                  <Th>Status</Th>
+                  <Th>Note</Th>
                   <Th>Added</Th>
                   <Th />
                 </tr>
@@ -220,44 +187,22 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
                 {filtered.map((row) => (
                   <tr key={row.id}>
                     <Td className="font-medium text-slate-100">{row.email}</Td>
-                    <Td>
-                      <Select
-                        value={row.role}
-                        onChange={(e) => void changeRole(row, e.target.value as 'STUDENT' | 'ADMIN')}
-                        className="h-7 w-28 text-xs"
-                        aria-label={`Role for ${row.email}`}
-                      >
-                        <option value="STUDENT">Student</option>
-                        <option value="ADMIN">Admin</option>
-                      </Select>
-                    </Td>
                     <Td className="text-slate-400">{row.batch ?? '—'}</Td>
                     <Td>
                       <Badge tone={row.hasAccount ? 'ok' : 'neutral'}>
                         {row.hasAccount ? 'signed in' : 'never signed in'}
                       </Badge>
                     </Td>
-                    <Td>
-                      <Badge tone={row.active ? 'ok' : 'bad'}>{row.active ? 'active' : 'revoked'}</Badge>
-                    </Td>
+                    <Td className="max-w-[16rem] truncate text-xs text-slate-400">{row.note ?? '—'}</Td>
                     <Td className="text-xs text-slate-500">{formatDateTime(row.createdAt)}</Td>
                     <Td>
-                      <div className="flex gap-2 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => void toggleActive(row)}
-                          className="text-brand-300 hover:underline"
-                        >
-                          {row.active ? 'Revoke' : 'Restore'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPendingDelete(row)}
-                          className="text-rose-400 hover:underline"
-                        >
-                          Delete
-                        </button>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setPendingDelete(row)}
+                        className="text-xs text-rose-400 hover:underline"
+                      >
+                        Remove
+                      </button>
                     </Td>
                   </tr>
                 ))}
@@ -269,7 +214,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
 
       <Modal
         open={addOpen}
-        title="Add an allowed address"
+        title="Add to the roster"
         onClose={() => setAddOpen(false)}
         footer={
           <>
@@ -292,25 +237,13 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
               placeholder="mentee@gmail.com"
             />
           </Field>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Role" htmlFor="ae-role">
-              <Select
-                id="ae-role"
-                value={draft.role}
-                onChange={(e) => setDraft((d) => ({ ...d, role: e.target.value as 'STUDENT' | 'ADMIN' }))}
-              >
-                <option value="STUDENT">Student</option>
-                <option value="ADMIN">Admin</option>
-              </Select>
-            </Field>
-            <Field label="Batch" hint="Optional grouping" htmlFor="ae-batch">
-              <Input
-                id="ae-batch"
-                value={draft.batch}
-                onChange={(e) => setDraft((d) => ({ ...d, batch: e.target.value }))}
-              />
-            </Field>
-          </div>
+          <Field label="Batch" hint="Used to assign tests by batch" htmlFor="ae-batch">
+            <Input
+              id="ae-batch"
+              value={draft.batch}
+              onChange={(e) => setDraft((d) => ({ ...d, batch: e.target.value }))}
+            />
+          </Field>
           <Field label="Note" htmlFor="ae-note">
             <Input
               id="ae-note"
@@ -320,7 +253,8 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
           </Field>
           <p className="text-xs text-slate-500">
             The address must match exactly what Google reports, lowercased. Aliases such as
-            <code className="mx-1">name+tag@gmail.com</code> are different addresses.
+            <code className="mx-1">name+tag@gmail.com</code> are different addresses. Nobody needs to be on
+            the roster to sign in.
           </p>
         </div>
       </Modal>
@@ -328,8 +262,9 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
       <Modal open={importOpen} title="Import a CSV" onClose={() => setImportOpen(false)}>
         <div className="space-y-3">
           <p>
-            The file needs a header row with <code>email</code>, and may include <code>role</code> and{' '}
-            <code>batch</code> columns. Existing addresses are updated rather than duplicated.
+            The file needs a header row with <code>email</code> and may include a <code>batch</code> column.
+            Existing addresses are updated rather than duplicated. The roster never grants a role: rows asking
+            for <code>ADMIN</code> are reported and skipped.
           </p>
           <input
             type="file"
@@ -368,8 +303,8 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
 
       <ConfirmDialog
         open={Boolean(pendingDelete)}
-        title="Remove from the allowlist?"
-        message={`${pendingDelete?.email ?? ''} will lose access immediately. Their past results are kept.`}
+        title="Remove from the roster?"
+        message={`${pendingDelete?.email ?? ''} is taken off the roster. Their account, assignments and results are not affected.`}
         confirmLabel="Remove"
         danger
         busy={deleting}
@@ -380,14 +315,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
   );
 }
 
-/** FormData upload cannot go through the JSON helper. */
-async function api_importCsv(form: FormData): Promise<ImportSummary> {
-  const res = await fetch('/api/allowed-emails/import', {
-    method: 'POST',
-    body: form,
-    credentials: 'same-origin',
-  });
-  const payload = (await res.json().catch(() => null)) as (ImportSummary & { error?: string }) | null;
-  if (!res.ok) throw new ApiError(res.status, payload?.error ?? 'Import failed.');
-  return payload as ImportSummary;
+/** CSV upload: `api` leaves the multipart Content-Type to the browser for FormData bodies. */
+function api_importCsv(form: FormData): Promise<ImportSummary> {
+  return api<ImportSummary>('/api/allowed-emails/import', { method: 'POST', body: form });
 }

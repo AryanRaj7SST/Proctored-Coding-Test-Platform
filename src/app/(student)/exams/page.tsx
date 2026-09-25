@@ -1,122 +1,85 @@
-import { requireUser } from '@/lib/authz';
-import { prisma } from '@/lib/prisma';
-import { listStudentExams } from '@/server/services/exams';
-import { Badge, Card, CardBody, CardHeader, EmptyState, Table, Td, Th } from '@/components/ui';
-import { formatDateTime, percentage } from '@/lib/utils';
+import Link from 'next/link';
+import { requireAuth } from '@/lib/authz';
+import { listMySittings } from '@/server/services/results';
+import { Badge, Card, CardBody, EmptyState, Table, Td, Th } from '@/components/ui';
+import { displayMarks, formatDateTime } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
-/**
- * Student results view (product requirement #31): scores per question, but
- * never the hidden test bodies and never another student's work.
- */
-export default async function StudentExamsPage() {
-  const user = await requireUser();
-  const exams = await listStudentExams(user.id);
+const STATE: Record<string, { label: string; tone: 'ok' | 'warn' | 'bad' | 'info' }> = {
+  IN_PROGRESS: { label: 'In progress', tone: 'warn' },
+  GRADING_PENDING: { label: 'Grading pending', tone: 'warn' },
+  PASSED: { label: 'Passed', tone: 'ok' },
+  FAILED: { label: 'Not passed', tone: 'bad' },
+};
 
-  const attempts = await prisma.attempt.findMany({
-    where: { userId: user.id, status: { not: 'IN_PROGRESS' } },
-    orderBy: { submittedAt: 'desc' },
-    select: {
-      id: true,
-      score: true,
-      maxScore: true,
-      status: true,
-      submittedAt: true,
-      exam: { select: { id: true, title: true } },
-      question: { select: { title: true } },
-      testResults: { where: { final: true }, select: { passed: true } },
-    },
-  });
+/**
+ * Every attempt the student has made. Scores follow each test's result
+ * visibility; the detail page shows the per-question breakdown when allowed.
+ */
+export default async function MyResultsPage() {
+  const user = await requireAuth();
+  const sittings = await listMySittings(user.id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">My assessments</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Scores appear as soon as a question is graded. Hidden test cases stay hidden.
-        </p>
+        <h1 className="text-xl font-semibold text-slate-50">My results</h1>
+        <p className="mt-1 text-sm text-slate-400">Every test attempt you have made, newest first.</p>
       </div>
-
       <Card>
-        <CardHeader title="Assigned exams" subtitle={`${exams.length} total`} />
         <CardBody className="p-0">
-          {exams.length === 0 ? (
+          {sittings.length === 0 ? (
             <div className="p-4">
-              <EmptyState title="Nothing assigned yet" />
+              <EmptyState title="No attempts yet" description="Tests you start will be listed here." />
             </div>
           ) : (
             <Table>
               <thead>
                 <tr>
-                  <Th>Exam</Th>
+                  <Th>Test</Th>
+                  <Th>Attempt</Th>
                   <Th>Status</Th>
-                  <Th>Questions</Th>
-                  <Th>Score</Th>
-                  <Th>Closes</Th>
-                </tr>
-              </thead>
-              <tbody>
-                {exams.map((e) => (
-                  <tr key={e.id}>
-                    <Td className="font-medium text-slate-100">{e.title}</Td>
-                    <Td>
-                      <Badge tone={e.availability === 'SUBMITTED' ? 'ok' : 'neutral'}>
-                        {e.availability.replace(/_/g, ' ').toLowerCase()}
-                      </Badge>
-                    </Td>
-                    <Td className="text-slate-400">
-                      {e.submittedCount}/{e.questionCount}
-                    </Td>
-                    <Td className="text-slate-300">
-                      {e.score !== null
-                        ? `${e.score}/${e.maxScore} (${percentage(e.score, e.maxScore ?? 0)}%)`
-                        : '—'}
-                    </Td>
-                    <Td className="text-slate-500">{e.endTime ? formatDateTime(e.endTime) : '—'}</Td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-          )}
-        </CardBody>
-      </Card>
-
-      <Card>
-        <CardHeader title="Graded questions" subtitle={`${attempts.length} submitted`} />
-        <CardBody className="p-0">
-          {attempts.length === 0 ? (
-            <div className="p-4">
-              <EmptyState
-                title="No submissions yet"
-                description="Questions you submit will be listed here."
-              />
-            </div>
-          ) : (
-            <Table>
-              <thead>
-                <tr>
-                  <Th>Question</Th>
-                  <Th>Exam</Th>
-                  <Th>Tests passed</Th>
                   <Th>Score</Th>
                   <Th>Submitted</Th>
+                  <Th>
+                    <span className="sr-only">Details</span>
+                  </Th>
                 </tr>
               </thead>
               <tbody>
-                {attempts.map((a) => (
-                  <tr key={a.id}>
-                    <Td className="font-medium text-slate-100">{a.question.title}</Td>
-                    <Td className="text-slate-400">{a.exam.title}</Td>
-                    <Td className="text-slate-400">
-                      {a.testResults.filter((r) => r.passed).length}/{a.testResults.length}
-                    </Td>
-                    <Td className="text-slate-200">
-                      {a.score}/{a.maxScore}
-                    </Td>
-                    <Td className="text-slate-500">{formatDateTime(a.submittedAt)}</Td>
-                  </tr>
-                ))}
+                {sittings.map((s) => {
+                  const state = s.resultsHidden && s.state !== 'IN_PROGRESS' ? null : STATE[s.state];
+                  return (
+                    <tr key={s.sessionId}>
+                      <Td className="font-medium text-slate-100">{s.examTitle}</Td>
+                      <Td className="text-slate-400">#{s.attemptNumber}</Td>
+                      <Td>
+                        {state ? (
+                          <Badge tone={state.tone}>{state.label}</Badge>
+                        ) : (
+                          <Badge tone="info">Submitted</Badge>
+                        )}
+                      </Td>
+                      <Td className="text-slate-300">
+                        {s.score !== null
+                          ? `${displayMarks(s.score)}/${displayMarks(s.maxScore)} (${displayMarks(s.percentage)}%)`
+                          : '—'}
+                      </Td>
+                      <Td className="text-xs text-slate-400">{formatDateTime(s.submittedAt)}</Td>
+                      <Td>
+                        {s.state !== 'IN_PROGRESS' ? (
+                          <Link
+                            href={`/results/${s.sessionId}`}
+                            className="text-xs text-brand-300 hover:underline"
+                          >
+                            View
+                          </Link>
+                        ) : null}
+                      </Td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </Table>
           )}
