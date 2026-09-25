@@ -14,7 +14,7 @@ export const POST = handler(async (_req: Request, ctx: Ctx): Promise<NextRespons
   const user = await requireAuth();
   const { id: examId } = await ctx.params;
 
-  const limit = rateLimit(`end-exam:${user.id}`, 5, 60_000);
+  const limit = await rateLimit(`end-exam:${user.id}`, 5, 60_000);
   if (!limit.allowed) throw tooManyRequests('Please wait a moment before trying again.');
 
   await requireTestAccess(examId, user);

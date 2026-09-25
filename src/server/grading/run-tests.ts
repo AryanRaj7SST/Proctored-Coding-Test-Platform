@@ -101,8 +101,17 @@ export async function executeTests(params: {
   const grade = gradeQuestion(marksMicro, tests, outcome.verdicts);
   await persistGrade({ attempt, testRunId: testRun.id, grade, final, durationMs, logs });
 
+  return executionOutcomeOf(testRun.id, grade, durationMs);
+}
+
+/** A completed run's grade as the execution outcome the API projects for students. */
+export function executionOutcomeOf(
+  runId: string,
+  grade: QuestionGrade,
+  durationMs: number,
+): ExecutionOutcome {
   return {
-    runId: testRun.id,
+    runId,
     status: 'COMPLETED',
     questionStatus: grade.status,
     results: grade.results.map((r) => ({

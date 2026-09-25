@@ -53,6 +53,20 @@ export function isExpired(expiresAt: Date, now: Date = new Date()): boolean {
   return now.getTime() >= expiresAt.getTime();
 }
 
+/**
+ * The window as an account with open test access sees it (see
+ * hasOpenTestAccess): no opening or closing time, and a closed test counts
+ * as published. Only the account's own sitting clock still applies.
+ */
+export function unboundedWindow<T extends ExamWindow>(exam: T): T {
+  return {
+    ...exam,
+    status: exam.status === 'ENDED' ? 'PUBLISHED' : exam.status,
+    startTime: null,
+    endTime: null,
+  };
+}
+
 /** Has the exam window itself closed (admin ended it, or endTime passed)? */
 export function examClosed(exam: ExamWindow, now: Date = new Date()): boolean {
   if (exam.status === 'ENDED') return true;

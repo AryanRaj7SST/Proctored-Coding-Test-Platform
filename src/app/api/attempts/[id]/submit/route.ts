@@ -22,7 +22,7 @@ export const POST = handler(async (req: Request, ctx: Ctx): Promise<NextResponse
   const user = await requireAuth();
   const { id } = await ctx.params;
 
-  const limit = rateLimit(`submit:${user.id}`, env.submitRateLimitPerMin, 60_000);
+  const limit = await rateLimit(`submit:${user.id}`, env.submitRateLimitPerMin, 60_000);
   if (!limit.allowed) throw tooManyRequests('Too many submissions. Please wait a moment.');
 
   await requireAttemptAccess(id, user, 'write');

@@ -48,6 +48,8 @@
     "@neon/config": "^1.7.2",
     "@neon/env": "^1.4.3",
     "@prisma/client": "^6.16.0",
+    "@upstash/ratelimit": "^2.2.0",
+    "@upstash/redis": "^1.39.0",
     "clsx": "^2.1.1",
     "codemirror": "^6.0.1",
     "lucide-react": "^1.47.0",

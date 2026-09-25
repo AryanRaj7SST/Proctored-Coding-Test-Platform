@@ -4,7 +4,10 @@ import { boxQuestion, gridQuestion, type SeedQuestion } from './seed-data';
 
 const prisma = new PrismaClient();
 
-const ADMIN_EMAIL = (process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com').toLowerCase();
+const ADMIN_EMAILS = (process.env.SEED_ADMIN_EMAIL ?? 'admin@example.com')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 const STUDENT_EMAILS = (
   process.env.SEED_STUDENT_EMAILS ?? 'student1@example.com,student2@example.com,student3@example.com'
 )
@@ -89,13 +92,19 @@ async function main(): Promise<void> {
   console.log(`  roster: ${STUDENT_EMAILS.length} students`);
 
   // 2. Local user rows so the exam can be assigned before first sign-in.
-  //    The administrator exists only as a user row with role ADMIN: signing in
+  //    Administrators exist only as user rows with role ADMIN: signing in
   //    never grants that role (Google sign-in refreshes name/image only).
-  const admin = await prisma.user.upsert({
-    where: { email: ADMIN_EMAIL },
-    create: { email: ADMIN_EMAIL, name: 'Seed Administrator', role: 'ADMIN', batch: 'STAFF' },
-    update: { role: 'ADMIN' },
-  });
+  const admins = [];
+  for (const [i, email] of ADMIN_EMAILS.entries()) {
+    admins.push(
+      await prisma.user.upsert({
+        where: { email },
+        create: { email, name: `Seed Administrator ${i + 1}`, role: 'ADMIN', batch: 'STAFF' },
+        update: { role: 'ADMIN', batch: 'STAFF' },
+      }),
+    );
+  }
+  const admin = admins[0];
   const students = [];
   for (const [i, email] of STUDENT_EMAILS.entries()) {
     students.push(
@@ -153,19 +162,21 @@ async function main(): Promise<void> {
   });
   console.log(`  exam "${exam.title}" with 2 questions, assigned to ${students.length} students`);
 
-  await prisma.auditLog.create({
-    data: {
-      userId: admin.id,
-      action: 'seed.completed',
-      entity: 'System',
-      metadata: { students: students.length },
-    },
-  });
+  if (admin) {
+    await prisma.auditLog.create({
+      data: {
+        userId: admin.id,
+        action: 'seed.completed',
+        entity: 'System',
+        metadata: { students: students.length },
+      },
+    });
+  }
 
   console.log('\nSeed complete.');
-  console.log(`  Admin login:   ${ADMIN_EMAIL}`);
+  console.log(`  Admin login:   ${ADMIN_EMAILS.join(', ')}`);
   console.log(`  Student login: ${STUDENT_EMAILS.join(', ')}`);
-  console.log('\nNext: sign in with Google as the admin address above, then open /admin.');
+  console.log('\nNext: sign in with Google as an admin address above, then open /admin.');
   console.log('Questions are seeded as NOT_VALIDATED on purpose -- run "Validate Question"');
   console.log('in the admin UI so the reference solution proves the tests before you assign them.');
 }

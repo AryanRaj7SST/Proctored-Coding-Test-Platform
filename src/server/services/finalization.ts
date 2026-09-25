@@ -2,11 +2,11 @@ import { after } from 'next/server';
 import type { Exam } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { logger, sanitizeError } from '@/lib/logger';
-import { sittingNeedsFinalization } from '@/lib/timing';
+import { sittingNeedsFinalization, unboundedWindow } from '@/lib/timing';
 import { gradeAttempt } from '@/server/grading/grade-attempt';
 import { refreshSittingTotals } from '@/server/grading/sitting-totals';
 import { claimAttempt } from './attempts';
-import { currentSession, getExamTimeState } from './sessions';
+import { currentSession, getExamTimeState, hasOpenTestAccess } from './sessions';
 import { countSessionViolations } from './proctoring';
 import { recordAudit } from './audit';
 
@@ -250,11 +250,19 @@ export async function finalizeOverdueSittings(
       ...(opts.userId ? { userId: opts.userId } : {}),
       ...(opts.examId ? { examId: opts.examId } : {}),
     },
-    include: { exam: { select: { status: true, startTime: true, endTime: true, durationMinutes: true } } },
+    include: {
+      exam: { select: { status: true, startTime: true, endTime: true, durationMinutes: true } },
+      user: { select: { email: true, role: true } },
+    },
     orderBy: { expiresAt: 'asc' },
     take: 500,
   });
-  const overdue = openSessions.filter((s) => sittingNeedsFinalization(s.exam, s, now)).slice(0, limit);
+  // A sitting with open test access ends by its own clock only (see hasOpenTestAccess).
+  const overdue = openSessions
+    .filter((s) =>
+      sittingNeedsFinalization(hasOpenTestAccess(s.user) ? unboundedWindow(s.exam) : s.exam, s, now),
+    )
+    .slice(0, limit);
 
   let finalised = 0;
   for (const s of overdue) {

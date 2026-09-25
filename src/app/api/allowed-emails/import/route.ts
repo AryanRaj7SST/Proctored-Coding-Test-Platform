@@ -16,7 +16,7 @@ export const maxDuration = 60;
 export const POST = handler(async (req: Request): Promise<NextResponse> => {
   const admin = await requireAdmin();
 
-  const limit = rateLimit(`allowlist-import:${admin.id}`, 5, 60_000);
+  const limit = await rateLimit(`allowlist-import:${admin.id}`, 5, 60_000);
   if (!limit.allowed) throw tooManyRequests('Too many imports. Please wait a moment.');
 
   const contentType = req.headers.get('content-type') ?? '';

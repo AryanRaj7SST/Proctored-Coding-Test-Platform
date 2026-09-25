@@ -21,7 +21,7 @@ export const maxDuration = 60;
 export const POST = handler(async (req: Request): Promise<NextResponse> => {
   const user = await requireAuth();
 
-  const limit = rateLimit(`proctor:${user.id}`, env.proctorRateLimitPerMin, 60_000);
+  const limit = await rateLimit(`proctor:${user.id}`, env.proctorRateLimitPerMin, 60_000);
   if (!limit.allowed) throw tooManyRequests('Too many proctoring events.');
 
   const body = parseOrThrow(proctorEventInput, await readJson(req, 16_384));

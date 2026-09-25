@@ -69,12 +69,20 @@ export default async function MyResultsPage() {
                       <Td className="text-xs text-slate-400">{formatDateTime(s.submittedAt)}</Td>
                       <Td>
                         {s.state !== 'IN_PROGRESS' ? (
-                          <Link
-                            href={`/results/${s.sessionId}`}
-                            className="text-xs text-brand-300 hover:underline"
-                          >
-                            View
-                          </Link>
+                          <div className="flex items-center justify-end gap-3">
+                            <Link
+                              href={`/results/${s.sessionId}`}
+                              className="text-xs text-brand-300 hover:underline"
+                            >
+                              View
+                            </Link>
+                            <Link
+                              href={`/results/${s.sessionId}#practice`}
+                              className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/20"
+                            >
+                              Practice
+                            </Link>
+                          </div>
                         ) : null}
                       </Td>
                     </tr>

@@ -5,6 +5,7 @@ import { toCsv } from '@/lib/csv';
 import { describeTestCase, validateTestCaseBody } from '@shared/test-spec';
 import { marksToNumber } from '@/server/grading/marks';
 import { enabledTests, snapshotOf, type QuestionSnapshot } from './questions';
+import { COMPLETED_ATTEMPT_STATUSES } from './practice';
 
 /**
  * Results are per sitting (one attempt at a test). A student is judged by
@@ -369,6 +370,13 @@ export async function getSittingResultForStudent(sessionId: string, userId: stri
     state: summary.state,
     submittedAt: summary.submittedAt,
     visibility,
+    // Practice Mode (see services/practice): each completed question of a finished sitting.
+    practice:
+      summary.state === 'IN_PROGRESS'
+        ? []
+        : s.attempts
+            .filter((a) => COMPLETED_ATTEMPT_STATUSES.includes(a.status))
+            .map((a) => ({ attemptId: a.id, title: snapshotOf(a).title })),
   };
   if (visibility === 'HIDDEN' || summary.state === 'IN_PROGRESS')
     return { ...base, totals: null, questions: null };

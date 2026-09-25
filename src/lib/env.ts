@@ -61,6 +61,9 @@ const REQUIRED: Partial<Record<StringKey, string>> = {
   runnerSecret: 'RUNNER_SECRET',
 };
 
+/** The variable behind each setting requireEnv() can be asked for. */
+const ENV_KEY_MAP: Partial<Record<StringKey, string>> = { ...REQUIRED, runnerUrl: 'RUNNER_URL' };
+
 /** Hosts reachable only inside a private network, where plain http to the runner is acceptable. */
 export function isPrivateHost(hostname: string): boolean {
   const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
@@ -110,9 +113,13 @@ export function assertServerEnv(): void {
   }
 }
 
-/** Throw a clear error when a hard requirement is missing at request time. */
+/**
+ * Throw a clear error when a hard requirement is missing at request time.
+ * The variable is read live first, so a value set after start-up is seen.
+ */
 export function requireEnv(key: StringKey): string {
-  const value = env[key];
+  const name = ENV_KEY_MAP[key];
+  const value = (name ? process.env[name] : undefined) || env[key];
   if (!value) {
     throw new Error(`Missing required environment variable for "${key}". See .env.example.`);
   }

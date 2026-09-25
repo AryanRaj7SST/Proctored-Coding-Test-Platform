@@ -150,6 +150,32 @@ export default async function StudentResultPage({ params }: { params: Promise<{ 
         </Card>
       )}
 
+      {result.practice.length > 0 ? (
+        <section id="practice" className="scroll-mt-4">
+          <Card className="space-y-3 p-4">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-100">Practice mode</h2>
+              <p className="mt-1 text-xs text-slate-400">
+                Keep working on a question and run its tests. Practice never changes your submitted work or
+                your score.
+              </p>
+            </div>
+            <ul className="flex flex-wrap gap-2">
+              {result.practice.map((p) => (
+                <li key={p.attemptId}>
+                  <Link
+                    href={`/practice/${p.attemptId}`}
+                    className="inline-flex items-center gap-1 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/20"
+                  >
+                    Practice: {p.title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </section>
+      ) : null}
+
       {result.questions ? (
         <div className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">Question breakdown</h2>

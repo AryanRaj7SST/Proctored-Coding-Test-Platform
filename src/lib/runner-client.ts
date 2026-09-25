@@ -61,22 +61,28 @@ export function runTimeoutFor(testCount: number): number {
   return env.runnerTimeoutMs + Math.max(0, testCount) * env.runnerTestTimeoutMs;
 }
 
-export async function runOnRunner(
-  request: RunnerRequest,
-  timeoutMs = runTimeoutFor(request.spec.tests.length),
-): Promise<RunnerRunResult> {
-  const baseUrl = requireEnv('runnerUrl').replace(/\/$/, '');
-  const candidateUrls = [
-    `${baseUrl}/run`,
-    baseUrl.includes('127.0.0.1')
-      ? `${baseUrl.replace('127.0.0.1', 'localhost')}/run`
-      : baseUrl.includes('localhost')
-        ? `${baseUrl.replace('localhost', '127.0.0.1')}/run`
-        : null,
-  ].filter(Boolean) as string[];
+/**
+ * Longest one runOnRunner call may wait in total, retry included, so a
+ * grading request ends inside the 300 s limit its routes declare (maxDuration).
+ */
+const MAX_TOTAL_WAIT_MS = 280_000;
 
-  const secret = requireEnv('runnerSecret');
-  const body = JSON.stringify(request);
+class HttpResponseError extends Error {
+  readonly runnerError: RunnerError;
+
+  constructor(runnerError: RunnerError) {
+    super(runnerError.message);
+    this.name = 'HttpResponseError';
+    this.runnerError = runnerError;
+  }
+}
+
+async function postToCandidateUrls(
+  candidateUrls: string[],
+  secret: string,
+  body: string,
+  timeoutMs: number,
+): Promise<RunnerRunResult> {
   const timestamp = String(Date.now());
   const signature = signPayload(body, secret, timestamp);
 
@@ -100,18 +106,34 @@ export async function runOnRunner(
         cache: 'no-store',
       });
 
-      if (res.status === 429) throw new RunnerError('BUSY', 'Runner queue is full.');
-      if (res.status === 401 || res.status === 403)
-        throw new RunnerError('REJECTED', 'Runner rejected the request.');
-      if (res.status === 400) throw new RunnerError('INVALID', 'Runner rejected the payload.');
-      if (!res.ok) throw new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}.`);
+      if (res.status === 429) {
+        throw new HttpResponseError(new RunnerError('BUSY', 'Runner queue is full.'));
+      }
+      if (res.status === 401 || res.status === 403) {
+        throw new HttpResponseError(new RunnerError('REJECTED', 'Runner rejected the request.'));
+      }
+      if (res.status === 400) {
+        throw new HttpResponseError(new RunnerError('INVALID', 'Runner rejected the payload.'));
+      }
+      if (!res.ok) {
+        throw new HttpResponseError(new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}.`));
+      }
 
-      const json = (await res.json()) as RunnerRunResult;
-      if (!json || !Array.isArray(json.results))
-        throw new RunnerError('INVALID', 'Malformed runner response.');
+      let json: RunnerRunResult;
+      try {
+        json = (await res.json()) as RunnerRunResult;
+      } catch {
+        throw new HttpResponseError(new RunnerError('INVALID', 'Malformed runner response.'));
+      }
+
+      if (!json || !Array.isArray(json.results)) {
+        throw new HttpResponseError(new RunnerError('INVALID', 'Malformed runner response.'));
+      }
+
+      clearTimeout(timer);
       return json;
     } catch (err) {
-      if (err instanceof RunnerError) {
+      if (err instanceof HttpResponseError) {
         clearTimeout(timer);
         throw err;
       }
@@ -127,8 +149,77 @@ export async function runOnRunner(
   clearTimeout(timer);
   const errorDetails =
     lastError instanceof Error ? `${lastError.name}: ${lastError.message}` : String(lastError);
-  logger.error('runner.unreachable', { error: sanitizeError(lastError), detail: errorDetails });
   throw new RunnerError('UNAVAILABLE', `Runner is unreachable (${errorDetails}).`);
+}
+
+export async function runOnRunner(
+  request: RunnerRequest,
+  timeoutMs = runTimeoutFor(request.spec.tests.length),
+  retryBackoffMs = 1500,
+): Promise<RunnerRunResult> {
+  const baseUrl = requireEnv('runnerUrl').replace(/\/$/, '');
+  const candidateUrls = [
+    `${baseUrl}/run`,
+    baseUrl.includes('127.0.0.1')
+      ? `${baseUrl.replace('127.0.0.1', 'localhost')}/run`
+      : baseUrl.includes('localhost')
+        ? `${baseUrl.replace('localhost', '127.0.0.1')}/run`
+        : null,
+  ].filter(Boolean) as string[];
+
+  const secret = requireEnv('runnerSecret');
+  const body = JSON.stringify(request);
+
+  // Each attempt gets the full per-test wait (see runTimeoutFor): a shorter one
+  // would turn a slow but valid run into a timeout. The retry only gets what
+  // is left of MAX_TOTAL_WAIT_MS.
+  const startedAt = Date.now();
+
+  try {
+    return await postToCandidateUrls(candidateUrls, secret, body, timeoutMs);
+  } catch (err) {
+    if (err instanceof HttpResponseError) {
+      // The runner was reachable and responded with an HTTP status (429, 4xx, 5xx) or body.
+      // Do not retry per spec: retrying 429 adds load, and 4xx/5xx indicates runner responded.
+      throw err.runnerError;
+    }
+
+    // It was a transient network/connection/timeout error (e.g. ECONNREFUSED, fetch abort).
+    const retryTimeout = Math.min(timeoutMs, MAX_TOTAL_WAIT_MS - (Date.now() - startedAt) - retryBackoffMs);
+    if (retryTimeout < 1_000) {
+      logger.error('runner.retry_skipped', { runId: request.runId, error: sanitizeError(err) });
+      throw err;
+    }
+    logger.warn('runner.retry', {
+      runId: request.runId,
+      error: sanitizeError(err),
+      attempt: 1,
+    });
+
+    if (retryBackoffMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, retryBackoffMs));
+    }
+
+    try {
+      const result = await postToCandidateUrls(candidateUrls, secret, body, retryTimeout);
+      logger.info('runner.retry_succeeded', {
+        runId: request.runId,
+        attempt: 2,
+      });
+      return result;
+    } catch (retryErr) {
+      const finalError = retryErr instanceof HttpResponseError ? retryErr.runnerError : retryErr;
+      logger.error('runner.retry_failed', {
+        runId: request.runId,
+        error: sanitizeError(finalError),
+        attempt: 2,
+      });
+      if (finalError instanceof RunnerError && finalError.code === 'UNAVAILABLE') {
+        logger.error('runner.unreachable', { error: sanitizeError(finalError) });
+      }
+      throw finalError;
+    }
+  }
 }
 
 export async function runnerHealth(): Promise<{ ok: boolean; detail?: string }> {

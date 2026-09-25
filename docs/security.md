@@ -38,6 +38,20 @@ source of truth — file an issue.
   revoke one student's access to one test (`ExamAssignment.revokedAt`,
   Assignments page); `requireTestAccess` answers such a student with 404, a
   sitting in progress is submitted, and the account is untouched.
+- **Open test access is a deliberate, narrow exemption.** Administrators, and
+  the accounts listed in `OPEN_ACCESS_EMAILS` (`src/server/services/sessions.ts`,
+  decided from the verified Google email), are bound by neither a test's
+  window nor its attempt limit: they can start before it opens, after it
+  closes, and again after every finished sitting. Each sitting is still timed,
+  proctored and graded, and nothing is deleted. It does not bypass access
+  revocation or assignment rules. Keep that list short and review it before
+  every release.
+- **Practice Mode never touches graded work.** After a question is submitted
+  its owner can reopen it at `/practice/[attemptId]` (no proctoring) and run
+  its frozen tests. Runs are recorded as `PRACTICE` test runs that are not
+  linked to the attempt, so the attempt's code, score, status and results are
+  never changed (`src/server/services/practice.ts`). It is refused while the
+  student has a sitting of that test in progress, and after access is revoked.
 - **`src/middleware.ts` is a UX redirect, not the access boundary.** It only
   checks for the presence of a session cookie (Edge runtime, no database
   access) and redirects to `/login`. Every API route and server page calls
@@ -101,8 +115,7 @@ rendered, and they're behind `requireAdmin()`.
 ## Rate limits and payload ceilings
 
 Every mutating route the student can call is rate-limited per user
-(`src/lib/rate-limit.ts`, in-memory, see `docs/architecture.md` for why no
-Redis): 12 runs/min, 6 submits/min, 120 proctor events/min, 5 CSV
+(`src/lib/rate-limit.ts`, sliding-window via Upstash Redis): 12 runs/min, 6 submits/min, 120 proctor events/min, 5 CSV
 imports/min for admins, by default (`.env.example`). `readJson`/`readText`
 (`src/lib/http.ts`) enforce a byte ceiling **before** parsing, checking
 `Content-Length` first so an oversized body is rejected without even being

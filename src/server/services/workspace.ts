@@ -1,12 +1,11 @@
 import type { Exam } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { sittingNeedsFinalization } from '@/lib/timing';
 import { isClipboardExempt, type ProctorEventType } from '@/lib/proctor';
 import type { SessionUser } from '@/lib/authz';
 import { ensureAttempts } from './attempts';
 import { studentQuestionOf } from './questions';
 import { marksToNumber } from '@/server/grading/marks';
-import { currentSession, getExamTimeState, heartbeat, startExamSession } from './sessions';
+import { currentSession, getExamTimeState, heartbeat, sittingOverdue, startExamSession } from './sessions';
 import { countSessionViolations, countViolations, recordProctorEvent } from './proctoring';
 import { enforceViolationLimit, finalizeExpiredAttempts, sittingEndReason } from './finalization';
 import { recordAudit } from './audit';
@@ -23,11 +22,15 @@ async function finalizeIfOverdue(exam: Exam, userId: string): Promise<void> {
   const state = await getExamTimeState(exam.id, userId, exam);
   if (
     state.session &&
-    sittingNeedsFinalization(exam, {
-      startedAt: state.session.startedAt,
-      expiresAt: state.session.expiresAt,
-      endedAt: state.session.endedAt,
-    })
+    (await sittingOverdue(
+      exam,
+      {
+        startedAt: state.session.startedAt,
+        expiresAt: state.session.expiresAt,
+        endedAt: state.session.endedAt,
+      },
+      userId,
+    ))
   ) {
     await finalizeExpiredAttempts(exam.id, userId);
   }
@@ -126,7 +129,7 @@ export async function processHeartbeat(exam: Exam, userId: string) {
   const beat = await heartbeat(exam.id, userId);
   if (beat.status !== 'NONE') {
     const session = await currentSession(exam.id, userId);
-    if (sittingNeedsFinalization(exam, session)) {
+    if (await sittingOverdue(exam, session, userId)) {
       await finalizeExpiredAttempts(exam.id, userId);
     } else {
       // Violations can also arrive without a proctor-event call (e.g. the

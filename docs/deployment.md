@@ -9,30 +9,32 @@ be exposed to the public internet directly (see below).
 
 ### App (`.env`, see `.env.example`)
 
-| Variable                                                                                                                                                                                             | Required       | Notes                                                                                  |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | -------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                                                                                                                                                                                       | yes            | PostgreSQL connection string                                                           |
-| `AUTH_SECRET`                                                                                                                                                                                        | yes            | `openssl rand -base64 32`                                                              |
-| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`                                                                                                                                                              | yes            | Google Cloud Console → APIs & Services → Credentials                                   |
-| `AUTH_URL`                                                                                                                                                                                           | production     | Public base URL; needed for the OAuth callback                                         |
-| `AUTH_TRUST_HOST`                                                                                                                                                                                    | behind a proxy | `"true"` on Vercel or behind any reverse proxy                                         |
-| `RUNNER_URL`                                                                                                                                                                                         | yes            | Where the app reaches the runner                                                       |
-| `RUNNER_SECRET`                                                                                                                                                                                      | yes            | `openssl rand -hex 32`. **Must match the runner's copy exactly.**                      |
-| `RUNNER_TIMEOUT_MS`                                                                                                                                                                                  | no             | App-side budget per run request (default 30000)                                        |
-| `MAX_CODE_BYTES`, `RUN_RATE_LIMIT_PER_MIN`, `SUBMIT_RATE_LIMIT_PER_MIN`, `PROCTOR_RATE_LIMIT_PER_MIN`, `HEARTBEAT_INTERVAL_SECONDS`, `SESSION_STALE_SECONDS`, `TEST_LOG_RETENTION_DAYS`, `LOG_LEVEL` | no             | See `.env.example` for defaults                                                        |
-| `CRON_SECRET`                                                                                                                                                                                        | production     | Bearer token for `/api/cron/maintenance` (Vercel Cron); unset disables it              |
-| `SEED_ADMIN_EMAIL`, `SEED_STUDENT_EMAILS`, `SEED_BATCH`                                                                                                                                              | dev only       | Used only by `npm run db:seed`                                                         |
-| `ADMIN_EMAILS`                                                                                                                                                                                       | no             | Comma-separated list for `npm run db:seed-admins` (defaults to the list in the script) |
+| Variable                                                                                                                                                                                             | Required       | Notes                                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                                                                                                                                                                                       | yes            | Neon POOLED connection string (uses `-pooler` in hostname). Used by the running app for queries to prevent connection ceiling exhaustion.                                                                              |
+| `DIRECT_URL`                                                                                                                                                                                         | for migrations | Neon UNPOOLED direct connection string (no `-pooler` in hostname). Required by Prisma migrations (`prisma migrate deploy`); not read by the running app or `prisma generate`. Locally, set it equal to `DATABASE_URL`. |
+| `AUTH_SECRET`                                                                                                                                                                                        | yes            | `openssl rand -base64 32`                                                                                                                                                                                              |
+| `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`                                                                                                                                                              | yes            | Google Cloud Console → APIs & Services → Credentials                                                                                                                                                                   |
+| `AUTH_URL`                                                                                                                                                                                           | production     | Public base URL; needed for the OAuth callback                                                                                                                                                                         |
+| `AUTH_TRUST_HOST`                                                                                                                                                                                    | behind a proxy | `"true"` on Vercel or behind any reverse proxy                                                                                                                                                                         |
+| `RUNNER_URL`                                                                                                                                                                                         | yes            | Where the app reaches the runner                                                                                                                                                                                       |
+| `RUNNER_SECRET`                                                                                                                                                                                      | yes            | `openssl rand -hex 32`. **Must match the runner's copy exactly.**                                                                                                                                                      |
+| `RUNNER_TIMEOUT_MS`                                                                                                                                                                                  | no             | App-side budget per run request (default 30000)                                                                                                                                                                        |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN`                                                                                                                                                | yes (prod)     | Upstash Redis REST API credentials. Required in production (Vercel) to enforce sliding-window rate limits across lambdas. Fails open (no rate limiting) if unset.                                                      |
+| `MAX_CODE_BYTES`, `RUN_RATE_LIMIT_PER_MIN`, `SUBMIT_RATE_LIMIT_PER_MIN`, `PROCTOR_RATE_LIMIT_PER_MIN`, `HEARTBEAT_INTERVAL_SECONDS`, `SESSION_STALE_SECONDS`, `TEST_LOG_RETENTION_DAYS`, `LOG_LEVEL` | no             | See `.env.example` for defaults                                                                                                                                                                                        |
+| `CRON_SECRET`                                                                                                                                                                                        | production     | Bearer token for `/api/cron/maintenance` (Vercel Cron); unset disables it                                                                                                                                              |
+| `SEED_ADMIN_EMAIL`, `SEED_STUDENT_EMAILS`, `SEED_BATCH`                                                                                                                                              | dev only       | Used only by `npm run db:seed` (`SEED_ADMIN_EMAIL` may be a comma-separated list)                                                                                                                                      |
+| `ADMIN_EMAILS`                                                                                                                                                                                       | no             | Comma-separated list for `npm run db:seed-admins` (defaults to the list in the script)                                                                                                                                 |
 
 ### Runner (`runner/.env`, see `runner/.env.example`)
 
-| Variable                                                            | Required                          | Notes                                                                        |
-| ------------------------------------------------------------------- | --------------------------------- | ---------------------------------------------------------------------------- |
-| `RUNNER_SECRET`                                                     | yes                               | Must match the app's copy                                                    |
-| `RUNNER_ISOLATION`                                                  | no                                | `container` (default) or `docker` — see `docs/security.md#isolation-modes`   |
-| `RUNNER_MAX_CONCURRENCY`, `RUNNER_MAX_QUEUE`                        | no                                | Bounded-queue tuning; see `docs/architecture.md#rate-limiting-without-redis` |
-| `RUN_TIMEOUT_MS`, `TEST_TIMEOUT_MS`                                 | no                                | Per-run / per-test wall-clock limits                                         |
-| `DOCKER_IMAGE`, `DOCKER_MEMORY`, `DOCKER_CPUS`, `DOCKER_PIDS_LIMIT` | only if `RUNNER_ISOLATION=docker` | Per-container resource limits                                                |
+| Variable                                                            | Required                          | Notes                                                                             |
+| ------------------------------------------------------------------- | --------------------------------- | --------------------------------------------------------------------------------- |
+| `RUNNER_SECRET`                                                     | yes                               | Must match the app's copy                                                         |
+| `RUNNER_ISOLATION`                                                  | no                                | `container` (default) or `docker` — see `docs/security.md#isolation-modes`        |
+| `RUNNER_MAX_CONCURRENCY`, `RUNNER_MAX_QUEUE`                        | no                                | Bounded-queue tuning; see `docs/architecture.md#rate-limiting-with-upstash-redis` |
+| `RUN_TIMEOUT_MS`, `TEST_TIMEOUT_MS`                                 | no                                | Per-run / per-test wall-clock limits                                              |
+| `DOCKER_IMAGE`, `DOCKER_MEMORY`, `DOCKER_CPUS`, `DOCKER_PIDS_LIMIT` | only if `RUNNER_ISOLATION=docker` | Per-container resource limits                                                     |
 
 Neither `.env` should ever be committed; both are already in `.gitignore`.
 
@@ -96,9 +98,12 @@ app can live there, the runner should not).
    Migrations are additive, so the old deployment keeps working meanwhile.
 
    ```bash
-   pg_dump -Fc -d "$DIRECT_DATABASE_URL" -f backup-$(date +%F).dump
-   DATABASE_URL="$DIRECT_DATABASE_URL" npx prisma migrate deploy
+   pg_dump -Fc -d "$DIRECT_URL" -f backup-$(date +%F).dump
+   DIRECT_URL="$DIRECT_URL" DATABASE_URL="$DIRECT_URL" npx prisma migrate deploy
    ```
+
+   Prisma migrates over `DIRECT_URL` (`directUrl` in `prisma/schema.prisma`), so
+   it must be set wherever you run a migration command.
 
    Do not run migrations in the Vercel build.
 
@@ -106,16 +111,17 @@ app can live there, the runner should not).
    build command runs `npm run build` = `prisma generate && next build`). Set
    these **Production** environment variables:
 
-   | Variable                                      | Value                                                                           |
-   | --------------------------------------------- | ------------------------------------------------------------------------------- |
-   | `DATABASE_URL`                                | the **pooled** connection string                                                |
-   | `AUTH_SECRET`                                 | `openssl rand -base64 32` (32+ characters)                                      |
-   | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`       | from Google Cloud                                                               |
-   | `AUTH_URL`                                    | `https://<your-domain>`                                                         |
-   | `AUTH_TRUST_HOST`                             | `true`                                                                          |
-   | `RUNNER_URL` / `RUNNER_SECRET`                | the runner's https URL / the same secret as the runner                          |
-   | `RUNNER_TIMEOUT_MS`, `RUNNER_TEST_TIMEOUT_MS` | optional; keep `RUNNER_TEST_TIMEOUT_MS` equal to the runner's `TEST_TIMEOUT_MS` |
-   | `CRON_SECRET`                                 | `openssl rand -hex 32` (enables scheduled maintenance)                          |
+   | Variable                                              | Value                                                                           |
+   | ----------------------------------------------------- | ------------------------------------------------------------------------------- |
+   | `DATABASE_URL`                                        | the **pooled** connection string                                                |
+   | `AUTH_SECRET`                                         | `openssl rand -base64 32` (32+ characters)                                      |
+   | `AUTH_GOOGLE_ID` / `AUTH_GOOGLE_SECRET`               | from Google Cloud                                                               |
+   | `AUTH_URL`                                            | `https://<your-domain>`                                                         |
+   | `AUTH_TRUST_HOST`                                     | `true`                                                                          |
+   | `RUNNER_URL` / `RUNNER_SECRET`                        | the runner's https URL / the same secret as the runner                          |
+   | `RUNNER_TIMEOUT_MS`, `RUNNER_TEST_TIMEOUT_MS`         | optional; keep `RUNNER_TEST_TIMEOUT_MS` equal to the runner's `TEST_TIMEOUT_MS` |
+   | `CRON_SECRET`                                         | `openssl rand -hex 32` (enables scheduled maintenance)                          |
+   | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | from the Upstash console; without them rate limiting is off                     |
 
    The server refuses to start with a missing or weak value and names the
    variable in the function logs.
@@ -153,7 +159,7 @@ refuses non-local databases unless `ALLOW_REMOTE_DEMO_SEED=1`.
 ## First deploy on your own host, step by step
 
 ```bash
-# 1. Provision Postgres, get its connection string into DATABASE_URL.
+# 1. Provision Postgres (e.g. Neon), configure DATABASE_URL (pooled) and DIRECT_URL (unpooled).
 
 # 2. Build and run the runner where it will live long-term:
 docker build -f runner/Dockerfile -t proctored-runner .
@@ -190,6 +196,18 @@ bash scripts/validate-stack.sh
 - `/admin/test-logs` and `/admin/settings` (audit log) are the operational
   diagnosis surfaces once something has gone wrong.
 
+### Render Free Tier & Runner Keep-Alive
+
+When hosting the runner on **Render's free web service tier**, note that Render spins down free services after **~15 minutes** of inbound inactivity. A cold start on wake-up takes 50+ seconds, which causes the Next.js app's health check to timeout and display "Runner offline".
+
+To prevent the instance from entering sleep mode:
+
+- A GitHub Actions workflow ([`.github/workflows/runner-keepalive.yml`](../.github/workflows/runner-keepalive.yml)) runs every 10 minutes (`cron: '*/10 * * * *'`) and sends a `GET` request directly to the runner's public health endpoint (e.g. `https://<render-service>.onrender.com/health`).
+- **Configuration**:
+  - `vars.RUNNER_HEALTH_URL` (Repository Variable): The runner's public health URL. Configured in GitHub under **Settings → Secrets and variables → Actions → Variables**.
+  - `secrets.ALERT_WEBHOOK_URL` (Repository Secret, optional): Webhook URL (Slack, Discord, or generic) called when the runner fails the health check (non-200 response).
+- **Operational Tradeoff**: Using a cron keepalive adds an external dependency on GitHub Actions scheduler punctuality. For production environments hosting high-stakes assessments, upgrading the runner container to Render's paid **Starter tier** natively eliminates sleep behavior without requiring keep-alive pings.
+
 ## Backups
 
 Nothing in this repository backs up PostgreSQL for you — use your database
@@ -205,13 +223,15 @@ archiving is the intended path for an exam with history.
 Two things in this build assume a single app process and would need
 attention before running the app horizontally scaled:
 
-- **Rate limiting** (`src/lib/rate-limit.ts`) is in-memory per instance —
-  each instance would enforce its own limit independently. On Vercel this
-  already applies (each function instance counts separately); the runner's
-  bounded queue (`RUNNER_MAX_QUEUE`, answered with 503 when full) remains the
-  hard backstop. Swap in a
-  Redis/Upstash-backed implementation behind the same `rateLimit(key, limit,
-windowMs)` interface.
+- **Rate limiting** (`src/lib/rate-limit.ts`) uses Upstash Redis sliding-window
+  rate limiting (`@upstash/ratelimit` + `@upstash/redis`). On serverless
+  environments like Vercel, requests from the same student land across separate
+  ephemeral Lambda instances; an in-process memory limiter cannot reliably enforce
+  rate limits (`RUN_RATE_LIMIT_PER_MIN`, `SUBMIT_RATE_LIMIT_PER_MIN`, `PROCTOR_RATE_LIMIT_PER_MIN`).
+  Upstash Redis is therefore a **required production dependency**. In local development,
+  if `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are not configured, the limiter
+  automatically fails open with a console warning so developers can run offline
+  without provisioning Redis.
 - **The SSE monitor stream** holds its poll loop in the serving instance's
   memory for up to 4 minutes per connection; this works fine scaled out (each
   admin's browser just talks to whichever instance handled that connection),

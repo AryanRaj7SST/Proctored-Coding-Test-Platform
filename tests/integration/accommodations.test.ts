@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 
 /**
- * Security regression: the hard-coded personal-email bypass (early exam access
- * + clipboard exemption) is gone. Exemptions now come only from an explicit,
- * admin-set accommodation on the student's assignment, and only for clipboard
- * events. Uses the real database and the real proctor-events route handler.
+ * Security regression: no email gets a clipboard exemption, and no arbitrary
+ * email can start early. Clipboard exemptions come only from an explicit,
+ * admin-set accommodation on the student's assignment. The one deliberate
+ * scheduling exemption is open test access (hasOpenTestAccess: administrators
+ * and the short OPEN_ACCESS_EMAILS list), which never covers the clipboard.
+ * Uses the real database and the real proctor-events route handler.
  */
 const session = vi.hoisted(() => ({ current: null as null | { user: Record<string, unknown> } }));
 vi.mock('@/lib/auth', () => ({ auth: async () => session.current }));
@@ -95,13 +97,22 @@ describeDb('accommodations instead of email bypasses (requires DATABASE_URL)', {
     await prisma.$disconnect();
   });
 
-  it('arbitrary emails (including the formerly special-cased one) cannot start early', async () => {
+  it('arbitrary emails cannot start early', async () => {
     const exam = await prisma.exam.findUniqueOrThrow({ where: { id: ids.exam } });
-    for (const u of users.filter((x) => x.role === 'STUDENT')) {
+    for (const u of users.filter((x) => x.role === 'STUDENT' && x.id !== ids.formerlyBypassed)) {
       const state = await sessions.getExamTimeState(ids.exam, u.id, exam);
       expect(state.availability).toBe('NOT_STARTED');
       await expect(sessions.startExamSession(exam, u.id)).rejects.toThrow(/not opened/i);
     }
+  });
+
+  it('only the explicitly listed open-access email may start early (a scheduling rule, nothing else)', async () => {
+    expect(sessions.hasOpenTestAccess({ role: 'STUDENT', email: 'agnihotriaryan5361@gmail.com' })).toBe(true);
+    expect(sessions.hasOpenTestAccess({ role: 'STUDENT', email: `${ids.student}@example.test` })).toBe(false);
+    if (preexistingUser) return; // never start a sitting for a real account
+    const exam = await prisma.exam.findUniqueOrThrow({ where: { id: ids.exam } });
+    const state = await sessions.getExamTimeState(ids.exam, ids.formerlyBypassed, exam);
+    expect(state.availability).toBe('AVAILABLE');
   });
 
   it('administrators keep the explicit dry-run early start (a role rule)', async () => {

@@ -2,11 +2,12 @@ import { Prisma, type Exam } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { badRequest, conflict, notFound } from '@/lib/errors';
 import type { ExamCreateInput, ExamUpdateInput } from '@/lib/validation';
-import { examAvailability, testPhase, type TestPhase } from '@/lib/timing';
+import { examAvailability, testPhase, unboundedWindow, type TestPhase } from '@/lib/timing';
 import { marksToNumber, toMicro, totalOf, fromMicro } from '@/server/grading/marks';
 import { refreshSittingTotals } from '@/server/grading/sitting-totals';
 import { buildSnapshot } from './questions';
 import { finalizeOverdueSittings } from './finalization';
+import { hasOpenTestAccess } from './sessions';
 
 /**
  * Tests ("exams" in the schema): building, scheduling, publishing.
@@ -406,7 +407,7 @@ export async function listStudentExams(userId: string) {
   await finalizeOverdueSittings({ userId });
 
   const [user, assignments] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true, email: true } }),
     prisma.examAssignment.findMany({ where: { userId }, select: { examId: true, revokedAt: true } }),
   ]);
   // Same rule as requireTestAccess: open tests plus assigned ones, minus any
@@ -432,25 +433,28 @@ export async function listStudentExams(userId: string) {
   });
 
   const now = new Date();
+  const openAccess = hasOpenTestAccess(user);
   return exams.map((exam) => {
     const mine = sessions.filter((s) => s.examId === exam.id);
     const current = mine[0] ?? null;
     const attemptsUsed = current?.attemptNumber ?? 0;
+    const window = {
+      status: exam.status,
+      startTime: exam.startTime,
+      endTime: exam.endTime,
+      durationMinutes: exam.durationMinutes,
+    };
+    // Same rule as getExamTimeState: open test access ignores the window and the attempt limit.
     const availability = examAvailability(
-      {
-        status: exam.status,
-        startTime: exam.startTime,
-        endTime: exam.endTime,
-        durationMinutes: exam.durationMinutes,
-      },
+      openAccess ? unboundedWindow(window) : window,
       current
         ? { startedAt: current.startedAt, expiresAt: current.expiresAt, endedAt: current.endedAt }
         : null,
-      // Same role rule as getExamTimeState: only administrators may start early.
       {
         now,
-        allowEarlyStart: user?.role === 'ADMIN',
-        attemptsRemaining: Math.max(0, exam.maxAttempts - attemptsUsed),
+        attemptsRemaining: openAccess
+          ? Number.POSITIVE_INFINITY
+          : Math.max(0, exam.maxAttempts - attemptsUsed),
       },
     );
     const gradingPending = current

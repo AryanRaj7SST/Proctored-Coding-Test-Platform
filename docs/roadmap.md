@@ -81,5 +81,5 @@ natural next iteration would tackle first.
 5. **Configurable proctoring severity** — today `Exam.maxViolations` is a
    single number that auto-submits at the threshold; a mentor might want
    "warn at N, auto-submit at M" instead.
-6. **Redis-backed rate limiting**, only once running more than one app
-   instance — see `docs/deployment.md#scaling-beyond-one-instance`.
+6. ~~**Redis-backed rate limiting**~~ — done: `src/lib/rate-limit.ts` uses
+   Upstash Redis (see `docs/architecture.md#rate-limiting-with-upstash-redis`).

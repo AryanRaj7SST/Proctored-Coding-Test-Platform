@@ -15,7 +15,7 @@ type Ctx = { params: Promise<{ id: string }> };
 export const POST = handler(async (req: Request, ctx: Ctx): Promise<NextResponse> => {
   const admin = await requireAdmin();
   const { id } = await ctx.params;
-  const limit = rateLimit(`regrade-exam:${admin.id}`, 5, 60_000);
+  const limit = await rateLimit(`regrade-exam:${admin.id}`, 5, 60_000);
   if (!limit.allowed) throw tooManyRequests('Please wait a moment before regrading again.');
 
   const body = parseOrThrow(bulkRegradeInput, await readJson(req, 4096));

@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/authz';
 import { listStudentExams } from '@/server/services/exams';
+import { listPracticeAttempts, type PracticeLink } from '@/server/services/practice';
 import { Badge, Card, EmptyState } from '@/components/ui';
 import { displayMarks, formatDateTimeInZone, formatDuration } from '@/lib/utils';
 import { StartExamButton } from './StartExamButton';
@@ -27,9 +28,43 @@ const STATUS: Record<string, { label: string; tone: 'ok' | 'warn' | 'bad' | 'neu
   UNPUBLISHED: { label: 'Unavailable', tone: 'neutral' },
 };
 
-function TestCard({ test }: { test: StudentTest }) {
+/** Post-submission Practice Mode links for one test (never while a sitting is in progress). */
+function PracticeLinks({ links }: { links: PracticeLink[] }) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 border-t border-ink-800/80 pt-3">
+      <span className="text-xs font-medium text-slate-400">Practice completed questions:</span>
+      {links.map((link) => (
+        <Link
+          key={link.attemptId}
+          href={`/practice/${link.attemptId}`}
+          className="inline-flex items-center gap-1.5 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-300 transition-colors hover:border-emerald-500/50 hover:bg-emerald-500/20"
+        >
+          <svg
+            className="h-3 w-3"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+            aria-hidden="true"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+            />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Practice: {link.questionTitle}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function TestCard({ test, practice }: { test: StudentTest; practice: PracticeLink[] }) {
   const status = STATUS[test.availability] ?? STATUS.UNPUBLISHED!;
   const canStart = test.availability === 'AVAILABLE' || test.availability === 'IN_PROGRESS';
+  const practiceLinks = test.availability === 'IN_PROGRESS' ? [] : practice;
   const retake = test.availability === 'AVAILABLE' && test.attemptsUsed > 0;
   const resultHref = test.bestSessionId
     ? `/results/${test.bestSessionId}`
@@ -105,7 +140,17 @@ function TestCard({ test }: { test: StudentTest }) {
         ) : null}
       </dl>
 
+      {practiceLinks.length > 0 ? <PracticeLinks links={practiceLinks} /> : null}
+
       <div className="mt-auto flex flex-wrap items-center justify-end gap-2 pt-1">
+        {!canStart && practiceLinks.length === 1 && practiceLinks[0] ? (
+          <Link
+            href={`/practice/${practiceLinks[0].attemptId}`}
+            className="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm transition-colors hover:bg-emerald-500"
+          >
+            Practice
+          </Link>
+        ) : null}
         {resultHref ? (
           <Link
             href={resultHref}
@@ -131,7 +176,17 @@ function TestCard({ test }: { test: StudentTest }) {
   );
 }
 
-function TestSection({ title, tests, empty }: { title: string; tests: StudentTest[]; empty: string }) {
+function TestSection({
+  title,
+  tests,
+  empty,
+  practice,
+}: {
+  title: string;
+  tests: StudentTest[];
+  empty: string;
+  practice: Map<string, PracticeLink[]>;
+}) {
   return (
     <section className="space-y-3" aria-labelledby={`section-${title}`}>
       <h2 id={`section-${title}`} className="text-sm font-semibold uppercase tracking-wide text-slate-400">
@@ -143,7 +198,7 @@ function TestSection({ title, tests, empty }: { title: string; tests: StudentTes
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {tests.map((t) => (
             <li key={t.id}>
-              <TestCard test={t} />
+              <TestCard test={t} practice={practice.get(t.id) ?? []} />
             </li>
           ))}
         </ul>
@@ -155,6 +210,8 @@ function TestSection({ title, tests, empty }: { title: string; tests: StudentTes
 export default async function DashboardPage() {
   const user = await requireAuth();
   const tests = await listStudentExams(user.id);
+  // After listStudentExams, which finalises abandoned sittings: their attempts can be practised too.
+  const practice = await listPracticeAttempts(user.id);
   const by = (s: Section) => tests.filter((t) => sectionOf(t) === s);
 
   return (
@@ -173,9 +230,24 @@ export default async function DashboardPage() {
         />
       ) : (
         <>
-          <TestSection title="Active" tests={by('active')} empty="Nothing is open right now." />
-          <TestSection title="Upcoming" tests={by('upcoming')} empty="No upcoming tests." />
-          <TestSection title="Completed" tests={by('completed')} empty="You have not completed a test yet." />
+          <TestSection
+            title="Active"
+            tests={by('active')}
+            empty="Nothing is open right now."
+            practice={practice}
+          />
+          <TestSection
+            title="Upcoming"
+            tests={by('upcoming')}
+            empty="No upcoming tests."
+            practice={practice}
+          />
+          <TestSection
+            title="Completed"
+            tests={by('completed')}
+            empty="You have not completed a test yet."
+            practice={practice}
+          />
         </>
       )}
     </div>

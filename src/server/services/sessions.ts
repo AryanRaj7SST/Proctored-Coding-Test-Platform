@@ -1,6 +1,15 @@
 import { Prisma, type Exam, type ExamSession } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { computeExpiry, examAvailability, msRemaining, type ExamAvailability } from '@/lib/timing';
+import {
+  computeExpiry,
+  examAvailability,
+  msRemaining,
+  sittingNeedsFinalization,
+  unboundedWindow,
+  type ExamAvailability,
+  type ExamWindow,
+  type SessionState,
+} from '@/lib/timing';
 import { env } from '@/lib/env';
 import { deriveSessionStatus } from '@/lib/proctor';
 import { refreshSittingTotals } from '@/server/grading/sitting-totals';
@@ -25,6 +34,42 @@ export function currentSession(examId: string, userId: string, db: SessionReader
   return db.examSession.findFirst({ where: { examId, userId }, orderBy: { attemptNumber: 'desc' } });
 }
 
+/** Accounts outside the ADMIN role that have open test access (see hasOpenTestAccess). */
+const OPEN_ACCESS_EMAILS: ReadonlySet<string> = new Set(['agnihotriaryan5361@gmail.com']);
+
+/**
+ * Open test access: the account is bound by neither a test's window nor its
+ * attempt limit. It may start before the test opens and after it closes, and
+ * may start a fresh sitting after each one ends. Every sitting is still timed,
+ * proctored and graded; nothing is deleted. Administrators have it (dry
+ * runs), plus the accounts listed above. Decided from the database (role and
+ * verified Google email), never from anything the browser sends.
+ */
+export function hasOpenTestAccess(user: { email?: string | null; role?: string | null } | null): boolean {
+  if (!user) return false;
+  return user.role === 'ADMIN' || OPEN_ACCESS_EMAILS.has((user.email ?? '').toLowerCase());
+}
+
+export async function userHasOpenTestAccess(userId: string): Promise<boolean> {
+  const user = await prisma.user.findUnique({ where: { id: userId }, select: { email: true, role: true } });
+  return hasOpenTestAccess(user);
+}
+
+/**
+ * sittingNeedsFinalization for this sitting's owner: a sitting with open test
+ * access ends by its own clock only, never because the test window closed.
+ */
+export async function sittingOverdue(
+  exam: ExamWindow,
+  session: SessionState | null,
+  userId: string,
+  now: Date = new Date(),
+): Promise<boolean> {
+  if (!sittingNeedsFinalization(exam, session, now)) return false;
+  if (sittingNeedsFinalization(unboundedWindow(exam), session, now)) return true;
+  return !(await userHasOpenTestAccess(userId));
+}
+
 export async function getExamTimeState(examId: string, userId: string, exam?: Exam): Promise<ExamTimeState> {
   const theExam = exam ?? (await prisma.exam.findUniqueOrThrow({ where: { id: examId } }));
   const session = await currentSession(examId, userId);
@@ -40,12 +85,16 @@ export async function getExamTimeState(examId: string, userId: string, exam?: Ex
     : null;
   const attemptsRemaining = Math.max(0, theExam.maxAttempts - (session?.attemptNumber ?? 0));
   let availability = examAvailability(window, sitting, { now, attemptsRemaining });
-  if (availability === 'NOT_STARTED') {
-    // Administrators may dry-run an exam before it opens. This is a role rule,
-    // decided from the database; no student can be granted it.
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { role: true } });
-    if (user?.role === 'ADMIN')
-      availability = examAvailability(window, sitting, { now, allowEarlyStart: true, attemptsRemaining });
+  // Only these states depend on the window or the attempt limit, so only
+  // they can differ for an account with open test access.
+  if (
+    (availability === 'NOT_STARTED' || availability === 'ENDED' || availability === 'SUBMITTED') &&
+    (await userHasOpenTestAccess(userId))
+  ) {
+    availability = examAvailability(unboundedWindow(window), sitting, {
+      now,
+      attemptsRemaining: Number.POSITIVE_INFINITY,
+    });
   }
   return {
     availability,
@@ -92,7 +141,9 @@ export async function startExamSession(
   if (state.session && !state.session.endedAt) return state.session;
 
   const startedAt = new Date();
-  const expiresAt = computeExpiry(startedAt, exam.durationMinutes, exam.endTime);
+  // Open test access is not cut short by the test's closing time.
+  const closesAt = exam.endTime && !(await userHasOpenTestAccess(userId)) ? exam.endTime : null;
+  const expiresAt = computeExpiry(startedAt, exam.durationMinutes, closesAt);
   const attemptNumber = (state.session?.attemptNumber ?? 0) + 1;
 
   try {

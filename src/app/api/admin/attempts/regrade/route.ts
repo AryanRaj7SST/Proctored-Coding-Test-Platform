@@ -18,7 +18,7 @@ const regradeInput = z.object({ examId: idSchema.optional() });
  */
 export const POST = handler(async (req: Request): Promise<NextResponse> => {
   const admin = await requireAdmin();
-  const limit = rateLimit(`regrade-bulk:${admin.id}`, 5, 60_000);
+  const limit = await rateLimit(`regrade-bulk:${admin.id}`, 5, 60_000);
   if (!limit.allowed) throw tooManyRequests('Please wait a moment before regrading again.');
 
   const body = parseOrThrow(regradeInput, await readJson(req, 4096));
