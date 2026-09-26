@@ -100,6 +100,19 @@ app.post('/run', async (req: Request, res: Response) => {
   }
 });
 
+// Lets the app prove its credentials work (the admin "Runner online" badge):
+// authenticated exactly like /run, but runs nothing.
+app.post('/auth-check', (req: Request, res: Response) => {
+  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString('utf8') : '';
+  const authResult = authenticate(req, rawBody);
+  if (!authResult.ok) {
+    log.warn('auth.rejected', { reason: authResult.reason, ip: req.ip, route: 'auth-check' });
+    res.status(401).json({ error: 'Unauthorized.' });
+    return;
+  }
+  res.json({ ok: true });
+});
+
 // Nothing else is exposed.
 app.use((_req: Request, res: Response) => res.status(404).json({ error: 'Not found.' }));
 app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {

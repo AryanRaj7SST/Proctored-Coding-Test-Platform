@@ -106,6 +106,26 @@ export function outcomeFromResult(raw: unknown, testIds: string[]): RunnerOutcom
   return { kind: 'SUCCESS', verdicts, consoleLogs, durationMs };
 }
 
+/**
+ * What an administrator should check after a runner failure. Admin screens
+ * only (question validation, test logs): students see `message`, never this.
+ */
+export function adminRunnerHint(outcome: Exclude<RunnerOutcome, { kind: 'SUCCESS' }>): string {
+  const d = outcome.detail;
+  if (/rejected the request/i.test(d)) {
+    return 'The runner refused the app credentials: RUNNER_SECRET must be identical on the app and the runner (redeploy the app after changing an environment variable).';
+  }
+  if (/rejected the payload/i.test(d)) {
+    return 'The runner refused the test specification: deploy the runner from the same commit as the app.';
+  }
+  if (/queue is full/i.test(d)) return 'The runner is busy with other runs. Try again shortly.';
+  if (outcome.kind === 'TIMEOUT') {
+    return 'The runner did not answer in time. A sleeping free instance can take about a minute to wake: try again.';
+  }
+  if (/unreachable/i.test(d)) return `The app could not reach RUNNER_URL: ${d}`;
+  return `Runner detail: ${d}`;
+}
+
 /** Classify an error thrown while calling the runner. */
 export function outcomeFromError(err: unknown): RunnerOutcome {
   if (err instanceof RunnerError) {

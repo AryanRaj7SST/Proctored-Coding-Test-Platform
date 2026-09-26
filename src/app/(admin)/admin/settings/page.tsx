@@ -61,6 +61,7 @@ export default async function SettingsPage() {
         <Badge tone={dbOk ? 'ok' : 'bad'}>Database {dbOk ? 'connected' : 'unreachable'}</Badge>
         <Badge tone={runner.ok ? 'ok' : 'bad'}>Runner {runner.ok ? 'online' : 'offline'}</Badge>
       </div>
+      {runner.detail ? <p className="text-xs text-slate-400">Runner: {runner.detail}</p> : null}
 
       <Card>
         <CardHeader title="Configuration" />

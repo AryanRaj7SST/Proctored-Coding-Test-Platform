@@ -3,7 +3,12 @@ import { prisma } from '@/lib/prisma';
 import { AppError, badRequest, conflict, notFound } from '@/lib/errors';
 import { logger, sanitizeError } from '@/lib/logger';
 import { runOnRunner } from '@/lib/runner-client';
-import { outcomeFromError, outcomeFromResult, type RunnerOutcome } from '@/server/grading/runner-result';
+import {
+  adminRunnerHint,
+  outcomeFromError,
+  outcomeFromResult,
+  type RunnerOutcome,
+} from '@/server/grading/runner-result';
 import { validateTestSuiteShape } from '@shared/test-spec';
 import { compileRunnerSpec, isEnabled } from './questions';
 
@@ -91,7 +96,12 @@ export async function validateQuestion(questionId: string): Promise<QuestionVali
       },
     });
     logger.warn('validation.runner_failed', { questionId, kind: outcome.kind });
-    throw new AppError(503, `Validation could not run: ${outcome.message}`, outcome.code);
+    // Validation is admin-only, so the message says what to fix, not just that it failed.
+    throw new AppError(
+      503,
+      `Validation could not run: ${outcome.message} ${adminRunnerHint(outcome)}`,
+      outcome.code,
+    );
   }
 
   const verdicts = outcome.verdicts;

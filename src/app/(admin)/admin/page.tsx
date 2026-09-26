@@ -45,9 +45,11 @@ export default async function AdminDashboardPage() {
 
       {!runner.ok ? (
         <div className="rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30" role="alert">
-          The test runner is not reachable. Students can still write and save code, but running tests, grading
-          and question validation will wait until it is back (submissions show &ldquo;grading pending&rdquo;,
-          never 0). Check <code>RUNNER_URL</code> and the runner container.
+          The test runner is not usable
+          {runner.detail ? <>: {runner.detail}</> : '.'} Students can still write and save code, but running
+          tests, grading and question validation will wait until it is fixed (submissions show &ldquo;grading
+          pending&rdquo;, never 0). Check <code>RUNNER_URL</code>, <code>RUNNER_SECRET</code> and the runner
+          service.
         </div>
       ) : null}
 

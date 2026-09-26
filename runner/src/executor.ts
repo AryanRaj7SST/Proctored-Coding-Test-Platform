@@ -12,6 +12,7 @@ import {
 import { config } from './config';
 import { log, safeError } from './logger';
 import { EVALUATOR_SOURCE } from './page-script';
+import { isSandboxNetworkNoise } from './console-noise';
 
 export interface RunInput {
   runId: string;
@@ -214,7 +215,10 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {
       if (consoleLogs.length < 100) consoleLogs.push(`[${msg.type()}] ${msg.text().slice(0, 300)}`);
-      if (msg.type() === 'error' && consoleErrors.length < 20) consoleErrors.push(msg.text().slice(0, 300));
+      // Resources the sandbox blocked (e.g. a photo URL) are not the student's errors.
+      if (msg.type() === 'error' && consoleErrors.length < 20 && !isSandboxNetworkNoise(msg.text())) {
+        consoleErrors.push(msg.text().slice(0, 300));
+      }
     });
     page.on('pageerror', (err) => {
       const text = `[pageerror] ${String(err.message).slice(0, 300)}`;

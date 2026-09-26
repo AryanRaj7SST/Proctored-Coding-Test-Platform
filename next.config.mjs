@@ -9,7 +9,10 @@ const csp = [
   // required by Monaco's tokenizer in dev and by its worker bootstrap.
   "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://lh3.googleusercontent.com https://d3dyfaf3iutrxo.cloudfront.net https://s3-ap-southeast-1.amazonaws.com https://cdn.jsdelivr.net",
+  // Photos in questions, reference solutions and the student preview (which
+  // inherits this policy) may come from any https host. Scripts, frames and
+  // connections stay locked to this origin.
+  "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
   "connect-src 'self'",
   "frame-src 'self' blob:",
