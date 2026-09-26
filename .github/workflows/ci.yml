@@ -34,6 +34,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/coding_platform_ci?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/coding_platform_ci?schema=public
       AUTH_SECRET: ci-only-secret-not-used-for-anything-real
       AUTH_GOOGLE_ID: ci-placeholder
       AUTH_GOOGLE_SECRET: ci-placeholder
@@ -130,6 +131,7 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/coding_platform_ci?schema=public
+      DIRECT_URL: postgresql://postgres:postgres@localhost:5432/coding_platform_ci?schema=public
       AUTH_SECRET: ci-only-secret-not-used-for-anything-real
       AUTH_GOOGLE_ID: ci-placeholder
       AUTH_GOOGLE_SECRET: ci-placeholder
