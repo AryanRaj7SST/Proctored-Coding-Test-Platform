@@ -544,12 +544,8 @@ async function main(): Promise<void> {
       console.log(`  ✓ Question already attached to exam "${exam.title}".`);
     }
   } else {
-    console.log(
-      '\n  ℹ Notice: Exam "Mid-term Practice Quiz" was not found in the database.',
-    );
-    console.log(
-      '    Per runbook instructions, skipped exam attachment rather than guessing an exam name.',
-    );
+    console.log('\n  ℹ Notice: Exam "Mid-term Practice Quiz" was not found in the database.');
+    console.log('    Per runbook instructions, skipped exam attachment rather than guessing an exam name.');
   }
 
   console.log('\n--- Seeding Complete ---');

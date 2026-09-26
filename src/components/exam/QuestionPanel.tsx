@@ -162,7 +162,9 @@ function RichText({ text }: { text: string }) {
       }
 
       // Explicit image: ![alt](url) OR implicit image link: [alt](url) if url/alt has image indicators
-      const imageOrLinkMatch = trimmed.match(/^(!?)\[([^\]]*)\]\(((?:https?:\/\/|\/api\/image-proxy)[^\s)]+)\)$/);
+      const imageOrLinkMatch = trimmed.match(
+        /^(!?)\[([^\]]*)\]\(((?:https?:\/\/|\/api\/image-proxy)[^\s)]+)\)$/,
+      );
       if (imageOrLinkMatch && imageOrLinkMatch[2] !== undefined && imageOrLinkMatch[3]) {
         const isExplicitImage = imageOrLinkMatch[1] === '!';
         const alt = imageOrLinkMatch[2];
@@ -178,7 +180,9 @@ function RichText({ text }: { text: string }) {
       }
 
       // Standalone bare image URL on its own line: https://.../image.png
-      const bareImageMatch = trimmed.match(/^(https?:\/\/[^\s)]+\.(?:png|jpe?g|gif|webp|svg|bmp|avif)(?:\?[^\s)]*)?)$/i);
+      const bareImageMatch = trimmed.match(
+        /^(https?:\/\/[^\s)]+\.(?:png|jpe?g|gif|webp|svg|bmp|avif)(?:\?[^\s)]*)?)$/i,
+      );
       if (bareImageMatch && bareImageMatch[1]) {
         flushList();
         flushParagraph();
@@ -228,12 +232,7 @@ function RichText({ text }: { text: string }) {
             ? block.url
             : `/api/image-proxy?url=${encodeURIComponent(block.url)}`;
           return (
-            <QuestionImage
-              key={i}
-              src={imageSrc}
-              alt={block.alt || 'Question diagram'}
-              rawUrl={block.url}
-            />
+            <QuestionImage key={i} src={imageSrc} alt={block.alt || 'Question diagram'} rawUrl={block.url} />
           );
         }
 

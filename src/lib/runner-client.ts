@@ -113,7 +113,10 @@ async function postToCandidateUrls(
 
       if (!res.ok) {
         const bodyText = typeof res.text === 'function' ? await res.text().catch(() => '') : '';
-        const sanitizedBody = bodyText.slice(0, 500).replace(/[\r\n]+/g, ' ').trim();
+        const sanitizedBody = bodyText
+          .slice(0, 500)
+          .replace(/[\r\n]+/g, ' ')
+          .trim();
         logger.error('runner.post_failed', {
           url,
           status: res.status,
@@ -133,7 +136,10 @@ async function postToCandidateUrls(
           );
         }
         throw new HttpResponseError(
-          new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}: ${sanitizedBody || res.statusText}`),
+          new RunnerError(
+            'UNAVAILABLE',
+            `Runner responded with ${res.status}: ${sanitizedBody || res.statusText}`,
+          ),
         );
       }
 

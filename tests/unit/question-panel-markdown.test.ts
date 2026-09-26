@@ -110,4 +110,3 @@ describe('QuestionPanel Markdown / RichText Rendering', () => {
     );
   });
 });
-

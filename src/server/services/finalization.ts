@@ -251,9 +251,7 @@ export async function finalizeExpiredAttempts(examId: string, userId: string): P
  */
 export async function endExam(examId: string, userId: string): Promise<FinalizeResult> {
   const state = await getExamTimeState(examId, userId);
-  const isGraceExpired = Boolean(
-    state.expiresAt && !withinSubmitDeadline(state.expiresAt, state.serverTime),
-  );
+  const isGraceExpired = Boolean(state.expiresAt && !withinSubmitDeadline(state.expiresAt, state.serverTime));
   const reason: SittingEndReason = isGraceExpired
     ? 'EXPIRED'
     : state.availability === 'ENDED'

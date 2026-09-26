@@ -266,7 +266,10 @@ async function main() {
     console.log(`   Validating "${q.title}" (${slug})...`);
     const valResult = await validateQuestion(q.id);
     if (!valResult.ok) {
-      console.error(`   ✗ Validation failed for ${q.title}!`, valResult.results.filter((r) => !r.passed));
+      console.error(
+        `   ✗ Validation failed for ${q.title}!`,
+        valResult.results.filter((r) => !r.passed),
+      );
       throw new Error(`Question ${q.title} failed validation.`);
     }
     console.log(`   ✓ Passed ${valResult.passedCount}/${valResult.totalCount} tests.`);

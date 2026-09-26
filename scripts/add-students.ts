@@ -53,9 +53,7 @@ function formatNameFromEmail(email: string): string {
   if (nameParts.length === 0) {
     return local;
   }
-  return nameParts
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
-    .join(' ');
+  return nameParts.map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
 }
 
 async function main(): Promise<void> {

@@ -159,9 +159,7 @@ const TESTS: TestDef[] = [
     hidden: false,
     order: 1,
     body: {
-      assertions: [
-        { type: 'gap', selector: '.game-board', equals: 10, axis: 'both', tolerance: 2 },
-      ],
+      assertions: [{ type: 'gap', selector: '.game-board', equals: 10, axis: 'both', tolerance: 2 }],
     },
   },
   {
@@ -394,9 +392,7 @@ const TESTS: TestDef[] = [
     hidden: false,
     order: 8,
     body: {
-      assertions: [
-        { type: 'css', selector: '.new-game-button', property: 'cursor', equals: 'pointer' },
-      ],
+      assertions: [{ type: 'css', selector: '.new-game-button', property: 'cursor', equals: 'pointer' }],
     },
   },
   {
@@ -463,9 +459,13 @@ async function main(): Promise<void> {
   // Run validation against runner
   console.log('\n--- Running validation against runner ---');
   const validation = await validateQuestion(question.id);
-  console.log(`Validation result: ${validation.ok ? 'PASSED' : 'FAILED'} (${validation.passedCount}/${validation.totalCount})`);
+  console.log(
+    `Validation result: ${validation.ok ? 'PASSED' : 'FAILED'} (${validation.passedCount}/${validation.totalCount})`,
+  );
   for (const [i, r] of validation.results.entries()) {
-    console.log(`  [${i + 1}] ${r.passed ? '✓ PASS' : '✗ FAIL'}: ${r.testName} ${r.message ? `(${r.message})` : ''}`);
+    console.log(
+      `  [${i + 1}] ${r.passed ? '✓ PASS' : '✗ FAIL'}: ${r.testName} ${r.message ? `(${r.message})` : ''}`,
+    );
   }
 
   if (!validation.ok) {
@@ -558,7 +558,9 @@ async function main(): Promise<void> {
       exam = await changeExamStatus(exam.id, 'publish');
       console.log(`✓ Exam "${exam.title}" published successfully via changeExamStatus!`);
     } catch (err) {
-      console.warn(`changeExamStatus threw: ${(err as Error).message}. Applying direct publish transaction...`);
+      console.warn(
+        `changeExamStatus threw: ${(err as Error).message}. Applying direct publish transaction...`,
+      );
       exam = await prisma.exam.update({
         where: { id: exam.id },
         data: {

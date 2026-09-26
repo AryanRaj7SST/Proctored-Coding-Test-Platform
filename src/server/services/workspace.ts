@@ -197,7 +197,8 @@ export async function reportProctorEvent(
         where: { examId_userId: { examId: exam.id, userId: user.id } },
         select: { allowClipboard: true },
       })
-    )?.allowClipboard ?? false);
+    )?.allowClipboard ??
+      false);
 
   if (isClipboardExempt(event.type, { allowClipboard })) {
     return {

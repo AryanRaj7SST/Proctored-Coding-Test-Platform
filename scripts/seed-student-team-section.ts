@@ -183,9 +183,7 @@ The section must remain readable on both desktop and mobile widths.
       points: 10,
       order: 1,
       body: {
-        assertions: [
-          { type: 'gap', selector: '.team-section', equals: 20, axis: 'both', tolerance: 4 },
-        ],
+        assertions: [{ type: 'gap', selector: '.team-section', equals: 20, axis: 'both', tolerance: 4 }],
       },
     },
     {
@@ -213,8 +211,21 @@ The section must remain readable on both desktop and mobile widths.
       body: {
         assertions: [
           { type: 'cssNumber', selector: '.team-card', property: 'border-top-width', op: 'gt', value: 0 },
-          { type: 'cssNumber', selector: '.team-card', property: 'border-top-left-radius', op: 'gt', value: 0 },
-          { type: 'cssNumber', selector: '.team-card', property: 'padding-top', op: 'gte', value: 12, tolerance: 2 },
+          {
+            type: 'cssNumber',
+            selector: '.team-card',
+            property: 'border-top-left-radius',
+            op: 'gt',
+            value: 0,
+          },
+          {
+            type: 'cssNumber',
+            selector: '.team-card',
+            property: 'padding-top',
+            op: 'gte',
+            value: 12,
+            tolerance: 2,
+          },
         ],
       },
     },
@@ -228,7 +239,13 @@ The section must remain readable on both desktop and mobile widths.
         assertions: [
           { type: 'size', selector: '.team-avatar', dimension: 'width', op: 'eq', value: 64, tolerance: 6 },
           { type: 'size', selector: '.team-avatar', dimension: 'height', op: 'eq', value: 64, tolerance: 6 },
-          { type: 'cssNumber', selector: '.team-avatar', property: 'border-top-left-radius', op: 'gte', value: 32 },
+          {
+            type: 'cssNumber',
+            selector: '.team-avatar',
+            property: 'border-top-left-radius',
+            op: 'gte',
+            value: 32,
+          },
         ],
       },
     },
@@ -273,7 +290,14 @@ The section must remain readable on both desktop and mobile widths.
       body: {
         assertions: [
           { type: 'cssNumber', selector: '.team-card', property: 'flex-grow', op: 'gte', value: 1 },
-          { type: 'cssNumber', selector: '.team-card', property: 'flex-basis', op: 'gte', value: 200, tolerance: 20 },
+          {
+            type: 'cssNumber',
+            selector: '.team-card',
+            property: 'flex-basis',
+            op: 'gte',
+            value: 200,
+            tolerance: 20,
+          },
         ],
       },
     },
@@ -400,12 +424,8 @@ async function main(): Promise<void> {
       console.log(`  ✓ Question already attached to exam "${exam.title}".`);
     }
   } else {
-    console.log(
-      '\n  ℹ Notice: Exam "Mid-term Practice Quiz" was not found in the database.',
-    );
-    console.log(
-      '    Per runbook instructions, skipped exam attachment rather than guessing an exam name.',
-    );
+    console.log('\n  ℹ Notice: Exam "Mid-term Practice Quiz" was not found in the database.');
+    console.log('    Per runbook instructions, skipped exam attachment rather than guessing an exam name.');
   }
 
   // 4. Run real validation against live runner
