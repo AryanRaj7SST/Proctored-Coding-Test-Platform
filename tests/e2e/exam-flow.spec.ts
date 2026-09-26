@@ -294,6 +294,50 @@ test.describe('student exam flow', () => {
     await expect(gate).toHaveCount(0);
     await expect(page.getByRole('status').filter({ hasText: /^Active$/ })).toBeVisible();
   });
+
+  test('a submitted question stays editable and can be resubmitted; the test does not end', async ({
+    page,
+  }) => {
+    await enterWorkspace(page);
+    const submitOnce = async () => {
+      const response = page.waitForResponse(
+        (r) =>
+          /\/api\/attempts\/[^/]+\/submit$/.test(new URL(r.url()).pathname) &&
+          r.request().method() === 'POST',
+        { timeout: 90_000 },
+      );
+      await page.getByRole('button', { name: /^(submit|resubmit) code$/i }).click();
+      await page
+        .getByRole('dialog')
+        .getByRole('button', { name: /^(submit|resubmit) code$/i })
+        .click();
+      const res = await response;
+      expect(res.status()).toBe(200);
+      return (await res.json()) as { score: number | null; bestScore: number | null };
+    };
+
+    const first = await submitOnce();
+    // Still open: the editor accepts changes and the button now offers a resubmission.
+    await expect(page.getByRole('button', { name: /^resubmit code$/i })).toBeEnabled();
+    await page.getByRole('button', { name: /index\.html/ }).click();
+    const editor = page.getByRole('textbox', { name: 'html editor' });
+    await expect(editor).toHaveAttribute('contenteditable', 'true');
+    await editor.click();
+    await page.keyboard.press('ControlOrMeta+End');
+    const saved = page.waitForResponse(
+      (r) => r.url().includes('/api/attempts/') && r.request().method() === 'PATCH',
+      { timeout: 20_000 },
+    );
+    await page.keyboard.insertText(`\n<!-- resubmitted-${Date.now()} -->`);
+    expect((await saved).status()).toBe(200);
+
+    const second = await submitOnce();
+    // The best submission counts: a resubmission never lowers the question's score.
+    expect(second.bestScore ?? 0).toBeGreaterThanOrEqual(first.bestScore ?? 0);
+    // Submitting never ends the test: the timer keeps running, no closing screen.
+    await expect(page.getByRole('timer')).toBeVisible();
+    await expect(page.getByText(/test submitted|time's up/i)).toHaveCount(0);
+  });
 });
 
 test.describe('admin surface', () => {

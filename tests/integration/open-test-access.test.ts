@@ -164,6 +164,7 @@ describeDb('open test access (requires DATABASE_URL)', { timeout: 120_000 }, () 
       const first = await sessions.startExamSession(exam, userId);
       const [{ attempt }] = await attempts.ensureAttempts(first);
       await attempts.submitAttempt({ attemptId: attempt.id, userId });
+      await finalization.endExam(exam.id, userId);
     }
     expect((await sessions.getExamTimeState(exam.id, ids.student, exam)).availability).toBe('SUBMITTED');
     await expect(sessions.startExamSession(exam, ids.student)).rejects.toThrow(/already submitted/);

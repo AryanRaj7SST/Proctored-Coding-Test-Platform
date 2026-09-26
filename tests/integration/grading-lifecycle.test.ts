@@ -542,16 +542,19 @@ describeDb('exam finalisation and grading (requires DATABASE_URL)', { timeout: 1
       expect(out).toMatchObject({ status: 'COMPLETED', score: 0, failedCount: 2, totalCount: 2 });
     });
 
-    it('submitting the last answer ends the sitting and audits it like End Test', async () => {
+    it('submitting every answer never ends the test early: only the timer or End Test does', async () => {
       const { exam, userId, attempt } = await sit();
       runner.mode = 'pass';
       await attempts.submitAttempt({ attemptId: attempt.id, userId });
       const session = await prisma.examSession.findFirstOrThrow({ where: { examId: exam.id, userId } });
-      expect(session.endedAt).not.toBeNull();
-      const audit = await prisma.auditLog.findFirst({
-        where: { userId, action: 'exam.ended', entityId: exam.id },
-      });
-      expect(audit?.metadata).toMatchObject({ reason: 'ALL_SUBMITTED', attemptNumber: 1 });
+      expect(session.endedAt).toBeNull();
+      expect(
+        await prisma.auditLog.count({ where: { userId, action: 'exam.ended', entityId: exam.id } }),
+      ).toBe(0);
+      await finalization.endExam(exam.id, userId);
+      expect(
+        (await prisma.examSession.findFirstOrThrow({ where: { examId: exam.id, userId } })).endedAt,
+      ).not.toBeNull();
     });
 
     it('a manual submit with the runner down is recorded as grading pending', async () => {
@@ -562,10 +565,16 @@ describeDb('exam finalisation and grading (requires DATABASE_URL)', { timeout: 1
       const a = await attemptRow(attempt.id);
       expect(a.status).toBe('SUBMITTED');
       expect(a.gradedAt).toBeNull();
-      // Duplicate submission returns the pending state, never a fresh (fake) grade.
+      // Resubmitting while time remains grades the code for real once the runner is back.
       runner.mode = 'pass';
       const again = await attempts.submitAttempt({ attemptId: attempt.id, userId });
-      expect(again).toMatchObject({ gradingPending: true, alreadySubmitted: true });
+      expect(again).toMatchObject({
+        gradingPending: false,
+        alreadySubmitted: false,
+        score: 10,
+        bestScore: 10,
+      });
+      expect((await attemptRow(attempt.id)).gradedAt).not.toBeNull();
     });
   });
 

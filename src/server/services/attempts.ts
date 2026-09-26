@@ -4,8 +4,9 @@ import { conflict, forbidden, notFound } from '@/lib/errors';
 import { canAutosaveAttempt, canModifyAttempt, withinSubmitDeadline } from '@/lib/timing';
 import type { ExecutionOutcome } from '@/lib/outcome';
 import { gradeAttempt, pendingOutcome, storedOutcome } from '@/server/grading/grade-attempt';
+import { marksToNumber } from '@/server/grading/marks';
 import { pinnedSnapshot } from './questions';
-import { currentSession, getExamTimeState, maybeFinishExam } from './sessions';
+import { currentSession, getExamTimeState, type ExamTimeState } from './sessions';
 import { recordAudit } from './audit';
 
 type ExamQuestionWithTests = Prisma.ExamQuestionGetPayload<{
@@ -101,16 +102,27 @@ export async function ensureAttempts(session: {
 }
 
 /**
+ * A submitted question stays open for editing and resubmission until its
+ * sitting ends (timer, End Test, violation limit, revoked access). Only the
+ * student's own submit leaves an attempt SUBMITTED inside an open sitting.
+ */
+function openForResubmission(attempt: Attempt, state: ExamTimeState): boolean {
+  return attempt.status === 'SUBMITTED' && state.session?.id === attempt.sessionId && !state.session.endedAt;
+}
+
+/**
  * Guard shared by autosave / run. `allowGrace` (autosave only) accepts the
  * final flush that races the deadline, mirroring the submit grace window.
  */
 async function assertAttemptWritable(attempt: Attempt, exam: Exam, allowGrace = false): Promise<void> {
   const state = await getExamTimeState(exam.id, attempt.userId, exam);
+  // A resubmittable attempt follows the same time rules as one never submitted.
+  const status = openForResubmission(attempt, state) ? 'IN_PROGRESS' : attempt.status;
   const writable = allowGrace
-    ? canAutosaveAttempt(state.availability, attempt.status, state.expiresAt)
-    : canModifyAttempt(state.availability, attempt.status);
+    ? canAutosaveAttempt(state.availability, status, state.expiresAt)
+    : canModifyAttempt(state.availability, status);
   if (!writable) {
-    if (attempt.status !== 'IN_PROGRESS') throw conflict('This attempt has already been submitted.');
+    if (status !== 'IN_PROGRESS') throw conflict('This attempt has already been submitted.');
     if (state.availability === 'EXPIRED') throw forbidden('Your time for this test has expired.');
     if (state.availability === 'ENDED') throw forbidden('This test has closed.');
     throw forbidden('This test is not open for editing.');
@@ -136,7 +148,13 @@ export async function saveAttemptCode(
   }
 
   const result = await prisma.attempt.updateMany({
-    where: { id: attemptId, userId, status: 'IN_PROGRESS' },
+    // Never into a closed sitting, whatever a stale tab sends.
+    where: {
+      id: attemptId,
+      userId,
+      status: { in: ['IN_PROGRESS', 'SUBMITTED'] },
+      session: { endedAt: null },
+    },
     data: { html: code.html, css: code.css, js: code.js },
   });
   if (result.count === 0) throw conflict('This attempt can no longer be edited.');
@@ -184,11 +202,28 @@ export type SubmitResult = ExecutionOutcome & {
   /** True when the submission is recorded but grading is deferred. */
   gradingPending: boolean;
   gradingError?: string;
+  /** The question's counted score: the best of its graded submissions (null while none is graded). */
+  bestScore: number | null;
 };
 
+/** Refuse a submit the sitting can no longer accept (same rules for first and later submits). */
+function assertAcceptingSubmissions(state: ExamTimeState): void {
+  if (state.availability === 'SUBMITTED' || state.availability === 'UNPUBLISHED') {
+    throw conflict('This test is no longer accepting submissions.');
+  }
+  if (state.availability === 'ENDED') {
+    throw forbidden('This test has closed. Submissions are no longer accepted.');
+  }
+  if (state.expiresAt && !withinSubmitDeadline(state.expiresAt)) {
+    throw forbidden('Your time for this test has expired.');
+  }
+}
+
 /**
- * Submit one question: idempotent, deadline-checked, ownership-checked.
- * A second call returns the stored grading rather than re-scoring.
+ * Submit one question: deadline-checked, ownership-checked. While the sitting
+ * is open a question can be submitted again and again: every submission is
+ * graded, and the best score counts. After the sitting ends, a submit returns
+ * the stored grading rather than re-scoring.
  */
 export async function submitAttempt(params: {
   attemptId: string;
@@ -201,17 +236,54 @@ export async function submitAttempt(params: {
   });
   if (!attempt || attempt.userId !== params.userId) throw notFound('Attempt not found.');
 
-  if (attempt.status === 'IN_PROGRESS') {
-    const state = await getExamTimeState(attempt.examId, params.userId, attempt.exam);
-    if (state.availability === 'SUBMITTED' || state.availability === 'UNPUBLISHED') {
-      throw conflict('This test is no longer accepting submissions.');
+  const state =
+    attempt.status === 'IN_PROGRESS' || attempt.status === 'SUBMITTED'
+      ? await getExamTimeState(attempt.examId, params.userId, attempt.exam)
+      : null;
+
+  if (state && openForResubmission(attempt, state)) {
+    assertAcceptingSubmissions(state);
+    const code = params.code ?? { html: attempt.html, css: attempt.css, js: attempt.js };
+    await prisma.attempt.updateMany({
+      where: { id: attempt.id, status: 'SUBMITTED', session: { endedAt: null } },
+      data: { ...code, submittedAt: new Date() },
+    });
+    const graded = await gradeAttempt(attempt.id, { reason: 'resubmission', keepBest: true });
+    if (graded.busy) {
+      throw conflict(
+        'Your previous submission of this question is still being graded. Try again in a moment.',
+      );
     }
-    if (state.availability === 'ENDED') {
-      throw forbidden('This test has closed. Submissions are no longer accepted.');
+    const fresh = await prisma.attempt.findUniqueOrThrow({ where: { id: attempt.id } });
+    const bestScore = fresh.gradedAt ? marksToNumber(fresh.score) : null;
+    await recordAudit({
+      userId: params.userId,
+      action: 'attempt.resubmitted',
+      entity: 'Attempt',
+      entityId: attempt.id,
+      metadata: graded.outcome
+        ? {
+            score: graded.outcome.score,
+            maxScore: graded.outcome.maxScore,
+            bestScore,
+            counted: Boolean(graded.counted),
+          }
+        : { gradingPending: true },
+    });
+    if (graded.outcome) {
+      return { ...graded.outcome, alreadySubmitted: false, gradingPending: false, bestScore };
     }
-    if (state.expiresAt && !withinSubmitDeadline(state.expiresAt)) {
-      throw forbidden('Your time for this test has expired.');
-    }
+    return {
+      ...pendingOutcome(attempt),
+      alreadySubmitted: false,
+      gradingPending: true,
+      gradingError: graded.error,
+      bestScore,
+    };
+  }
+
+  if (state && attempt.status === 'IN_PROGRESS') {
+    assertAcceptingSubmissions(state);
 
     const code = params.code ?? { html: attempt.html, css: attempt.css, js: attempt.js };
     if (await claimAttempt(attempt.id, 'SUBMITTED', code)) {
@@ -225,13 +297,17 @@ export async function submitAttempt(params: {
           ? { score: graded.outcome.score, maxScore: graded.outcome.maxScore }
           : { gradingPending: true },
       });
-      await maybeFinishExam(attempt.examId, params.userId);
-      if (graded.outcome) return { ...graded.outcome, alreadySubmitted: false, gradingPending: false };
+      // The sitting stays open: it ends only when time runs out or the student ends the test.
+      const bestScore = graded.outcome ? graded.outcome.score : null;
+      if (graded.outcome) {
+        return { ...graded.outcome, alreadySubmitted: false, gradingPending: false, bestScore };
+      }
       return {
         ...pendingOutcome(attempt),
         alreadySubmitted: false,
         gradingPending: true,
         gradingError: graded.error,
+        bestScore,
       };
     }
     // Lost the claim to a concurrent submit / finalisation: fall through and
@@ -240,11 +316,16 @@ export async function submitAttempt(params: {
 
   const fresh = await prisma.attempt.findUniqueOrThrow({ where: { id: attempt.id } });
   if (!fresh.gradedAt) {
-    return { ...pendingOutcome(fresh), alreadySubmitted: true, gradingPending: true };
+    return { ...pendingOutcome(fresh), alreadySubmitted: true, gradingPending: true, bestScore: null };
   }
   const stored = await prisma.testResult.findMany({
     where: { attemptId: attempt.id, final: true },
     orderBy: { createdAt: 'asc' },
   });
-  return { ...storedOutcome(fresh, stored), alreadySubmitted: true, gradingPending: false };
+  return {
+    ...storedOutcome(fresh, stored),
+    alreadySubmitted: true,
+    gradingPending: false,
+    bestScore: marksToNumber(fresh.score),
+  };
 }

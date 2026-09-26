@@ -42,6 +42,7 @@ or requires **OS-level software** outside a normal webpage's reach.
 | Open sign-in, role-based access             | Hard restriction          | Any verified Google account signs in as STUDENT; ADMIN only set server-side          |
 | Per-test access control                     | Hard restriction          | Tests open by default or assigned-only; admins can revoke one student's access       |
 | Post-submission practice mode               | Feature                   | Submitted questions can be reopened and re-run without proctoring; never re-graded   |
+| Unlimited resubmission, best score counts   | Feature                   | Resubmit any question until time runs out; the test ends only by timer or End Test   |
 | Role re-verified server-side every request  | Hard restriction          | Client-reported role/permissions are never trusted                                   |
 
 ## 3. Content & question protection

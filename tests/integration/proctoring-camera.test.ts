@@ -154,6 +154,8 @@ describeDb('proctoring: camera and clipboard events (requires DATABASE_URL)', { 
   });
 
   it('after the sitting closes, nothing more is recorded against it', async () => {
+    const { endExam } = await import('@/server/services/finalization');
+    await endExam(examId, alice); // submitting every question never ends a test; End Test does
     const closed = await sittingOf(alice);
     expect(closed.endedAt).not.toBeNull();
     const before = await prisma.proctorEvent.count({ where: { sessionId: closed.id } });

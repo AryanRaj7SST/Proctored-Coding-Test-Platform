@@ -113,6 +113,8 @@ describeDb('post-submission practice mode (requires DATABASE_URL)', { timeout: 1
       userId: ids.owner,
       code: { html: '<p>wrong</p>', css: '', js: '' },
     });
+    const { endExam } = await import('@/server/services/finalization');
+    await endExam(examId, ids.owner); // practice opens once the test has ended
     const before = await prisma.attempt.findUniqueOrThrow({ where: { id: attemptId } });
     expect(before).toMatchObject({ status: 'SUBMITTED', html: '<p>wrong</p>' });
     expect(Number(before.score)).toBe(0);
