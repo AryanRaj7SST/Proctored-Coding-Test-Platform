@@ -5,13 +5,7 @@ import type { SessionUser } from '@/lib/authz';
 import { ensureAttempts } from './attempts';
 import { studentQuestionOf } from './questions';
 import { marksToNumber } from '@/server/grading/marks';
-import {
-  currentSession,
-  getExamTimeState,
-  heartbeat,
-  sittingOverdue,
-  startExamSession,
-} from './sessions';
+import { currentSession, getExamTimeState, heartbeat, sittingOverdue, startExamSession } from './sessions';
 import { countSessionViolations, countViolations, recordProctorEvent } from './proctoring';
 import { enforceViolationLimit, finalizeExpiredAttempts, sittingEndReason } from './finalization';
 import { recordAudit } from './audit';
