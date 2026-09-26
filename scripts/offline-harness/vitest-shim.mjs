@@ -67,6 +67,25 @@ function deepEqual(a, b) {
   return ka.every((k) => deepEqual(a[k], b[k]));
 }
 
+/** Vitest's toMatchObject: every property in `expected` matches, recursively; extra ones are ignored. */
+function matchesObject(actual, expected) {
+  if (typeof expected !== 'object' || expected === null || expected instanceof Date) {
+    return deepEqual(actual, expected);
+  }
+  if (typeof actual !== 'object' || actual === null) return false;
+  if (Array.isArray(expected)) {
+    return (
+      Array.isArray(actual) &&
+      actual.length === expected.length &&
+      expected.every((v, i) => matchesObject(actual[i], v))
+    );
+  }
+  if (actual instanceof Map) {
+    return Object.keys(expected).every((k) => matchesObject(actual.get(k), expected[k]));
+  }
+  return Object.keys(expected).every((k) => matchesObject(actual[k], expected[k]));
+}
+
 function fail(message) {
   throw new Error(message);
 }
@@ -82,7 +101,16 @@ function build(actual, negated) {
       check(Object.is(actual, expected), `expected ${stringify(actual)} ${not}to be ${stringify(expected)}`);
     },
     toEqual(expected) {
-      check(deepEqual(actual, expected), `expected ${stringify(actual)} ${not}to equal ${stringify(expected)}`);
+      check(
+        deepEqual(actual, expected),
+        `expected ${stringify(actual)} ${not}to equal ${stringify(expected)}`,
+      );
+    },
+    toMatchObject(expected) {
+      check(
+        matchesObject(actual, expected),
+        `expected ${stringify(actual)} ${not}to match object ${stringify(expected)}`,
+      );
     },
     toContain(expected) {
       const contains =

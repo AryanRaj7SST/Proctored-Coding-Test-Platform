@@ -1,12 +1,12 @@
 import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 
 /**
- * Security regression: no email gets a clipboard exemption, and no arbitrary
- * email can start early. Clipboard exemptions come only from an explicit,
- * admin-set accommodation on the student's assignment. The one deliberate
- * scheduling exemption is open test access (hasOpenTestAccess: administrators
- * and the short OPEN_ACCESS_EMAILS list), which never covers the clipboard.
- * Uses the real database and the real proctor-events route handler.
+ * Security regression: no arbitrary email gets a clipboard exemption or can
+ * start early. For students, clipboard exemptions come only from an explicit,
+ * admin-set accommodation on their assignment. The one deliberate exemption
+ * by identity is open test access (hasOpenTestAccess: administrators and the
+ * short OPEN_ACCESS_EMAILS list): no test window or attempt limit, and copy /
+ * paste allowed. Uses the real database and the real proctor-events route.
  */
 const session = vi.hoisted(() => ({ current: null as null | { user: Record<string, unknown> } }));
 vi.mock('@/lib/auth', () => ({ auth: async () => session.current }));
@@ -106,7 +106,7 @@ describeDb('accommodations instead of email bypasses (requires DATABASE_URL)', {
     }
   });
 
-  it('only the explicitly listed open-access email may start early (a scheduling rule, nothing else)', async () => {
+  it('only the explicitly listed open-access email may start early', async () => {
     expect(sessions.hasOpenTestAccess({ role: 'STUDENT', email: 'agnihotriaryan5361@gmail.com' })).toBe(true);
     expect(sessions.hasOpenTestAccess({ role: 'STUDENT', email: `${ids.student}@example.test` })).toBe(false);
     if (preexistingUser) return; // never start a sitting for a real account
@@ -129,10 +129,13 @@ describeDb('accommodations instead of email bypasses (requires DATABASE_URL)', {
   });
 
   if (!preexistingUser) {
-    it('the formerly special-cased email gets no clipboard bypass either', async () => {
+    it('the listed open-access email may copy and paste, like an administrator', async () => {
       await startSitting(users.find((x) => x.id === ids.formerlyBypassed)!);
       const res = await postEvent({ examId: ids.exam, type: 'PASTE' });
-      expect(res.body).toMatchObject({ recorded: true, violationCount: 1 });
+      expect(res.body).toMatchObject({ recorded: false, violationCount: 0 });
+      // Only the clipboard: leaving the tab is still a violation.
+      const tab = await postEvent({ examId: ids.exam, type: 'TAB_HIDDEN' });
+      expect(tab.body).toMatchObject({ recorded: true, violationCount: 1 });
     });
   }
 

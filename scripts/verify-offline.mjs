@@ -59,9 +59,7 @@ function readText(rel) {
  * and whole-line `//` comments are removed, so URLs inside strings survive.
  */
 function stripComments(text) {
-  return text
-    .replace(/\/\*[\s\S]*?\*\//g, '')
-    .replace(/^\s*\/\/.*$/gm, '');
+  return text.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 }
 
 function readCode(rel) {
@@ -194,7 +192,9 @@ check(`no client component imports prisma (${clientFiles.length} client files sc
 });
 
 check('no client component imports a server service', () => {
-  const bad = clientFiles.filter((f) => /from '@\/server\//.test(readText(f)) && !/^import type/m.test(readText(f)));
+  const bad = clientFiles.filter(
+    (f) => /from '@\/server\//.test(readText(f)) && !/^import type/m.test(readText(f)),
+  );
   const reallyBad = bad.filter((f) => {
     // `import type { X } from '@/server/...'` is erased at compile time and is fine.
     const text = readText(f);
@@ -223,21 +223,31 @@ check('no dangerouslySetInnerHTML anywhere', () => {
 check('the preview iframe never gets allow-same-origin', () => {
   const preview = readCode('src/components/editor/PreviewFrame.tsx');
   if (!preview.includes('sandbox=')) throw new Error('no sandbox attribute found');
-  if (preview.includes('allow-same-origin')) throw new Error('allow-same-origin would break the origin boundary');
+  if (preview.includes('allow-same-origin'))
+    throw new Error('allow-same-origin would break the origin boundary');
 });
 
 check('the test DSL has no source-inspection assertion', () => {
   const spec = readCode('shared/test-spec.ts');
   if (/sourceContains|sourceMatches|codeContains/.test(spec)) {
-    throw new Error('behaviour-based grading requires that source inspection does not exist in the vocabulary');
+    throw new Error(
+      'behaviour-based grading requires that source inspection does not exist in the vocabulary',
+    );
   }
 });
 
 check('hidden test code is never selected into a student payload', () => {
   const questions = readCode('src/server/services/questions.ts');
-  const projection = questions.slice(questions.indexOf('export function toStudentQuestion'));
-  const body = projection.slice(0, projection.indexOf('\n}\n'));
-  if (body.includes('testCode')) throw new Error('toStudentQuestion leaks testCode');
+  // What each projection RETURNS. Reading testCode to describe a check in
+  // words is fine; returning it would hand students the grading spec.
+  for (const fn of ['toStudentQuestion', 'toStudentTestCase']) {
+    const start = questions.indexOf(`function ${fn}(`);
+    if (start < 0) throw new Error(`${fn} not found`);
+    const rest = questions.slice(start);
+    const body = rest.slice(0, rest.indexOf('\n}\n'));
+    const returned = body.slice(body.lastIndexOf('return {'));
+    if (/\btestCode\b/.test(returned)) throw new Error(`${fn} returns testCode`);
+  }
 });
 
 check('every API route wraps its handler or returns a Response directly', () => {
@@ -252,7 +262,9 @@ check('every API route wraps its handler or returns a Response directly', () => 
 
 check('mutating admin routes call requireAdmin', () => {
   const routes = walk('src/app/api/admin').filter((f) => f.endsWith('route.ts'));
-  const bad = routes.filter((f) => !readText(f).includes('requireAdmin') && !readText(f).includes('role !== '));
+  const bad = routes.filter(
+    (f) => !readText(f).includes('requireAdmin') && !readText(f).includes('role !== '),
+  );
   if (bad.length) throw new Error(bad.join(', '));
 });
 
@@ -300,7 +312,7 @@ if (skipped.length) {
 
 /* ------------------------------------------------------- 5. runner tests */
 
-section('5. Executing the runner\'s pure unit tests (node --test, no npm install)');
+section("5. Executing the runner's pure unit tests (node --test, no npm install)");
 
 {
   const { spawnSync } = await import('node:child_process');

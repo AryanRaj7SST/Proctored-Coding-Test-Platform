@@ -749,8 +749,6 @@ function validateAssertion(raw: unknown, errors: string[], path: string): Assert
         ...(tol() !== undefined ? { tolerance: tol() as number } : {}),
       });
     }
-    case 'noConsoleErrors':
-      return withMsg({ type: 'noConsoleErrors' as const });
     default:
       // Never drop a check silently: a dropped check changes what a test means,
       // and a test left with no checks is refused by the runner.

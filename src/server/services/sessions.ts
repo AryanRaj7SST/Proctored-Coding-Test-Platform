@@ -38,8 +38,9 @@ const OPEN_ACCESS_EMAILS: ReadonlySet<string> = new Set(['agnihotriaryan5361@gma
 /**
  * Open test access: the account is bound by neither a test's window nor its
  * attempt limit. It may start before the test opens and after it closes, and
- * may start a fresh sitting after each one ends. Every sitting is still timed,
- * proctored and graded; nothing is deleted. Administrators have it (dry
+ * may start a fresh sitting after each one ends, and copy/paste is allowed
+ * (workspace.ts). Every sitting is still timed, proctored and graded; nothing
+ * is deleted. Administrators have it (dry
  * runs), plus the accounts listed above. Decided from the database (role and
  * verified Google email), never from anything the browser sends.
  */

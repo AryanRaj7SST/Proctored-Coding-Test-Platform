@@ -43,7 +43,8 @@ source of truth — file an issue.
   decided from the verified Google email), are bound by neither a test's
   window nor its attempt limit: they can start before it opens, after it
   closes, and again after every finished sitting. Each sitting is still timed,
-  proctored and graded, and nothing is deleted. It does not bypass access
+  proctored and graded, and nothing is deleted; copy/paste is allowed for
+  them (other proctoring rules still apply). It does not bypass access
   revocation or assignment rules. Keep that list short and review it before
   every release.
 - **Practice Mode never touches graded work.** After a question is submitted
