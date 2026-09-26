@@ -8,7 +8,6 @@ import { marksToNumber } from '@/server/grading/marks';
 import {
   currentSession,
   getExamTimeState,
-  hasOpenTestAccess,
   heartbeat,
   sittingOverdue,
   startExamSession,
@@ -83,7 +82,7 @@ export async function openWorkspace(
     ip: meta.ip,
   });
 
-  const allowClipboard = hasOpenTestAccess(user) || (assignment?.allowClipboard ?? false);
+  const allowClipboard = user.role === 'ADMIN' || (assignment?.allowClipboard ?? false);
 
   return {
     user: { id: user.id, email: user.email, role: user.role },
@@ -103,8 +102,7 @@ export async function openWorkspace(
     },
     violationCount,
     // Accommodations come from the student's assignment, set by an admin.
-    // Users with open test access (admins and designated staff) are always
-    // allowed to copy and paste.
+    // Admins sitting a test are always allowed to copy and paste.
     accommodations: { allowClipboard },
     questions: opened.map(({ order, attempt }) => {
       const graded = attempt.status !== 'IN_PROGRESS' && attempt.gradedAt !== null;
@@ -188,10 +186,9 @@ export async function reportProctorEvent(
   },
 ) {
   // Clipboard accommodation: an explicit, admin-set flag on THIS student's
-  // assignment. Users with open test access (admins and designated staff) are
-  // always exempt from clipboard blocking.
+  // assignment. Admins sitting an exam are always exempt from clipboard blocking.
   const allowClipboard =
-    hasOpenTestAccess(user) ||
+    user.role === 'ADMIN' ||
     ((
       await prisma.examAssignment.findUnique({
         where: { examId_userId: { examId: exam.id, userId: user.id } },

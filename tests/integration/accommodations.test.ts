@@ -129,13 +129,11 @@ describeDb('accommodations instead of email bypasses (requires DATABASE_URL)', {
   });
 
   if (!preexistingUser) {
-    it('the listed open-access email may copy and paste, like an administrator', async () => {
+    it('the formerly special-cased email gets no clipboard bypass either', async () => {
+      if (preexistingUser) return;
       await startSitting(users.find((x) => x.id === ids.formerlyBypassed)!);
       const res = await postEvent({ examId: ids.exam, type: 'PASTE' });
-      expect(res.body).toMatchObject({ recorded: false, violationCount: 0 });
-      // Only the clipboard: leaving the tab is still a violation.
-      const tab = await postEvent({ examId: ids.exam, type: 'TAB_HIDDEN' });
-      expect(tab.body).toMatchObject({ recorded: true, violationCount: 1 });
+      expect(res.body).toMatchObject({ recorded: true, violationCount: 1 });
     });
   }
 
