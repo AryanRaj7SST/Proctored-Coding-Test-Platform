@@ -69,9 +69,16 @@ from the live `Question`/`QuestionTest` tables. Re-editing a question after
 students have attempted it invalidates its `validation` status and bumps its
 version for _future_ attempts; it cannot retroactively change a stored score.
 
-Submission is idempotent (`submitAttempt`): a second submit call returns the
-already-stored grading rather than re-scoring, so a retried request or a
-double click can't change a result.
+While the sitting is open a question can be submitted any number of times
+(`submitAttempt`): every submission is graded, and the **best** score counts
+(`executeTests` with `keepBest`; a lower-scoring run is kept as history and
+never lowers the stored score). A submitted question stays editable. Nothing
+ends a test early: it ends only when the timer runs out or the student
+presses End Test. At that point a question edited since its last grading is
+graded once more with its final code (counted only if better), and every
+attempt keeps the code its counted result was graded on, so review screens
+and regrades see exactly the graded code. After the sitting ends, a submit
+returns the stored grading and cannot change it.
 
 ## Timing
 

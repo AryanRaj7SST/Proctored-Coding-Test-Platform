@@ -137,6 +137,8 @@ async function finalizeSession(session: SittingRef, reason: SittingEndReason): P
       });
       if (result.graded) gradedCount += 1;
     }
+    await gradeEditedSubmissions(session.id, claimed);
+    await keepCountedCode(session.id);
     await refreshSittingTotals(session.id);
     if (closed.count === 1) {
       await recordAudit({
@@ -162,6 +164,67 @@ async function finalizeSession(session: SittingRef, reason: SittingEndReason): P
     closedSitting: closed.count === 1,
     gradingDeferred: mode === 'deferred',
   };
+}
+
+type Code = { html: string; css: string; js: string };
+
+function sameCode(a: Code, b: unknown): boolean {
+  const c = b as Partial<Code> | null;
+  return Boolean(c) && c!.html === a.html && c!.css === a.css && c!.js === a.js;
+}
+
+/** The code of an attempt's most recent completed graded run, if any. */
+async function lastGradedCode(attemptId: string): Promise<unknown> {
+  const run = await prisma.testRun.findFirst({
+    where: { attemptId, kind: 'SUBMISSION', status: 'COMPLETED' },
+    orderBy: { startedAt: 'desc' },
+    select: { code: true },
+  });
+  return run?.code ?? null;
+}
+
+/**
+ * Best submission counts: a submitted question edited after it was last
+ * graded gets one more grading with its final code when the sitting ends. It
+ * counts only if it beats the question's best submission.
+ */
+async function gradeEditedSubmissions(sessionId: string, alreadyGraded: string[]): Promise<void> {
+  const submitted = await prisma.attempt.findMany({
+    where: { sessionId, status: 'SUBMITTED', id: { notIn: alreadyGraded } },
+    select: { id: true, html: true, css: true, js: true },
+  });
+  for (const a of submitted) {
+    if (sameCode(a, await lastGradedCode(a.id))) continue;
+    await gradeAttempt(a.id, { reason: 'final code', keepBest: true });
+  }
+}
+
+/**
+ * Once the sitting is over, each attempt keeps the code its counted (best)
+ * result was graded on, so the review screens and any regrade see exactly the
+ * graded code. Later, lower-scoring code stays in its own run's history. An
+ * attempt whose final code could not be graded (runner outage) keeps that
+ * code, so an administrator's regrade can still grade it.
+ */
+async function keepCountedCode(sessionId: string): Promise<void> {
+  const attempts = await prisma.attempt.findMany({
+    where: { sessionId, gradedAt: { not: null } },
+    select: { id: true, html: true, css: true, js: true },
+  });
+  for (const a of attempts) {
+    if (!sameCode(a, await lastGradedCode(a.id))) continue;
+    const counted = await prisma.testResult.findFirst({
+      where: { attemptId: a.id, final: true },
+      select: { testRun: { select: { code: true } } },
+    });
+    const code = counted?.testRun?.code as Code | null | undefined;
+    if (code && !sameCode(a, code)) {
+      await prisma.attempt.update({
+        where: { id: a.id },
+        data: { html: code.html, css: code.css, js: code.js },
+      });
+    }
+  }
 }
 
 /** Why a sitting was closed, for student-facing messages. */

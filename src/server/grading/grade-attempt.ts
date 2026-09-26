@@ -16,6 +16,8 @@ export interface GradeResult {
   /** Another grader holds this attempt right now; nothing was done. */
   busy?: boolean;
   outcome?: ExecutionOutcome;
+  /** This run became the attempt's counted result (always, unless `keepBest` kept a better one). */
+  counted?: boolean;
   /** Student-safe reason grading did not happen. */
   error?: string;
 }
@@ -45,7 +47,7 @@ async function releaseLease(attemptId: string): Promise<void> {
  */
 export async function gradeAttempt(
   attemptId: string,
-  opts: { reason?: string; triggeredById?: string } = {},
+  opts: { reason?: string; triggeredById?: string; keepBest?: boolean } = {},
 ): Promise<GradeResult> {
   const attempt = await prisma.attempt.findUnique({ where: { id: attemptId } });
   if (!attempt) return { graded: false, error: 'Attempt not found.' };
@@ -64,8 +66,10 @@ export async function gradeAttempt(
       userId: claimed.userId,
       reason: opts.reason ?? 'submission',
       triggeredById: opts.triggeredById,
+      keepBest: opts.keepBest,
     });
-    return { graded: true, outcome };
+    const { counted, ...rest } = outcome;
+    return { graded: true, outcome: rest, counted };
   } catch (err) {
     logger.warn('grading.deferred', { attemptId, error: sanitizeError(err) });
     await recordAudit({

@@ -77,14 +77,24 @@ class HttpResponseError extends Error {
   }
 }
 
+/** Headers that authenticate one request body to the runner (bearer + timestamped HMAC). */
+function signedHeaders(body: string, secret: string): Record<string, string> {
+  const timestamp = String(Date.now());
+  return {
+    'content-type': 'application/json',
+    authorization: `Bearer ${secret}`,
+    'x-runner-timestamp': timestamp,
+    'x-runner-signature': signPayload(body, secret, timestamp),
+  };
+}
+
 async function postToCandidateUrls(
   candidateUrls: string[],
   secret: string,
   body: string,
   timeoutMs: number,
 ): Promise<RunnerRunResult> {
-  const timestamp = String(Date.now());
-  const signature = signPayload(body, secret, timestamp);
+  const headers = signedHeaders(body, secret);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -95,12 +105,7 @@ async function postToCandidateUrls(
     try {
       const res = await fetch(url, {
         method: 'POST',
-        headers: {
-          'content-type': 'application/json',
-          authorization: `Bearer ${secret}`,
-          'x-runner-timestamp': timestamp,
-          'x-runner-signature': signature,
-        },
+        headers,
         body,
         signal: controller.signal,
         cache: 'no-store',
@@ -254,10 +259,31 @@ export async function runnerHealth(): Promise<{ ok: boolean; detail?: string }> 
         lastDetail = `status ${res.status}`;
         continue;
       }
-      return { ok: true };
+      // Reachable is not enough: a runner that rejects the app's secret looks
+      // healthy here but refuses every run. Prove the credentials too.
+      return await checkRunnerCredentials(url.replace(/\/health$/, '/auth-check'));
     } catch (err) {
       lastDetail = sanitizeError(err, 120);
     }
   }
   return { ok: false, detail: lastDetail };
+}
+
+export const RUNNER_SECRET_MISMATCH =
+  'The runner rejects the app credentials: RUNNER_SECRET must be identical on the app and the runner.';
+
+async function checkRunnerCredentials(url: string): Promise<{ ok: boolean; detail?: string }> {
+  const body = '{}';
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: signedHeaders(body, requireEnv('runnerSecret')),
+    body,
+    cache: 'no-store',
+    signal: AbortSignal.timeout(4000),
+  });
+  if (res.ok) return { ok: true };
+  if (res.status === 401 || res.status === 403) return { ok: false, detail: RUNNER_SECRET_MISMATCH };
+  // A runner deployed before /auth-check existed: reachable, credentials unverified.
+  if (res.status === 404) return { ok: true, detail: 'credentials not verified (redeploy the runner)' };
+  return { ok: false, detail: `credential check returned status ${res.status}` };
 }

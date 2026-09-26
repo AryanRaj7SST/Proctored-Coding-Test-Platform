@@ -144,6 +144,9 @@ Monaco's tokenizer/worker bootstrap — but this governs the **parent
 document** only; the student-code iframe has its own opaque origin and is not
 meaningfully constrained by the parent's CSP in the first place, which is why
 the sandbox attribute (not CSP) is what actually isolates it.
+`img-src` allows `https:` images from any host, so photos in questions, reference
+solutions and the student preview load; plain `http:` images, and every
+non-image resource from another origin, stay blocked.
 
 ## Errors never leak internals
 

@@ -127,6 +127,8 @@ type SubmitResponse = Omit<RunOutcome, 'score'> & {
   gradingPending: boolean;
   gradingError: string | null;
   score: number | null;
+  /** The question's counted score: its best graded submission. */
+  bestScore: number | null;
   questionStatus: 'PASSED' | 'PARTIAL' | 'FAILED' | null;
 };
 
@@ -224,7 +226,9 @@ export function ExamWorkspace({
 
   const slot = data?.questions[index];
   const attempt = slot?.attempt;
-  const locked = expired || (attempt ? attempt.status !== 'IN_PROGRESS' : true);
+  // A submitted question stays editable (and resubmittable) until the sitting ends.
+  const locked =
+    expired || (attempt ? attempt.status !== 'IN_PROGRESS' && attempt.status !== 'SUBMITTED' : true);
 
   /* ------------------------------------------------------------ bootstrap */
 
@@ -546,6 +550,7 @@ export function ExamWorkspace({
     setConfirmSubmit(false);
     try {
       await flush();
+      const resubmission = attempt.status === 'SUBMITTED';
       const res = await apiPost<SubmitResponse>(`/api/attempts/${attempt.id}/submit`, code);
       setBottomTab('tests');
       setData((prev) => {
@@ -558,10 +563,14 @@ export function ExamWorkspace({
             attempt: {
               ...current.attempt,
               status: 'SUBMITTED',
-              score: res.score,
+              // The best submission counts; a lower resubmission never lowers it.
+              score: res.bestScore ?? res.score,
               maxScore: res.maxScore,
-              gradingPending: res.gradingPending,
-              resultStatus: res.questionStatus,
+              gradingPending: res.bestScore === null && res.gradingPending,
+              resultStatus:
+                res.bestScore !== null && res.bestScore !== res.score
+                  ? current.attempt.resultStatus
+                  : res.questionStatus,
             },
           };
         }
@@ -570,13 +579,20 @@ export function ExamWorkspace({
       if (res.gradingPending || res.score === null) {
         // Recorded, but the grader could not run: no score is invented.
         const message =
-          'Your answer was submitted, but automatic grading is temporarily unavailable. It will be graded later; you do not need to resubmit.';
+          resubmission && res.bestScore !== null
+            ? `Automatic grading is temporarily unavailable. Your best score so far (${res.bestScore}/${res.maxScore}) is kept, and your latest code will be graded when the test ends.`
+            : 'Your answer was submitted, but automatic grading is temporarily unavailable. It will be graded later; you do not need to resubmit.';
         setOutcome(null);
         setRunError(message);
         toast.push(message, 'info');
       } else {
         setOutcome({ ...res, score: res.score, graded: true });
-        toast.push(`Submitted. Score ${res.score}/${res.maxScore}.`, 'success');
+        toast.push(
+          res.bestScore !== null && res.bestScore > res.score
+            ? `Submitted. This submission scored ${res.score}/${res.maxScore}; your best score ${res.bestScore}/${res.maxScore} counts.`
+            : `Submitted. Score ${res.score}/${res.maxScore}. You can resubmit until time runs out.`,
+          'success',
+        );
       }
     } catch (err) {
       const message = err instanceof ApiError ? err.message : 'Submission failed. Please try again.';
@@ -1200,7 +1216,11 @@ export function ExamWorkspace({
                     disabled={locked || submitting}
                     className="rounded-[4px] bg-[#0066d6] px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0052b3] disabled:opacity-50"
                   >
-                    {submitting ? 'Submitting…' : 'Submit Code'}
+                    {submitting
+                      ? 'Submitting…'
+                      : attempt.status === 'SUBMITTED'
+                        ? 'Resubmit Code'
+                        : 'Submit Code'}
                   </button>
                 </div>
               </div>
@@ -1250,9 +1270,9 @@ export function ExamWorkspace({
 
       <ConfirmDialog
         open={confirmSubmit}
-        title="Submit this question?"
-        message="Your code will be graded against the test cases and your score will be recorded."
-        confirmLabel="Submit Code"
+        title={attempt?.status === 'SUBMITTED' ? 'Resubmit this question?' : 'Submit this question?'}
+        message="Your code will be graded against the test cases. You can resubmit as many times as you like until time runs out; your best score counts."
+        confirmLabel={attempt?.status === 'SUBMITTED' ? 'Resubmit Code' : 'Submit Code'}
         busy={submitting}
         onConfirm={() => void submit()}
         onCancel={() => setConfirmSubmit(false)}

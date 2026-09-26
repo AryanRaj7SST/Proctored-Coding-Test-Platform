@@ -12,9 +12,7 @@ import {
 } from '@/lib/timing';
 import { env } from '@/lib/env';
 import { deriveSessionStatus } from '@/lib/proctor';
-import { refreshSittingTotals } from '@/server/grading/sitting-totals';
 import { conflict, forbidden } from '@/lib/errors';
-import { recordAudit } from './audit';
 
 export interface ExamTimeState {
   availability: ExamAvailability;
@@ -251,48 +249,4 @@ export function sessionStatusFor(session: ExamSession, lastEventType?: string | 
     new Date(),
     env.sessionStaleSeconds,
   );
-}
-
-/** When every question of the current sitting is submitted, close the sitting. */
-export async function maybeFinishExam(examId: string, userId: string): Promise<void> {
-  const session = await currentSession(examId, userId);
-  if (!session || session.endedAt) return;
-  const [total, submitted] = await Promise.all([
-    prisma.examQuestion.count({ where: { examId } }),
-    prisma.attempt.count({
-      where: { sessionId: session.id, status: { in: ['SUBMITTED', 'AUTO_SUBMITTED'] } },
-    }),
-  ]);
-  if (total > 0 && submitted >= total) {
-    const ended = await prisma.examSession.updateMany({
-      where: { id: session.id, endedAt: null },
-      data: { endedAt: new Date(), status: 'SUBMITTED' },
-    });
-    await prisma.examAssignment.updateMany({ where: { examId, userId }, data: { status: 'SUBMITTED' } });
-    await refreshSittingTotals(session.id);
-    if (ended.count === 1) {
-      await prisma.proctorEvent.create({
-        data: {
-          userId,
-          examId,
-          sessionId: session.id,
-          type: 'EXAM_SUBMITTED',
-          violation: false,
-          metadata: { reason: 'STUDENT_ENDED' },
-        },
-      });
-      // Same audit trail as pressing End Test: the sitting ended because every answer is in.
-      await recordAudit({
-        userId,
-        action: 'exam.ended',
-        entity: 'Exam',
-        entityId: examId,
-        metadata: {
-          reason: 'ALL_SUBMITTED',
-          attemptNumber: session.attemptNumber,
-          submittedCount: submitted,
-        },
-      });
-    }
-  }
 }

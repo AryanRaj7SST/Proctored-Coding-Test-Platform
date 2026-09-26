@@ -18,6 +18,9 @@ import { outcomeFromError, outcomeFromResult, type RunnerOutcome } from './runne
  * `final` = true is a graded run: its results replace the attempt's counted
  * results (earlier ones are kept, marked superseded) and set the attempt's
  * score in the same transaction. Practice runs never change a stored score.
+ * With `keepBest` (a student's resubmission), a graded run only replaces the
+ * counted result when it scores at least as well; otherwise its results are
+ * kept as history and the attempt's best score stands.
  *
  * Any runner outcome other than SUCCESS throws a 503 AppError and is never
  * turned into a score: a first grading stays "grading pending"
@@ -31,7 +34,8 @@ export async function executeTests(params: {
   userId: string;
   reason?: string;
   triggeredById?: string;
-}): Promise<ExecutionOutcome> {
+  keepBest?: boolean;
+}): Promise<ExecutionOutcome & { counted: boolean }> {
   const { attempt, final } = params;
   const snapshot = snapshotOf(attempt);
   const tests = enabledTests(snapshot);
@@ -99,9 +103,17 @@ export async function executeTests(params: {
   }
 
   const grade = gradeQuestion(marksMicro, tests, outcome.verdicts);
-  await persistGrade({ attempt, testRunId: testRun.id, grade, final, durationMs, logs });
+  const counted = await persistGrade({
+    attempt,
+    testRunId: testRun.id,
+    grade,
+    final,
+    keepBest: Boolean(params.keepBest),
+    durationMs,
+    logs,
+  });
 
-  return executionOutcomeOf(testRun.id, grade, durationMs);
+  return { ...executionOutcomeOf(testRun.id, grade, durationMs), counted };
 }
 
 /** A completed run's grade as the execution outcome the API projects for students. */
@@ -134,20 +146,31 @@ export function executionOutcomeOf(
   };
 }
 
+/** Returns true when this run's results became the attempt's counted result. */
 async function persistGrade(params: {
   attempt: Attempt;
   testRunId: string;
   grade: QuestionGrade;
   final: boolean;
+  keepBest: boolean;
   durationMs: number;
   logs: string | null;
-}): Promise<void> {
-  const { attempt, grade, final } = params;
-  await prisma.$transaction(async (tx) => {
+}): Promise<boolean> {
+  const { attempt, grade } = params;
+  return prisma.$transaction(async (tx) => {
+    let final = params.final;
     if (final) {
       // Serialise concurrent gradings of one attempt so their result sets
       // can never interleave (the grading lease prevents most overlaps).
       await tx.$queryRaw`SELECT id FROM attempts WHERE id = ${attempt.id} FOR UPDATE`;
+      if (params.keepBest) {
+        const current = await tx.attempt.findUniqueOrThrow({
+          where: { id: attempt.id },
+          select: { gradedAt: true, score: true },
+        });
+        // Best submission counts: a lower score is history, never a demotion.
+        if (current.gradedAt && grade.scoreMicro < toMicro(current.score)) final = false;
+      }
     }
     await tx.testRun.update({
       where: { id: params.testRunId },
@@ -192,6 +215,7 @@ async function persistGrade(params: {
         },
       });
     }
+    return final;
   });
 }
 

@@ -284,3 +284,48 @@ describe('web-development checks: classes, values, forms, JavaScript behaviour',
     expect(describeStep({ action: 'check', selector: '#a' })).toBe('Tick "#a".');
   });
 });
+
+describe('every assertion type survives validation (app and runner agree)', () => {
+  const minimal: Record<(typeof ASSERTION_TYPES)[number], Record<string, unknown>> = {
+    exists: { selector: '#a' },
+    notExists: { selector: '#a' },
+    visible: { selector: '#a' },
+    hidden: { selector: '#a' },
+    count: { selector: '#a', equals: 1 },
+    text: { selector: '#a', equals: 'x' },
+    css: { selector: '#a', property: 'color', equals: 'red' },
+    cssNumber: { selector: '#a', property: 'margin-top', op: 'gte', value: 1 },
+    attribute: { selector: '#a', name: 'alt', equals: 'x' },
+    size: { selector: '#a', property: 'width', op: 'gte', value: 1 },
+    gridColumns: { selector: '#a', equals: 2 },
+    gap: { selector: '#a', equals: 8 },
+    boxesPerRow: { selector: '#a', equals: 1 },
+    noConsoleErrors: {},
+    hasClass: { selector: '#a', className: 'on' },
+    notHasClass: { selector: '#a', className: 'on' },
+    value: { selector: '#a', equals: 'x' },
+    checked: { selector: '#a', equals: true },
+    validity: { selector: '#a', valid: true },
+    js: { expression: '1 + 1', equals: 2 },
+  };
+
+  it.each(ASSERTION_TYPES.map((type) => [type]))('%s is kept and the runner accepts it', (type) => {
+    const body = validateTestCaseBody({ assertions: [{ type, ...minimal[type] }] });
+    expect(body.ok, body.errors.join('; ')).toBe(true);
+    expect(body.value?.assertions).toHaveLength(1);
+    expect(body.value?.assertions[0]?.type).toBe(type);
+    const spec = validateRunnerSpec({
+      version: 1,
+      viewport: { width: 1280, height: 720 },
+      tests: [{ id: 't1', name: 'T', points: 0, hidden: false, ...body.value }],
+    });
+    expect(spec.ok, spec.errors.join('; ')).toBe(true);
+  });
+
+  it('a "No console errors" check inside a multi-check test is not silently dropped', () => {
+    const body = validateTestCaseBody({
+      assertions: [{ type: 'visible', selector: '#a' }, { type: 'noConsoleErrors' }],
+    });
+    expect(body.value?.assertions.map((a) => a.type)).toEqual(['visible', 'noConsoleErrors']);
+  });
+});
