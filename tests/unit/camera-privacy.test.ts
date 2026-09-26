@@ -17,7 +17,7 @@ function files(dir: string): string[] {
   return fs.readdirSync(abs, { withFileTypes: true }).flatMap((d) => {
     const rel = path.join(dir, d.name);
     if (d.isDirectory()) return d.name === 'node_modules' || d.name === 'migrations' ? [] : files(rel);
-    return /\.(ts|tsx|js|mjs|prisma)$/.test(d.name) ? [rel] : [];
+    return /\.(ts|tsx|js|mjs|prisma)$/.test(d.name) ? [rel.replace(/\\/g, '/')] : [];
   });
 }
 /** Code only: comments may name forbidden APIs (to forbid them) without using them. */

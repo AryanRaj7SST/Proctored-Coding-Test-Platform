@@ -106,17 +106,30 @@ async function postToCandidateUrls(
         cache: 'no-store',
       });
 
-      if (res.status === 429) {
-        throw new HttpResponseError(new RunnerError('BUSY', 'Runner queue is full.'));
-      }
-      if (res.status === 401 || res.status === 403) {
-        throw new HttpResponseError(new RunnerError('REJECTED', 'Runner rejected the request.'));
-      }
-      if (res.status === 400) {
-        throw new HttpResponseError(new RunnerError('INVALID', 'Runner rejected the payload.'));
-      }
       if (!res.ok) {
-        throw new HttpResponseError(new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}.`));
+        const bodyText = typeof res.text === 'function' ? await res.text().catch(() => '') : '';
+        const sanitizedBody = bodyText.slice(0, 500).replace(/[\r\n]+/g, ' ').trim();
+        logger.error('runner.post_failed', {
+          url,
+          status: res.status,
+          statusText: res.statusText,
+          body: sanitizedBody,
+        });
+
+        if (res.status === 429) {
+          throw new HttpResponseError(new RunnerError('BUSY', 'Runner queue is full.'));
+        }
+        if (res.status === 401 || res.status === 403) {
+          throw new HttpResponseError(new RunnerError('REJECTED', 'Runner rejected the request.'));
+        }
+        if (res.status === 400) {
+          throw new HttpResponseError(
+            new RunnerError('INVALID', `Runner rejected the payload: ${sanitizedBody || 'Bad Request'}`),
+          );
+        }
+        throw new HttpResponseError(
+          new RunnerError('UNAVAILABLE', `Runner responded with ${res.status}: ${sanitizedBody || res.statusText}`),
+        );
       }
 
       let json: RunnerRunResult;

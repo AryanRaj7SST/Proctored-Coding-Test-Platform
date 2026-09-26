@@ -72,10 +72,63 @@ interface ParsedBlock {
   text?: string;
 }
 
+function isSafeUrl(url: string): boolean {
+  if (url.startsWith('/api/image-proxy')) {
+    return true;
+  }
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function isImageTarget(url: string, alt?: string): boolean {
+  const cleanUrl = url.split('?')[0]?.toLowerCase() ?? '';
+  const hasImageExt = /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)$/i.test(cleanUrl);
+  const isCloudinaryImage = /res\.cloudinary\.com\/[^/]+\/image\/upload\//i.test(url);
+  const altHasImageExt = alt ? /\.(png|jpe?g|gif|webp|svg|bmp|ico|avif)\b/i.test(alt) : false;
+  return hasImageExt || isCloudinaryImage || altHasImageExt;
+}
+
+function QuestionImage({ src, alt, rawUrl }: { src: string; alt: string; rawUrl?: string }) {
+  const [failed, setFailed] = React.useState(false);
+
+  return (
+    <div className="shadow-xs my-3 overflow-hidden rounded-md border border-slate-200 bg-slate-50 p-2">
+      {failed ? (
+        <div className="flex flex-col items-center justify-center gap-1.5 py-4 text-xs text-slate-500">
+          <p className="font-medium text-slate-600">Image preview unavailable ({alt || 'illustration'})</p>
+          {rawUrl ? (
+            <a
+              href={rawUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline hover:text-blue-700"
+            >
+              Open image link in new tab
+            </a>
+          ) : null}
+        </div>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={src}
+          alt={alt || 'Question diagram'}
+          className="mx-auto max-h-96 w-auto max-w-full rounded object-contain"
+          loading="lazy"
+          onError={() => setFailed(true)}
+        />
+      )}
+    </div>
+  );
+}
+
 /**
  * Render structured question text safely without dangerouslySetInnerHTML.
  * Supports headings (# to ####), lists (- or *), markdown images (![alt](url)),
- * inline code, bold, and paragraphs.
+ * auto-detected image links ([alt](url)), inline code, bold, and paragraphs.
  */
 function RichText({ text }: { text: string }) {
   const blocks = React.useMemo(() => {
@@ -108,12 +161,28 @@ function RichText({ text }: { text: string }) {
         continue;
       }
 
-      // Image: ![alt](url)
-      const imageMatch = trimmed.match(/^!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)$/);
-      if (imageMatch && imageMatch[1] !== undefined && imageMatch[2]) {
+      // Explicit image: ![alt](url) OR implicit image link: [alt](url) if url/alt has image indicators
+      const imageOrLinkMatch = trimmed.match(/^(!?)\[([^\]]*)\]\(((?:https?:\/\/|\/api\/image-proxy)[^\s)]+)\)$/);
+      if (imageOrLinkMatch && imageOrLinkMatch[2] !== undefined && imageOrLinkMatch[3]) {
+        const isExplicitImage = imageOrLinkMatch[1] === '!';
+        const alt = imageOrLinkMatch[2];
+        const url = imageOrLinkMatch[3];
+        const isImplicitImage = isImageTarget(url, alt);
+
+        if (isExplicitImage || isImplicitImage) {
+          flushList();
+          flushParagraph();
+          result.push({ type: 'image', alt, url });
+          continue;
+        }
+      }
+
+      // Standalone bare image URL on its own line: https://.../image.png
+      const bareImageMatch = trimmed.match(/^(https?:\/\/[^\s)]+\.(?:png|jpe?g|gif|webp|svg|bmp|avif)(?:\?[^\s)]*)?)$/i);
+      if (bareImageMatch && bareImageMatch[1]) {
         flushList();
         flushParagraph();
-        result.push({ type: 'image', alt: imageMatch[1], url: imageMatch[2] });
+        result.push({ type: 'image', alt: 'Illustration', url: bareImageMatch[1] });
         continue;
       }
 
@@ -154,21 +223,17 @@ function RichText({ text }: { text: string }) {
     <div className="space-y-2">
       {blocks.map((block, i) => {
         if (block.type === 'image' && block.url) {
-          const isHttp = block.url.startsWith('http://') || block.url.startsWith('https://');
-          if (!isHttp) return null;
+          if (!isSafeUrl(block.url)) return null;
+          const imageSrc = block.url.startsWith('/api/image-proxy')
+            ? block.url
+            : `/api/image-proxy?url=${encodeURIComponent(block.url)}`;
           return (
-            <div
+            <QuestionImage
               key={i}
-              className="shadow-xs my-3 overflow-hidden rounded-md border border-slate-200 bg-slate-50 p-2"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={block.url}
-                alt={block.alt || 'Question diagram'}
-                className="mx-auto max-h-96 w-auto max-w-full rounded object-contain"
-                loading="lazy"
-              />
-            </div>
+              src={imageSrc}
+              alt={block.alt || 'Question diagram'}
+              rawUrl={block.url}
+            />
           );
         }
 

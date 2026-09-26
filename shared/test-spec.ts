@@ -575,6 +575,8 @@ function validateAssertion(raw: unknown, errors: string[], path: string): Assert
   const tol = (): number | undefined => (a.tolerance !== undefined ? Number(a.tolerance) : undefined);
 
   switch (type) {
+    case 'noConsoleErrors':
+      return withMsg({ type: 'noConsoleErrors' as const });
     case 'exists':
     case 'notExists':
     case 'visible':

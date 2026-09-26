@@ -5,7 +5,14 @@ import type { SessionUser } from '@/lib/authz';
 import { ensureAttempts } from './attempts';
 import { studentQuestionOf } from './questions';
 import { marksToNumber } from '@/server/grading/marks';
-import { currentSession, getExamTimeState, heartbeat, sittingOverdue, startExamSession } from './sessions';
+import {
+  currentSession,
+  getExamTimeState,
+  hasOpenTestAccess,
+  heartbeat,
+  sittingOverdue,
+  startExamSession,
+} from './sessions';
 import { countSessionViolations, countViolations, recordProctorEvent } from './proctoring';
 import { enforceViolationLimit, finalizeExpiredAttempts, sittingEndReason } from './finalization';
 import { recordAudit } from './audit';
@@ -76,8 +83,10 @@ export async function openWorkspace(
     ip: meta.ip,
   });
 
+  const allowClipboard = hasOpenTestAccess(user) || (assignment?.allowClipboard ?? false);
+
   return {
-    user: { id: user.id, email: user.email },
+    user: { id: user.id, email: user.email, role: user.role },
     exam: {
       id: exam.id,
       title: exam.title,
@@ -94,7 +103,9 @@ export async function openWorkspace(
     },
     violationCount,
     // Accommodations come from the student's assignment, set by an admin.
-    accommodations: { allowClipboard: assignment?.allowClipboard ?? false },
+    // Users with open test access (admins and designated staff) are always
+    // allowed to copy and paste.
+    accommodations: { allowClipboard },
     questions: opened.map(({ order, attempt }) => {
       const graded = attempt.status !== 'IN_PROGRESS' && attempt.gradedAt !== null;
       return {
@@ -177,16 +188,18 @@ export async function reportProctorEvent(
   },
 ) {
   // Clipboard accommodation: an explicit, admin-set flag on THIS student's
-  // assignment (never an identity check in code). Admins sitting an exam have
-  // no assignment and therefore no exemption.
-  const assignment =
-    user.role === 'STUDENT'
-      ? await prisma.examAssignment.findUnique({
-          where: { examId_userId: { examId: exam.id, userId: user.id } },
-          select: { allowClipboard: true },
-        })
-      : null;
-  if (isClipboardExempt(event.type, { allowClipboard: assignment?.allowClipboard ?? false })) {
+  // assignment. Users with open test access (admins and designated staff) are
+  // always exempt from clipboard blocking.
+  const allowClipboard =
+    hasOpenTestAccess(user) ||
+    ((
+      await prisma.examAssignment.findUnique({
+        where: { examId_userId: { examId: exam.id, userId: user.id } },
+        select: { allowClipboard: true },
+      })
+    )?.allowClipboard ?? false);
+
+  if (isClipboardExempt(event.type, { allowClipboard })) {
     return {
       recorded: false,
       violationCount: await countViolations(user.id, exam.id),

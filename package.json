@@ -20,6 +20,7 @@
     "test:e2e": "playwright test",
     "test:runner": "npm --prefix runner test",
     "verify:offline": "node --experimental-strip-types --no-warnings scripts/verify-offline.mjs",
+    "verify:deploy": "tsx scripts/verify-deployment.ts",
     "validate:stack": "bash scripts/validate-stack.sh",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",

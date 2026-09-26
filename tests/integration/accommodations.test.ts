@@ -144,9 +144,9 @@ describeDb('accommodations instead of email bypasses (requires DATABASE_URL)', {
     expect(tab.body).toMatchObject({ recorded: true, violationCount: 1 });
   });
 
-  it('admins do not inherit any student exemption', async () => {
+  it('admins are allowed to copy and paste in tests', async () => {
     signInAs(users.find((x) => x.id === ids.admin)!);
     const res = await postEvent({ examId: ids.exam, type: 'PASTE' });
-    expect(res.body).toMatchObject({ recorded: true });
+    expect(res.body).toMatchObject({ recorded: false, violationCount: 0 });
   });
 });

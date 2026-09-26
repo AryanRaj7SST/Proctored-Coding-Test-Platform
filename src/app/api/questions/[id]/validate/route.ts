@@ -5,6 +5,7 @@ import { rateLimit } from '@/lib/rate-limit';
 import { validateQuestion } from '@/server/services/validation-runs';
 import { recordAudit } from '@/server/services/audit';
 
+// Re-evaluated on validation run
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 

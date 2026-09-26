@@ -2,7 +2,7 @@ import { after } from 'next/server';
 import type { Exam } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { logger, sanitizeError } from '@/lib/logger';
-import { sittingNeedsFinalization, unboundedWindow } from '@/lib/timing';
+import { sittingNeedsFinalization, unboundedWindow, withinSubmitDeadline } from '@/lib/timing';
 import { gradeAttempt } from '@/server/grading/grade-attempt';
 import { refreshSittingTotals } from '@/server/grading/sitting-totals';
 import { claimAttempt } from './attempts';
@@ -188,12 +188,14 @@ export async function finalizeExpiredAttempts(examId: string, userId: string): P
  */
 export async function endExam(examId: string, userId: string): Promise<FinalizeResult> {
   const state = await getExamTimeState(examId, userId);
-  const reason: SittingEndReason =
-    state.availability === 'EXPIRED'
-      ? 'EXPIRED'
-      : state.availability === 'ENDED'
-        ? 'EXAM_CLOSED'
-        : 'STUDENT_ENDED';
+  const isGraceExpired = Boolean(
+    state.expiresAt && !withinSubmitDeadline(state.expiresAt, state.serverTime),
+  );
+  const reason: SittingEndReason = isGraceExpired
+    ? 'EXPIRED'
+    : state.availability === 'ENDED'
+      ? 'EXAM_CLOSED'
+      : 'STUDENT_ENDED';
   const result = await finalizeSitting(examId, userId, reason);
   // Preserve the historical behaviour of End Test for an exam that was never
   // opened: the assignment is still marked as handed in.

@@ -91,7 +91,7 @@ app can live there, the runner should not).
 
 1. **Runner first.** Deploy `runner/Dockerfile` to a host with long-running
    containers (Render, Railway, Fly.io or a VPS) with `RUNNER_SECRET` set and
-   an https URL. Check `https://<runner>/health`.
+   an https URL. Check `https://<runner>/health` (or `npm run verify:deploy`).
 2. **Database migrations — from your machine, before the app deploy.** Take a
    backup, then apply migrations over the **direct** (non-pooler) connection;
    migrations through Neon's pooler can leave a stuck advisory lock (P1002).
@@ -124,7 +124,8 @@ app can live there, the runner should not).
    | `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | from the Upstash console; without them rate limiting is off                     |
 
    The server refuses to start with a missing or weak value and names the
-   variable in the function logs.
+   variable in the function logs. Run `npm run verify:deploy` to verify env var
+   presence and connection string routing before deploying.
 
 4. **Region.** Project Settings → Functions → set the region closest to the
    database (a Neon project in `us-east-2` → `cle1`, Cleveland).
@@ -148,13 +149,58 @@ app can live there, the runner should not).
    The list is in `scripts/seed-admins.ts` (or pass addresses / `ADMIN_EMAILS`).
    It only ever adds ADMIN; it never demotes anyone.
 
-9. **Smoke test.** `/api/health` returns `ok`; sign in with Google as an
-   administrator (lands on `/admin`) and as a new account (lands on the student
-   dashboard as a STUDENT); run a test with the camera — the camera needs the
-   https origin Vercel provides.
+9. **Smoke test.** Run the automated deployment verification script against the
+   live deployment to verify backend health, migrations, and configuration:
+
+   ```bash
+   npm run verify:deploy https://<your-domain>
+   ```
+
+   Once automated checks pass, complete the manual half of the smoke test by
+   clicking through the UI: sign in with Google as an administrator (lands on
+   `/admin`) and as a new account (lands on the student dashboard as a
+   STUDENT); run a test with the camera — the camera needs the https origin
+   Vercel provides. Note that the student-flow walkthrough (camera and fullscreen
+   permission prompt, running tests, submitting) must still be performed by a
+   human clicking through the UI; `verify:deploy` only verifies the backend
+   health/config half.
 
 Never run `npm run db:seed` against production: it writes demo data and
 refuses non-local databases unless `ALLOW_REMOTE_DEMO_SEED=1`.
+
+## Automated deployment verification (`verify:deploy`)
+
+Instead of manually curling endpoints and inspecting connection strings, run
+the automated deployment verification script:
+
+```bash
+npm run verify:deploy [APP_URL]
+# Example:
+# npm run verify:deploy https://proctored-coding-test-platform.vercel.app
+```
+
+This single command executes read-only checks across the deployment runbook:
+
+- **Step 1 (Runner health)**: Calls `GET {RUNNER_URL}/health`, confirming HTTP 200
+  and `{ ok: true }`.
+- **Step 3 & 4 (Configuration & Connection strings)**:
+  - Verifies presence of all 11 required production app environment variables
+    (`DATABASE_URL`, `AUTH_SECRET`, `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET`,
+    `AUTH_URL`, `AUTH_TRUST_HOST`, `RUNNER_URL`, `RUNNER_SECRET`, `CRON_SECRET`,
+    `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`) without leaking secret
+    values into logs.
+  - Confirms `DATABASE_URL` contains `-pooler` (runtime pooled connection) and
+    `DIRECT_URL` does not (Prisma direct migration connection), catching swapped
+    connection strings before deployment.
+- **Migration status (Step 2)**: Runs `npx prisma migrate status` using `DIRECT_URL`
+  and parses whether the schema is up to date. This is strictly **read-only** —
+  it never runs `migrate deploy` or `db:seed-admins`.
+- **Smoke test automated checks (Step 7 / Step 9)**: Calls `GET {APP_URL}/api/health`,
+  confirming HTTP 200 and verifying that _both_ the database and runner sub-checks
+  report healthy (`ok`).
+
+The manual half of Step 7 (camera/fullscreen prompts, code execution, submission)
+remains a manual browser check.
 
 ## First deploy on your own host, step by step
 

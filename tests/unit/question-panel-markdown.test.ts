@@ -57,7 +57,7 @@ describe('QuestionPanel Markdown / RichText Rendering', () => {
     expect(html).not.toContain('![2048 Game Reference]');
     expect(html).toContain('<img');
     expect(html).toContain(
-      'src="https://d3dyfaf3iutrxo.cloudfront.net/thumbnail/assignment/question/cadc9666c939403998fc4b7153c5b350.png"',
+      `src="/api/image-proxy?url=${encodeURIComponent('https://d3dyfaf3iutrxo.cloudfront.net/thumbnail/assignment/question/cadc9666c939403998fc4b7153c5b350.png')}"`,
     );
     expect(html).toContain('alt="2048 Game Reference"');
   });
@@ -82,9 +82,32 @@ describe('QuestionPanel Markdown / RichText Rendering', () => {
     expect(html).not.toContain('####');
     expect(html).toContain('<img');
     expect(html).toContain(
-      'src="https://d3dyfaf3iutrxo.cloudfront.net/thumbnail/assignment/question/03020e7d3ddd47cb9d80a2fc91821a39.jpeg"',
+      `src="/api/image-proxy?url=${encodeURIComponent('https://d3dyfaf3iutrxo.cloudfront.net/thumbnail/assignment/question/03020e7d3ddd47cb9d80a2fc91821a39.jpeg')}"`,
     );
     expect(html).toContain('<h4');
     expect(html).toContain('>#grid-container</code>');
   });
+
+  it('renders image links even when missing the leading exclamation mark', () => {
+    const question: StudentQuestion = {
+      id: 'q3',
+      title: 'Cloudinary Image Test',
+      description: `Please refer to the diagram:\n\n[Screenshot_2026-09-08_223536.png (1917×898)](https://res.cloudinary.com/vrwhzinu/image/upload/v1788887160/Screenshot_2026-09-08_223536.png)`,
+      instructions: null,
+      mediaUrl: null,
+      difficulty: 'EASY',
+      points: 50,
+      starterHtml: '',
+      starterCss: '',
+      starterJs: '',
+      tests: [],
+    };
+
+    const html = renderToStaticMarkup(React.createElement(QuestionPanel, { question }));
+    expect(html).toContain('<img');
+    expect(html).toContain(
+      `src="/api/image-proxy?url=${encodeURIComponent('https://res.cloudinary.com/vrwhzinu/image/upload/v1788887160/Screenshot_2026-09-08_223536.png')}"`,
+    );
+  });
 });
+

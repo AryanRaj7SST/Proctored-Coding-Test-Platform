@@ -83,6 +83,7 @@ interface StartResponse {
   user?: {
     id: string;
     email: string;
+    role?: 'STUDENT' | 'ADMIN';
   };
   exam: {
     id: string;
@@ -279,11 +280,13 @@ export function ExamWorkspace({
     message: string;
   } | null>(null);
   const closingRef = React.useRef(false);
+  const heartbeatTimerRef = React.useRef<{ stop: () => void } | null>(null);
 
   const closeSitting = React.useCallback(
     async (known?: HeartbeatResponse, trigger: 'timer' | 'server' = 'server') => {
       if (closingRef.current) return; // timer, heartbeat and violations may all fire
       closingRef.current = true;
+      heartbeatTimerRef.current?.stop();
       const timeUp = trigger === 'timer' || (known?.expired && !known.finalized);
       setClosing({
         phase: 'finalizing',
@@ -347,22 +350,28 @@ export function ExamWorkspace({
     if (!data || expired) return;
     let stop = false;
     const timer: { id?: ReturnType<typeof setInterval> } = {};
+    const stopHeartbeat = () => {
+      stop = true;
+      if (timer.id) clearInterval(timer.id);
+    };
+    heartbeatTimerRef.current = { stop: stopHeartbeat };
+
     const tick = async () => {
+      if (stop || closingRef.current) return;
       try {
         const res = await apiPost<HeartbeatResponse>('/api/heartbeat', { examId });
-        if (stop) return;
+        if (stop || closingRef.current) return;
         setClock({ msRemaining: res.msRemaining, syncedAt: Date.now() });
         setViolationCount(res.violationCount);
         // Time ran out, or the server closed the sitting (violation limit,
         // exam ended by an administrator).
         if (res.expired || res.finalized) void closeSitting(res);
       } catch (err) {
+        if (stop || closingRef.current) return;
         // 404: this student can no longer open the test (an administrator
         // revoked their access; the server already submitted their work).
         if (err instanceof ApiError && err.status === 404) {
-          if (stop) return;
-          stop = true;
-          clearInterval(timer.id);
+          stopHeartbeat();
           setClosing({ phase: 'done', message: ACCESS_REVOKED_MESSAGE });
           setTimeout(() => router.push('/dashboard'), 4000);
           return;
@@ -372,10 +381,13 @@ export function ExamWorkspace({
       }
     };
     void tick();
-    timer.id = setInterval(() => void tick(), HEARTBEAT_MS);
+    timer.id = setInterval(() => {
+      if (stop || closingRef.current) return;
+      void tick();
+    }, HEARTBEAT_MS);
     return () => {
-      stop = true;
-      clearInterval(timer.id);
+      stopHeartbeat();
+      heartbeatTimerRef.current = null;
     };
   }, [data, examId, expired, closeSitting, router]);
 
@@ -383,8 +395,8 @@ export function ExamWorkspace({
 
   const onServerClosed = React.useCallback(() => void closeSitting(), [closeSitting]);
 
-  // Clipboard accommodation set by an administrator on this student's
-  // assignment (server-side, audited). The server applies the same flag.
+  // Clipboard accommodation: computed server-side from per-student accommodation
+  // or open test access.
   const isPasteAllowed = data?.accommodations?.allowClipboard === true;
 
   // Proctoring runs for the whole open sitting -- including while the question
@@ -578,6 +590,9 @@ export function ExamWorkspace({
 
   const handleEndExam = React.useCallback(async () => {
     if (endingExam || expired || closingRef.current) return;
+    // Cancel the heartbeat interval immediately before network requests start
+    // so no concurrent heartbeat tick can race the manual submit call.
+    heartbeatTimerRef.current?.stop();
     setEndingExam(true);
     closingRef.current = true; // the timer must not start a second close
     try {
