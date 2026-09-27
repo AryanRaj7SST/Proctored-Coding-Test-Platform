@@ -206,4 +206,41 @@ describeDb('question lifecycle (requires DATABASE_URL)', { timeout: 120_000 }, (
     expect(item.enabledTests).toBe(2);
     expect(item.marks).toBe(10);
   });
+
+  it('blocks deleting a test case when graded results reference it', async () => {
+    const q = await draft();
+    const testCase = q.tests[0]!;
+    const exam = await prisma.exam.create({ data: { title: `Test Exam ${Date.now()}` } });
+    const session = await prisma.examSession.create({
+      data: { userId: adminId, examId: exam.id, expiresAt: new Date(Date.now() + 3600_000) },
+    });
+    const attempt = await prisma.attempt.create({
+      data: {
+        userId: adminId,
+        examId: exam.id,
+        sessionId: session.id,
+        questionId: q.id,
+        snapshot: {},
+      },
+    });
+    await prisma.testResult.create({
+      data: {
+        attemptId: attempt.id,
+        testId: testCase.id,
+        testName: testCase.name,
+        passed: true,
+      },
+    });
+
+    const remainingTests = q.tests.filter((t) => t.id !== testCase.id);
+    await expect(questions.updateQuestion(q.id, { tests: remainingTests as never })).rejects.toThrow(
+      /cannot be deleted because graded results are attached to it/,
+    );
+
+    // Cleanup exam and attempt
+    await prisma.testResult.deleteMany({ where: { attemptId: attempt.id } });
+    await prisma.attempt.delete({ where: { id: attempt.id } });
+    await prisma.examSession.delete({ where: { id: session.id } });
+    await prisma.exam.delete({ where: { id: exam.id } });
+  });
 });

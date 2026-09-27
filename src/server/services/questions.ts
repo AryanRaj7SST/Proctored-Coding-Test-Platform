@@ -389,10 +389,28 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
     // Unchanged tests are left alone, so their ids (and anything referencing
     // them) survive a metadata-only save.
     if (input.tests && impact.testsChanged) {
-      const keepIds = input.tests.map((t) => t.id).filter((v): v is string => Boolean(v));
-      await tx.questionTest.deleteMany({
-        where: { questionId: id, id: { notIn: keepIds.length ? keepIds : ['__none__'] } },
-      });
+      const keepIds = new Set(input.tests.map((t) => t.id).filter((v): v is string => Boolean(v)));
+      const deletingTests = existing.tests.filter((e) => !keepIds.has(e.id));
+
+      if (deletingTests.length > 0) {
+        for (const t of deletingTests) {
+          const resultsCount = await tx.testResult.count({
+            where: {
+              attempt: { questionId: id },
+              OR: [{ testId: t.id }, { testName: t.name }],
+            },
+          });
+          if (resultsCount > 0) {
+            throw conflict(
+              `Test case "${t.name}" cannot be deleted because graded results are attached to it. Disable the test case instead.`,
+            );
+          }
+        }
+        await tx.questionTest.deleteMany({
+          where: { questionId: id, id: { in: deletingTests.map((t) => t.id) } },
+        });
+      }
+
       // Two-phase rename guard: (questionId, name) is unique, so park renamed rows first.
       for (const t of input.tests) {
         if (t.id && existing.tests.some((e) => e.id === t.id)) {
