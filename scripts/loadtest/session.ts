@@ -26,7 +26,9 @@ export function resolveAuthSecret(): string {
       .replace(/^["']|["']$/g, '');
     if (parsed) return parsed;
   }
-  throw new Error('AUTH_SECRET is required to sign load-test session cookies. Set AUTH_SECRET in your environment.');
+  throw new Error(
+    'AUTH_SECRET is required to sign load-test session cookies. Set AUTH_SECRET in your environment.',
+  );
 }
 
 /**
@@ -111,6 +113,8 @@ export async function provisionStudents({
     });
   }
 
-  console.log(`[Setup] Successfully provisioned ${students.length} students with minted Auth.js session cookies.`);
+  console.log(
+    `[Setup] Successfully provisioned ${students.length} students with minted Auth.js session cookies.`,
+  );
   return students;
 }

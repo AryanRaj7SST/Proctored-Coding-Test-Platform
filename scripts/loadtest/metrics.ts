@@ -81,7 +81,9 @@ export class MetricsCollector {
     const { elapsedSeconds, totalRequests, totalErrors, rows } = this.summary();
 
     console.log('\n========================================================================================');
-    console.log(`LOAD TEST PERFORMANCE REPORT (${elapsedSeconds}s elapsed, ${totalRequests} total requests, ${totalErrors} errors)`);
+    console.log(
+      `LOAD TEST PERFORMANCE REPORT (${elapsedSeconds}s elapsed, ${totalRequests} total requests, ${totalErrors} errors)`,
+    );
     console.log('========================================================================================');
     console.log(
       rpad('Endpoint', 32) +
@@ -91,7 +93,7 @@ export class MetricsCollector {
         rpad('p95 (ms)', 10) +
         rpad('p99 (ms)', 10) +
         rpad('Max (ms)', 10) +
-        'Errors'
+        'Errors',
     );
     console.log('-'.repeat(96));
 
@@ -104,7 +106,7 @@ export class MetricsCollector {
           rpad(String(r.p95), 10) +
           rpad(String(r.p99), 10) +
           rpad(String(r.max), 10) +
-          (r.errors > 0 ? `\x1b[31m${r.errors}\x1b[0m` : '0')
+          (r.errors > 0 ? `\x1b[31m${r.errors}\x1b[0m` : '0'),
       );
     }
     console.log('========================================================================================\n');

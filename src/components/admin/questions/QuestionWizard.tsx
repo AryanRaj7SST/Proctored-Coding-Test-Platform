@@ -160,7 +160,10 @@ export function QuestionWizard({
       const summary = await apiPost<RegradeQuestionSummary>(`/api/questions/${target.id}/regrade`);
       setQuestion(normalizeQuestion(await apiGet<object>(`/api/questions/${target.id}`)));
       setRegradeSummary(summary);
-      toast.push(`Republish and regrade completed. ${summary.changedCount} attempt score(s) updated.`, 'success');
+      toast.push(
+        `Republish and regrade completed. ${summary.changedCount} attempt score(s) updated.`,
+        'success',
+      );
     } catch (err) {
       toast.push(err instanceof ApiError ? err.message : 'Republish and regrade failed.', 'error');
     } finally {

@@ -274,7 +274,11 @@ export function ExamWorkspace({
     [],
   );
 
-  const { state: saveState, flush, retry } = useAutosave(code, attempt?.id ?? null, saveCode, {
+  const {
+    state: saveState,
+    flush,
+    retry,
+  } = useAutosave(code, attempt?.id ?? null, saveCode, {
     enabled: Boolean(attempt) && !locked,
   });
 

@@ -87,9 +87,7 @@ export default async function StudentsPage({
           subtitle={
             q
               ? `${total} matching "${q}" · showing ${users.length}${
-                  total > PAGE_SIZE
-                    ? ` (page ${page} of ${Math.max(1, Math.ceil(total / PAGE_SIZE))})`
-                    : ''
+                  total > PAGE_SIZE ? ` (page ${page} of ${Math.max(1, Math.ceil(total / PAGE_SIZE))})` : ''
                 }`
               : total > PAGE_SIZE
                 ? `${total} total · showing ${users.length} (page ${page} of ${Math.max(1, Math.ceil(total / PAGE_SIZE))})`
@@ -108,10 +106,7 @@ export default async function StudentsPage({
                 Search
               </Button>
               {q ? (
-                <Link
-                  href="/admin/students"
-                  className="text-xs text-slate-400 hover:text-slate-200"
-                >
+                <Link href="/admin/students" className="text-xs text-slate-400 hover:text-slate-200">
                   Clear
                 </Link>
               ) : null}

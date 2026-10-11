@@ -7,6 +7,7 @@ This directory contains the production-readiness load testing suite for the proc
 ## What It Simulates
 
 For each student:
+
 1. **`GET /dashboard`** — Loads the student dashboard.
 2. **`POST /api/exams/[id]/start`** — Starts or resumes the exam sitting, opens the workspace, and retrieves the attempt ID.
 3. **`PATCH /api/attempts/[id]` (Autosave)** — Continuously sends code changes every **1.5 to 4 seconds**.
@@ -21,6 +22,7 @@ For each student:
 ## Safety Guard (Production Refusal)
 
 To prevent accidental load testing on production infrastructure:
+
 - `--base-url` is **mandatory**; it never defaults to any URL.
 - The runner hard-refuses targets matching `proctored-coding-test-platform.vercel.app` or any host specified in `PRODUCTION_URL`.
 
@@ -33,6 +35,7 @@ To test safely in an isolated staging environment matching production:
 ### Step 1: Create an Isolated Neon Database Branch
 
 Use the Neon CLI or Neon Console to create an instant copy of your database:
+
 ```bash
 # Using Neon CLI:
 neon branches create --name loadtest-preview
@@ -68,12 +71,14 @@ npx tsx scripts/loadtest/run.ts \
 ## 2. Running Locally Against Local Server
 
 Start your Next.js application locally:
+
 ```bash
 npm run dev
 # App starts at http://localhost:3000
 ```
 
 In another terminal, run the load test:
+
 ```bash
 npx tsx scripts/loadtest/run.ts \
   --base-url http://localhost:3000 \
@@ -84,6 +89,7 @@ npx tsx scripts/loadtest/run.ts \
 ```
 
 For quick dry-runs (e.g. 10 students):
+
 ```bash
 npx tsx scripts/loadtest/run.ts \
   --base-url http://localhost:3000 \
@@ -97,15 +103,15 @@ npx tsx scripts/loadtest/run.ts \
 
 ## CLI Options
 
-| Flag | Default | Description |
-| :--- | :--- | :--- |
-| `--base-url <url>` | *(Required)* | Target application base URL. |
-| `--exam-id <id>` | *(Required)* | ID of the test/exam to run against. |
-| `--students <N>` | `250` | Number of concurrent students to simulate. |
-| `--ramp-seconds <S>` | `30` | Duration over which students start their tests. |
-| `--duration-seconds <D>`| `45` | Duration of each student's exam session before submission. |
-| `--simultaneous-finish` | `false` | Synchronizes all students to submit at the exact same instant. |
-| `--skip-db-verify` | `false` | Skips database code match assertion. |
+| Flag                     | Default      | Description                                                    |
+| :----------------------- | :----------- | :------------------------------------------------------------- |
+| `--base-url <url>`       | _(Required)_ | Target application base URL.                                   |
+| `--exam-id <id>`         | _(Required)_ | ID of the test/exam to run against.                            |
+| `--students <N>`         | `250`        | Number of concurrent students to simulate.                     |
+| `--ramp-seconds <S>`     | `30`         | Duration over which students start their tests.                |
+| `--duration-seconds <D>` | `45`         | Duration of each student's exam session before submission.     |
+| `--simultaneous-finish`  | `false`      | Synchronizes all students to submit at the exact same instant. |
+| `--skip-db-verify`       | `false`      | Skips database code match assertion.                           |
 
 ---
 

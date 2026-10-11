@@ -406,10 +406,7 @@ export interface ListStudentExamsOptions {
 }
 
 /** Tests a student can see, with their live state. */
-export async function listStudentExams(
-  userId: string,
-  options?: ListStudentExamsOptions,
-) {
+export async function listStudentExams(userId: string, options?: ListStudentExamsOptions) {
   // A sitting the student abandoned (closed tab, lost session) is finalised
   // here, so its work is graded without the student reopening the test.
   if (!options?.alreadyFinalized) {

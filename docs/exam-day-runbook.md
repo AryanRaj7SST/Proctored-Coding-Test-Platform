@@ -11,9 +11,11 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
 
 1. **Verify Environment Configuration**:
    Run the deployment verification script against the production target:
+
    ```bash
    npm run verify:deploy -- https://<your-production-app-url>
    ```
+
    Confirm all 11 required production environment variables pass:
    - `DATABASE_URL` (must contain `-pooler`)
    - `DIRECT_URL` (direct connection without `-pooler`, for migrations)
@@ -35,10 +37,13 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
 
 4. **Runner Health Check**:
    Query the runner health endpoint:
+
    ```bash
    curl -s https://<runner-url>/health
    ```
+
    Expected response:
+
    ```json
    {
      "ok": true,
@@ -50,6 +55,7 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
      "uptimeSeconds": 12345
    }
    ```
+
    Verify that `active == 0`, `queued == 0`, and `uptimeSeconds` indicates a stable instance.
 
 5. **Upstash Redis Rate Limit Check**:
@@ -90,7 +96,7 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
    - Normal operation during student "Run Tests" clicks:
      - `active`: 0 to 4 (or configured `RUNNER_MAX_CONCURRENCY`).
      - `queued`: 0 to 10 (well below `RUNNER_MAX_QUEUE = 64`).
-   - If `queued` approaches 64, students clicking "Run" will see: *"The test runner is busy right now. Please try again in a few seconds."*
+   - If `queued` approaches 64, students clicking "Run" will see: _"The test runner is busy right now. Please try again in a few seconds."_
 
 3. **Vercel Function Logs**:
    Look for structured log events emitted by `src/lib/logger.ts`:
@@ -104,6 +110,7 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
 ## 3. Incident Response: Runner Saturated or Unreachable
 
 ### Data Integrity Invariant (Answers are ALWAYS Safe)
+
 1. **Autosave Guarantee**:
    Student code is saved to PostgreSQL every 30 seconds and on tab blurs/keystroke pauses. Even if a browser crashes or the runner dies, the latest code exists in `Attempt.html`, `Attempt.css`, `Attempt.js`.
 2. **Never Marked as 0**:
@@ -142,12 +149,14 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
 At the exam end time, all ~250 sittings expire simultaneously.
 
 ### Drain Dynamics & Theoretical Drain Time
+
 - **Total Submissions ($N$)**: 250 attempts.
 - **Runner Concurrency ($C$)**: Default 4 (configurable via `RUNNER_MAX_CONCURRENCY`).
 - **Runner Buffer**: 4 active + 64 queue = 68 capacity.
 - **Run Duration ($T_{\text{run}}$)**: Average execution time per test suite (typically 1.5s – 3.0s).
 
 ### Drain Time Formula:
+
 $$T_{\text{drain}} = \frac{N \times T_{\text{run}}}{C}$$
 
 - **With Concurrency $C = 4$ and $T_{\text{run}} = 2.5\text{s}$**:
@@ -158,6 +167,7 @@ $$T_{\text{drain}} = \frac{N \times T_{\text{run}}}{C}$$
   $$T_{\text{drain}} = \frac{250 \times 15}{4} \approx 15.6\text{ minutes}$$
 
 ### Post-Exam Verification Steps
+
 1. Navigate to `/admin/results?examId=<id>`.
 2. Inspect the **Pending Grading** count:
    - Immediately at $T+0$: ~180 pending as first 68 enter queue.

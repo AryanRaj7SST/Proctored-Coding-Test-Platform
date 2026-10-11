@@ -11,7 +11,10 @@ try {
       if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
         const [k, ...v] = trimmed.split('=');
         const key = k?.trim();
-        const val = v.join('=').trim().replace(/^["']|["']$/g, '');
+        const val = v
+          .join('=')
+          .trim()
+          .replace(/^["']|["']$/g, '');
         if (key && !process.env[key]) {
           process.env[key] = val;
         }

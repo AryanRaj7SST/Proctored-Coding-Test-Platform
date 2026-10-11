@@ -29,9 +29,8 @@ function Section({ title, href, children }: { title: string; href: string; child
  * runner (up to 2 x 4 s of timeouts) must never hold up the whole dashboard.
  * `cache()` makes the badge and the alert share a single health check.
  */
-const getRunnerHealth = cache(
-  (): Promise<{ ok: boolean; detail?: string }> =>
-    runnerHealth().catch(() => ({ ok: false, detail: 'unreachable' })),
+const getRunnerHealth = cache((): Promise<{ ok: boolean; detail?: string }> =>
+  runnerHealth().catch(() => ({ ok: false, detail: 'unreachable' })),
 );
 
 async function RunnerBadge() {

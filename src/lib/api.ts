@@ -56,11 +56,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 /** Build an ApiError from a non-2xx response body in the standard error shape. */
-export function apiErrorFrom(
-  status: number,
-  payload: unknown,
-  fallback?: string,
-) {
+export function apiErrorFrom(status: number, payload: unknown, fallback?: string) {
   const body = (payload ?? {}) as Partial<ApiErrorBody>;
   let defaultMessage = fallback;
   if (!defaultMessage) {

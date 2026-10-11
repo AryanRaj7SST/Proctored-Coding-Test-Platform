@@ -173,7 +173,7 @@ export function PublishStep({
         {onRepublishAndRegrade && status !== 'ARCHIVED' ? (
           <Button
             variant="secondary"
-            className="border-brand-500/50 text-brand-300 hover:bg-brand-950/40 hover:text-brand-200"
+            className="hover:bg-brand-950/40 hover:text-brand-200 border-brand-500/50 text-brand-300"
             onClick={onRepublishAndRegrade}
             loading={regrading}
             disabled={busy !== null || regrading}
