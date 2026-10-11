@@ -436,19 +436,27 @@ export async function regradeAttemptsForQuestion(
       unchangedCount += 1;
     }
 
-    // Record score history entry before finalizing
-    await prisma.attemptScoreHistory.create({
-      data: {
+    // Record score history entry before finalizing (best-effort: never fails the regrade)
+    try {
+      await prisma.attemptScoreHistory.create({
+        data: {
+          attemptId: attempt.id,
+          questionId,
+          oldScore: fromMicro(toMicro(oldScore)),
+          newScore: fromMicro(toMicro(newScore)),
+          oldResultStatus: oldStatus,
+          newResultStatus: newStatus,
+          changedByAdminId: opts.adminId ?? null,
+          reason: opts.reason ?? 'Save & Republish regrade',
+        },
+      });
+    } catch (err) {
+      logger.warn('attempt_score_history.create_failed', {
         attemptId: attempt.id,
         questionId,
-        oldScore: fromMicro(toMicro(oldScore)),
-        newScore: fromMicro(toMicro(newScore)),
-        oldResultStatus: oldStatus,
-        newResultStatus: newStatus,
-        changedByAdminId: opts.adminId ?? null,
-        reason: opts.reason ?? 'Save & Republish regrade',
-      },
-    });
+        error: sanitizeError(err),
+      });
+    }
 
     changes.push({
       attemptId: attempt.id,

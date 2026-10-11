@@ -169,12 +169,13 @@ check('.env.example documents every variable src/lib/env.ts reads', () => {
   if (missing.length) throw new Error(`.env.example is missing ${missing.join(', ')}`);
 });
 
-check('prisma schema and the init migration agree on table names', () => {
+check('prisma schema and migrations agree on table names', () => {
   const schema = readText('prisma/schema.prisma');
-  const sql = readText('prisma/migrations/0001_init/migration.sql');
+  const migrationFiles = walk('prisma/migrations').filter((f) => f.endsWith('migration.sql'));
+  const sql = migrationFiles.map((f) => readText(f)).join('\n');
   const tables = [...schema.matchAll(/@@map\("([a-z_]+)"\)/g)].map((m) => m[1]);
   const missing = tables.filter((t) => !sql.includes(`"${t}"`));
-  if (missing.length) throw new Error(`migration does not create ${missing.join(', ')}`);
+  if (missing.length) throw new Error(`migrations do not create ${missing.join(', ')}`);
   if (tables.length < 10) throw new Error(`only ${tables.length} mapped tables found`);
 });
 
