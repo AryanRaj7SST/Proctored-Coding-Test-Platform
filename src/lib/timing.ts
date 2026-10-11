@@ -95,7 +95,6 @@ export function examAvailability(
   const now = opts.now ?? new Date();
   const canRetake = (opts.attemptsRemaining ?? 0) > 0;
   if (opts.submitted && !canRetake) return 'SUBMITTED';
-  if (exam.status === 'DRAFT' || exam.status === 'ARCHIVED') return 'UNPUBLISHED';
   if (session?.endedAt) {
     if (!canRetake) return 'SUBMITTED';
     session = null; // a new sitting would start: only the window matters
@@ -103,6 +102,7 @@ export function examAvailability(
   if (session && isExpired(session.expiresAt, now)) return 'EXPIRED';
   if (examClosed(exam, now)) return 'ENDED';
   if (session) return 'IN_PROGRESS';
+  if (exam.status === 'DRAFT' || exam.status === 'ARCHIVED') return 'UNPUBLISHED';
   if (exam.startTime && now.getTime() < exam.startTime.getTime() && !opts.allowEarlyStart) {
     return 'NOT_STARTED';
   }

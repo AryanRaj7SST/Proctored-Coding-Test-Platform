@@ -1,3 +1,4 @@
+import { cache } from 'react';
 import type { Attempt, Exam } from '@prisma/client';
 import { auth } from './auth';
 import { prisma } from './prisma';
@@ -22,8 +23,17 @@ export interface SessionUser {
   batch: string | null;
 }
 
-/** Resolve the authenticated user, or null. Role/active come from the DB (see lib/auth.ts). */
-export async function getSessionUser(): Promise<SessionUser | null> {
+/**
+ * Resolve the authenticated user, or null. Role/active come from the DB (see lib/auth.ts).
+ *
+ * Wrapped in React `cache()`: the Auth.js `jwt` callback re-reads the user from
+ * the database on every `auth()` call, and a page render calls this from both
+ * the layout and the page. Memoising per request makes that ONE lookup per
+ * render instead of two, without weakening anything: the role and active flag
+ * are still read fresh from the database on every request. Outside a React
+ * render (route handlers, tests) `cache()` simply calls through.
+ */
+export const getSessionUser = cache(async (): Promise<SessionUser | null> => {
   const session = await auth();
   const user = session?.user;
   if (!user?.id || !user.email) return null;
@@ -34,7 +44,7 @@ export async function getSessionUser(): Promise<SessionUser | null> {
     role: user.role === 'ADMIN' ? 'ADMIN' : 'STUDENT',
     batch: user.batch ?? null,
   };
-}
+});
 
 export async function requireAuth(): Promise<SessionUser> {
   const user = await getSessionUser();

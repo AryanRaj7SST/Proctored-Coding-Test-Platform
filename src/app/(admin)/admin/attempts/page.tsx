@@ -1,9 +1,11 @@
+import { after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { marksToNumber } from '@/server/grading/marks';
 import { requireAdmin } from '@/lib/authz';
 import { AttemptsTable, type AttemptRow } from '@/components/admin/AttemptsTable';
 import { RegradeButton } from '@/components/admin/RegradeButton';
 import { finalizeOverdueSittings } from '@/server/services/finalization';
+import { logger, sanitizeError } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,8 +16,12 @@ export default async function AttemptsPage({
 }) {
   await requireAdmin();
   const { examId, userId } = await searchParams;
-  // Grade sittings students abandoned (throttled per process).
-  await finalizeOverdueSittings();
+  // Grade sittings students abandoned in the background without blocking page render (safe and idempotent).
+  after(() =>
+    finalizeOverdueSittings().catch((err) =>
+      logger.warn('finalize.attempts_sweep_failed', { error: sanitizeError(err) }),
+    ),
+  );
 
   const [rawAttempts, exams, questions, batchRows] = await Promise.all([
     prisma.attempt.findMany({

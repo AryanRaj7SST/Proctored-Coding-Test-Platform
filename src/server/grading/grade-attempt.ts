@@ -1,11 +1,12 @@
-import type { Attempt, QuestionResultStatus } from '@prisma/client';
+import type { Attempt, Prisma, QuestionResultStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { AppError, conflict, notFound } from '@/lib/errors';
 import { logger, sanitizeError } from '@/lib/logger';
 import type { ExecutionOutcome, QuestionStatus } from '@/lib/outcome';
 import { recordAudit } from '@/server/services/audit';
+import { buildSnapshot } from '@/server/services/questions';
 import { executeTests } from './run-tests';
-import { marksToNumber, type DecimalLike } from './marks';
+import { fromMicro, marksToNumber, toMicro, type DecimalLike } from './marks';
 import { refreshSittingTotals } from './sitting-totals';
 
 /** How long one grader may hold an attempt. Longer than any run (40 tests x runner limit). */
@@ -311,3 +312,182 @@ export async function regradeExam(
   }
   return summary;
 }
+
+export interface QuestionAttemptDiff {
+  attemptId: string;
+  userId: string;
+  userEmail: string;
+  userName: string | null;
+  oldScore: number;
+  newScore: number;
+  scoreDelta: number;
+  oldStatus: QuestionResultStatus;
+  newStatus: QuestionResultStatus;
+  changed: boolean;
+  graded: boolean;
+  error?: string;
+}
+
+export interface RegradeQuestionSummary {
+  questionId: string;
+  totalAttempts: number;
+  regradedCount: number;
+  changedCount: number;
+  unchangedCount: number;
+  failedCount: number;
+  changes: QuestionAttemptDiff[];
+}
+
+/**
+ * Regrade every submitted attempt for a question against its CURRENT (newly published) test suite.
+ * Records score history in `AttemptScoreHistory` before updating and writes an audit log entry.
+ */
+export async function regradeAttemptsForQuestion(
+  questionId: string,
+  opts: {
+    includeGraded?: boolean;
+    adminId?: string;
+    reason?: string;
+  } = {},
+): Promise<RegradeQuestionSummary> {
+  const question = await prisma.question.findUnique({
+    where: { id: questionId },
+    include: { tests: { orderBy: { order: 'asc' } } },
+  });
+  if (!question) throw notFound('Question not found.');
+
+  const newSnapshot = buildSnapshot(question);
+
+  // Update exam questions that link to this question so their pinned snapshot matches the newly published version
+  await prisma.examQuestion.updateMany({
+    where: { questionId },
+    data: {
+      snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
+      questionVersion: question.version,
+      pinnedAt: new Date(),
+    },
+  });
+
+  const attempts = await prisma.attempt.findMany({
+    where: {
+      questionId,
+      status: { not: 'IN_PROGRESS' },
+      ...(opts.includeGraded ? {} : { gradedAt: null }),
+    },
+    include: {
+      user: { select: { id: true, email: true, name: true } },
+    },
+    orderBy: { submittedAt: 'asc' },
+  });
+
+  let regradedCount = 0;
+  let changedCount = 0;
+  let unchangedCount = 0;
+  let failedCount = 0;
+  const changes: QuestionAttemptDiff[] = [];
+
+  for (const attempt of attempts) {
+    const oldScore = attempt.gradedAt ? marksToNumber(attempt.score) : 0;
+    const oldStatus = attempt.resultStatus;
+
+    // Update attempt snapshot & version to the current published question suite before grading
+    await prisma.attempt.update({
+      where: { id: attempt.id },
+      data: {
+        snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
+        questionVersion: question.version,
+      },
+    });
+
+    const gradeRes = await gradeAttempt(attempt.id, {
+      reason: opts.reason ?? 'republish & regrade',
+      triggeredById: opts.adminId,
+    });
+
+    if (!gradeRes.graded) {
+      failedCount += 1;
+      changes.push({
+        attemptId: attempt.id,
+        userId: attempt.userId,
+        userEmail: attempt.user.email,
+        userName: attempt.user.name,
+        oldScore,
+        newScore: oldScore,
+        scoreDelta: 0,
+        oldStatus,
+        newStatus: oldStatus,
+        changed: false,
+        graded: false,
+        error: gradeRes.error ?? 'Grading failed',
+      });
+      continue;
+    }
+
+    regradedCount += 1;
+    const fresh = await prisma.attempt.findUniqueOrThrow({ where: { id: attempt.id } });
+    const newScore = fresh.gradedAt ? marksToNumber(fresh.score) : 0;
+    const newStatus = fresh.resultStatus;
+    const scoreDelta = Math.round((newScore - oldScore) * 10000) / 10000;
+    const changed = Math.abs(scoreDelta) > 0.0001 || oldStatus !== newStatus;
+
+    if (changed) {
+      changedCount += 1;
+    } else {
+      unchangedCount += 1;
+    }
+
+    // Record score history entry before finalizing
+    await prisma.attemptScoreHistory.create({
+      data: {
+        attemptId: attempt.id,
+        questionId,
+        oldScore: fromMicro(toMicro(oldScore)),
+        newScore: fromMicro(toMicro(newScore)),
+        oldResultStatus: oldStatus,
+        newResultStatus: newStatus,
+        changedByAdminId: opts.adminId ?? null,
+        reason: opts.reason ?? 'Save & Republish regrade',
+      },
+    });
+
+    changes.push({
+      attemptId: attempt.id,
+      userId: attempt.userId,
+      userEmail: attempt.user.email,
+      userName: attempt.user.name,
+      oldScore,
+      newScore,
+      scoreDelta,
+      oldStatus,
+      newStatus,
+      changed,
+      graded: true,
+    });
+  }
+
+  await recordAudit({
+    userId: opts.adminId ?? null,
+    action: 'question.republished_and_regraded',
+    entity: 'Question',
+    entityId: questionId,
+    metadata: {
+      reason: opts.reason ?? 'Save & Republish regrade',
+      totalAttempts: attempts.length,
+      regradedCount,
+      changedCount,
+      unchangedCount,
+      failedCount,
+    },
+  });
+
+  return {
+    questionId,
+    totalAttempts: attempts.length,
+    regradedCount,
+    changedCount,
+    unchangedCount,
+    failedCount,
+    changes,
+  };
+}
+

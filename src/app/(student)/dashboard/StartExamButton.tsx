@@ -31,6 +31,7 @@ export function StartExamButton({
   const [busy, setBusy] = React.useState(false);
 
   const go = async () => {
+    if (busy) return;
     setBusy(true);
     try {
       await document.documentElement.requestFullscreen?.();

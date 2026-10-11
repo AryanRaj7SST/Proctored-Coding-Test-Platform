@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic';
  */
 export const GET = handler(async (req: Request): Promise<NextResponse> => {
   const user = await requireAuth();
-  if (user.role !== 'ADMIN') return ok({ items: await listStudentExams(user.id) });
+  if (user.role !== 'ADMIN') return ok({ items: await listStudentExams(user.id, { user }) });
   const filter = parseOrThrow(examListInput, Object.fromEntries(new URL(req.url).searchParams));
   return ok(await listExamsForAdmin(filter));
 });

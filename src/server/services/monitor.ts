@@ -29,8 +29,18 @@ export interface MonitorRow {
   questionCount: number;
 }
 
+let lastSweepStaleAt = 0;
+const SWEEP_STALE_INTERVAL_MS = 15_000;
+
 export async function monitorSnapshot(examId?: string): Promise<MonitorRow[]> {
-  await sweepStaleSessions();
+  // Throttled per server process so multiple open tabs do not spam session sweeps.
+  const nowMs = Date.now();
+  if (nowMs - lastSweepStaleAt >= SWEEP_STALE_INTERVAL_MS) {
+    lastSweepStaleAt = nowMs;
+    await sweepStaleSessions().catch((err) =>
+      logger.warn('sessions.sweep_failed', { error: sanitizeError(err) }),
+    );
+  }
   // Grade sittings abandoned by their student (throttled per process). Not
   // awaited: grading must never stall the live monitor stream.
   void finalizeOverdueSittings().catch((err) =>

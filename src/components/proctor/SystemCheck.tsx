@@ -47,6 +47,7 @@ export function SystemCheck({
     ok: false,
     hint: null,
   });
+  const [starting, setStarting] = React.useState(false);
   const reported = React.useRef(new Set<string>());
 
   const cameraLive = useCameraMonitor(stream, true, () => {});
@@ -176,7 +177,15 @@ export function SystemCheck({
           <Button variant="secondary" onClick={() => router.push('/dashboard')}>
             Back to dashboard
           </Button>
-          <Button onClick={onStart} disabled={!ready}>
+          <Button
+            onClick={() => {
+              if (starting || !ready) return;
+              setStarting(true);
+              onStart();
+            }}
+            disabled={!ready || starting}
+            loading={starting}
+          >
             {resuming ? 'Resume Test' : 'Start Test'}
           </Button>
         </div>

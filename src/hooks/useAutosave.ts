@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { SaveQueue } from '@/lib/save-queue';
 
-export type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
+export type SaveState = 'idle' | 'pending' | 'saving' | 'retrying' | 'saved' | 'error';
 
 /**
  * Debounced autosave (product requirement #19).
@@ -16,6 +16,8 @@ export type SaveState = 'idle' | 'pending' | 'saving' | 'saved' | 'error';
  * - Requests are serialised and transient failures retried.
  * - `flush()` resolves only once every pending, queued and in-flight save has
  *   settled -- use it before submit, run, End Test and question switches.
+ * - `retry()` re-enqueues the latest edited code through the same SaveQueue
+ *   with coalescing preserved when retries have been exhausted.
  */
 export function useAutosave<T>(
   value: T,
@@ -35,6 +37,7 @@ export function useAutosave<T>(
     queueRef.current = new SaveQueue<T>((k, v) => saveRef.current(k, v), {
       onEvent: (event) => {
         if (event.type === 'saving') setState('saving');
+        if (event.type === 'retrying') setState('retrying');
         if (event.type === 'saved') {
           setSavedAt(new Date());
           setError(null);
@@ -50,6 +53,7 @@ export function useAutosave<T>(
 
   const timer = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = React.useRef<{ key: string; value: T } | null>(null);
+  const latest = React.useRef<{ key: string; value: T } | null>(null);
   const baselineKey = React.useRef<string | null>(key);
   const firstRun = React.useRef(true);
 
@@ -76,6 +80,7 @@ export function useAutosave<T>(
     }
     if (!enabled || !key) return;
     pending.current = { key, value };
+    latest.current = { key, value };
     setState('pending');
     if (timer.current) clearTimeout(timer.current);
     timer.current = setTimeout(() => void sendPending(), delay);
@@ -93,5 +98,18 @@ export function useAutosave<T>(
     await sendPending();
   }, [sendPending]);
 
-  return { state, savedAt, error, flush };
+  /** Re-enqueue the latest edited { key, value } through the queue. Coalescing preserved. */
+  const retry = React.useCallback(async () => {
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
+    const job = latest.current;
+    if (job) {
+      pending.current = null;
+      await queueRef.current!.enqueue(job.key, job.value);
+    } else {
+      await queueRef.current!.drain();
+    }
+  }, []);
+
+  return { state, savedAt, error, flush, retry };
 }

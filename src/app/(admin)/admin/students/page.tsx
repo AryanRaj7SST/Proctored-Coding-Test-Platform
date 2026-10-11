@@ -1,37 +1,71 @@
 import Link from 'next/link';
+import type { Prisma } from '@prisma/client';
 import { marksToNumber } from '@/server/grading/marks';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
-import { Badge, Card, CardBody, CardHeader, EmptyState, Table, Td, Th } from '@/components/ui';
+import { Badge, Button, Card, CardBody, CardHeader, EmptyState, Input, Table, Td, Th } from '@/components/ui';
+import { Pagination } from '@/components/admin/shared/Pagination';
 import { UserAccessControls } from '@/components/admin/UserAccessControls';
 import { formatDateTime, percentage } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
+
+const PAGE_SIZE = 50;
 
 /**
  * Registered people — anyone who has signed in with Google at least once.
  * This is where roles and account access are managed; the roster only holds
  * batches for people who have not signed in yet.
  */
-export default async function StudentsPage() {
+export default async function StudentsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ page?: string; q?: string }>;
+}) {
   const admin = await requireAdmin();
+  const params = searchParams ? await searchParams : {};
+  const page = Math.max(1, parseInt(typeof params.page === 'string' ? params.page : '1', 10) || 1);
+  const q = typeof params.q === 'string' ? params.q.trim() : '';
 
-  const users = await prisma.user.findMany({
-    orderBy: [{ role: 'asc' }, { email: 'asc' }],
-    include: { _count: { select: { assignments: true, attempts: true } } },
-  });
+  const where: Prisma.UserWhereInput = q
+    ? {
+        OR: [
+          { name: { contains: q, mode: 'insensitive' } },
+          { email: { contains: q, mode: 'insensitive' } },
+          { batch: { contains: q, mode: 'insensitive' } },
+        ],
+      }
+    : {};
 
-  const scores = await prisma.attempt.groupBy({
-    by: ['userId'],
-    where: { status: { in: ['SUBMITTED', 'AUTO_SUBMITTED'] } },
-    _sum: { score: true, maxScore: true },
-  });
+  const [total, users] = await Promise.all([
+    prisma.user.count({ where }),
+    prisma.user.findMany({
+      where,
+      orderBy: [{ role: 'asc' }, { email: 'asc' }],
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
+      include: { _count: { select: { assignments: true, attempts: true } } },
+    }),
+  ]);
 
-  const violations = await prisma.proctorEvent.groupBy({
-    by: ['userId'],
-    where: { violation: true },
-    _count: { _all: true },
-  });
+  const userIds = users.map((u) => u.id);
+
+  const [scores, violations] = await Promise.all([
+    userIds.length > 0
+      ? prisma.attempt.groupBy({
+          by: ['userId'],
+          where: { userId: { in: userIds }, status: { in: ['SUBMITTED', 'AUTO_SUBMITTED'] } },
+          _sum: { score: true, maxScore: true },
+        })
+      : [],
+    userIds.length > 0
+      ? prisma.proctorEvent.groupBy({
+          by: ['userId'],
+          where: { userId: { in: userIds }, violation: true },
+          _count: { _all: true },
+        })
+      : [],
+  ]);
 
   return (
     <div className="space-y-4">
@@ -48,13 +82,52 @@ export default async function StudentsPage() {
       </div>
 
       <Card>
-        <CardHeader title="Registered accounts" subtitle={`${users.length} total`} />
+        <CardHeader
+          title="Registered accounts"
+          subtitle={
+            q
+              ? `${total} matching "${q}" · showing ${users.length}${
+                  total > PAGE_SIZE
+                    ? ` (page ${page} of ${Math.max(1, Math.ceil(total / PAGE_SIZE))})`
+                    : ''
+                }`
+              : total > PAGE_SIZE
+                ? `${total} total · showing ${users.length} (page ${page} of ${Math.max(1, Math.ceil(total / PAGE_SIZE))})`
+                : `${total} total`
+          }
+          action={
+            <form method="GET" action="/admin/students" className="flex items-center gap-2">
+              <Input
+                type="search"
+                name="q"
+                defaultValue={q}
+                placeholder="Search name, email, batch..."
+                className="h-8 w-44 text-xs sm:w-64"
+              />
+              <Button type="submit" variant="secondary" size="sm">
+                Search
+              </Button>
+              {q ? (
+                <Link
+                  href="/admin/students"
+                  className="text-xs text-slate-400 hover:text-slate-200"
+                >
+                  Clear
+                </Link>
+              ) : null}
+            </form>
+          }
+        />
         <CardBody className="p-0">
           {users.length === 0 ? (
             <div className="p-4">
               <EmptyState
-                title="Nobody has signed in yet"
-                description="An account is created, as a student, the first time someone signs in with Google."
+                title={q ? 'No matching accounts found' : 'Nobody has signed in yet'}
+                description={
+                  q
+                    ? `No registered accounts match "${q}". Try clearing the search or searching a different term.`
+                    : 'An account is created, as a student, the first time someone signs in with Google.'
+                }
               />
             </div>
           ) : (
@@ -128,6 +201,14 @@ export default async function StudentsPage() {
           )}
         </CardBody>
       </Card>
+
+      <Pagination
+        basePath="/admin/students"
+        params={{ ...(q ? { q } : {}) }}
+        page={page}
+        pageSize={PAGE_SIZE}
+        total={total}
+      />
     </div>
   );
 }

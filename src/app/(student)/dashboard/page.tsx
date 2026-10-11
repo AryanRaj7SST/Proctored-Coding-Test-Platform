@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { requireAuth } from '@/lib/authz';
 import { listStudentExams } from '@/server/services/exams';
+import { finalizeOverdueSittings } from '@/server/services/finalization';
 import { listPracticeAttempts, type PracticeLink } from '@/server/services/practice';
 import { Badge, Card, EmptyState } from '@/components/ui';
 import { displayMarks, formatDateTimeInZone, formatDuration } from '@/lib/utils';
@@ -209,9 +210,12 @@ function TestSection({
 
 export default async function DashboardPage() {
   const user = await requireAuth();
-  const tests = await listStudentExams(user.id);
-  // After listStudentExams, which finalises abandoned sittings: their attempts can be practised too.
-  const practice = await listPracticeAttempts(user.id);
+  // Finalise abandoned sittings first so overdue attempts are graded and practiceable.
+  await finalizeOverdueSittings({ userId: user.id });
+  const [tests, practice] = await Promise.all([
+    listStudentExams(user.id, { user, alreadyFinalized: true }),
+    listPracticeAttempts(user.id),
+  ]);
   const by = (s: Section) => tests.filter((t) => sectionOf(t) === s);
 
   return (

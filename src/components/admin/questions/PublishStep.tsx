@@ -60,6 +60,8 @@ export function PublishStep({
   onAction,
   onDelete,
   onSave,
+  onRepublishAndRegrade,
+  regrading,
 }: {
   question: AdminQuestion;
   dirty: boolean;
@@ -67,6 +69,8 @@ export function PublishStep({
   onAction: (action: StatusAction) => Promise<boolean>;
   onDelete: () => Promise<boolean>;
   onSave: () => void;
+  onRepublishAndRegrade?: () => void;
+  regrading?: boolean;
 }) {
   const [confirm, setConfirm] = React.useState<Confirm | null>(null);
   const status = question.status;
@@ -161,9 +165,20 @@ export function PublishStep({
           <Button
             onClick={() => void onAction('publish')}
             loading={busy === 'publish'}
-            disabled={!canPublish || busy !== null}
+            disabled={!canPublish || busy !== null || regrading}
           >
             Publish
+          </Button>
+        ) : null}
+        {onRepublishAndRegrade && status !== 'ARCHIVED' ? (
+          <Button
+            variant="secondary"
+            className="border-brand-500/50 text-brand-300 hover:bg-brand-950/40 hover:text-brand-200"
+            onClick={onRepublishAndRegrade}
+            loading={regrading}
+            disabled={busy !== null || regrading}
+          >
+            Save & Republish (recalculate affected students)
           </Button>
         ) : null}
         {status === 'PUBLISHED' ? (

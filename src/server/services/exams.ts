@@ -241,7 +241,7 @@ export async function changeExamStatus(id: string, action: ExamStatusAction): Pr
       if ((await prisma.examSession.count({ where: { examId: id } })) > 0) {
         throw conflict('Students have already started this test. Close or archive it instead.');
       }
-      return prisma.exam.update({ where: { id }, data: { status: 'DRAFT' } });
+      return prisma.exam.update({ where: { id }, data: { status: 'DRAFT', active: false } });
     }
     case 'close': {
       if (exam.status !== 'PUBLISHED') throw conflict('Only a published test can be closed.');
@@ -400,36 +400,54 @@ export async function getExamForAdmin(id: string) {
   };
 }
 
+export interface ListStudentExamsOptions {
+  user?: { email?: string | null; role?: string | null } | null;
+  alreadyFinalized?: boolean;
+}
+
 /** Tests a student can see, with their live state. */
-export async function listStudentExams(userId: string) {
+export async function listStudentExams(
+  userId: string,
+  options?: ListStudentExamsOptions,
+) {
   // A sitting the student abandoned (closed tab, lost session) is finalised
   // here, so its work is graded without the student reopening the test.
-  await finalizeOverdueSittings({ userId });
+  if (!options?.alreadyFinalized) {
+    await finalizeOverdueSittings({ userId });
+  }
 
-  const [user, assignments] = await Promise.all([
-    prisma.user.findUnique({ where: { id: userId }, select: { role: true, email: true } }),
+  const [user, assignments, sessions] = await Promise.all([
+    options?.user !== undefined
+      ? options.user
+      : prisma.user.findUnique({ where: { id: userId }, select: { role: true, email: true } }),
     prisma.examAssignment.findMany({ where: { userId }, select: { examId: true, revokedAt: true } }),
+    prisma.examSession.findMany({
+      where: { userId },
+      orderBy: { attemptNumber: 'desc' },
+      include: { attempts: { select: { status: true, gradedAt: true } } },
+    }),
   ]);
   // Same rule as requireTestAccess: open tests plus assigned ones, minus any
   // test whose access an administrator revoked for this student.
   const revoked = assignments.filter((a) => a.revokedAt).map((a) => a.examId);
   const assigned = assignments.filter((a) => !a.revokedAt).map((a) => a.examId);
+  const activeSessions = sessions.filter((s) => s.status === 'ACTIVE' && s.endedAt === null);
+  const inProgressExamIds = activeSessions.map((s) => s.examId);
+
   const exams = await prisma.exam.findMany({
     where: {
-      active: true,
-      status: { notIn: ['DRAFT', 'ARCHIVED'] },
       id: { notIn: revoked },
-      OR: [{ accessMode: 'ANY_AUTHENTICATED_USER' }, { id: { in: assigned } }],
+      OR: [
+        {
+          active: true,
+          status: { notIn: ['DRAFT', 'ARCHIVED'] },
+          OR: [{ accessMode: 'ANY_AUTHENTICATED_USER' }, { id: { in: assigned } }],
+        },
+        ...(inProgressExamIds.length > 0 ? [{ id: { in: inProgressExamIds } }] : []),
+      ],
     },
     include: { questions: { select: { marks: true } } },
     orderBy: [{ startTime: 'asc' }, { createdAt: 'desc' }],
-  });
-
-  const examIds = exams.map((e) => e.id);
-  const sessions = await prisma.examSession.findMany({
-    where: { userId, examId: { in: examIds } },
-    orderBy: { attemptNumber: 'desc' },
-    include: { attempts: { select: { status: true, gradedAt: true } } },
   });
 
   const now = new Date();

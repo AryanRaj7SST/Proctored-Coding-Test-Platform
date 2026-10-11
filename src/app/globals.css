@@ -52,3 +52,18 @@ nextjs-portal,
 *::-webkit-scrollbar-track {
   background: transparent;
 }
+
+/*
+ * Navigation skeletons (loading.tsx) stay invisible for the first 150 ms, so a
+ * fast navigation never flashes a skeleton, while a slow one gets immediate,
+ * visible feedback. Pure CSS: no JS timer, no hydration needed.
+ */
+@keyframes loading-delay-in {
+  to {
+    opacity: 1;
+  }
+}
+.loading-delay {
+  opacity: 0;
+  animation: loading-delay-in 0s linear 150ms forwards;
+}

@@ -201,6 +201,15 @@ export function ExamWorkspace({
   const [confirmSubmit, setConfirmSubmit] = React.useState(false);
   const [confirmEndExam, setConfirmEndExam] = React.useState(false);
   const [endingExam, setEndingExam] = React.useState(false);
+  const [switchingQuestion, setSwitchingQuestion] = React.useState(false);
+  const switchingRef = React.useRef(false);
+
+  const [reloadKey, setReloadKey] = React.useState(0);
+  const reloadTest = React.useCallback(() => {
+    setLoading(true);
+    setFatal(null);
+    setReloadKey((k) => k + 1);
+  }, []);
 
   const [clock, setClock] = React.useState({ msRemaining: 0, syncedAt: Date.now() });
   const [expired, setExpired] = React.useState(false);
@@ -252,7 +261,7 @@ export function ExamWorkspace({
     return () => {
       cancelled = true;
     };
-  }, [examId]);
+  }, [examId, reloadKey]);
 
   /* ------------------------------------------------------------- autosave */
 
@@ -265,7 +274,7 @@ export function ExamWorkspace({
     [],
   );
 
-  const { state: saveState, flush } = useAutosave(code, attempt?.id ?? null, saveCode, {
+  const { state: saveState, flush, retry } = useAutosave(code, attempt?.id ?? null, saveCode, {
     enabled: Boolean(attempt) && !locked,
   });
 
@@ -493,24 +502,31 @@ export function ExamWorkspace({
 
   const selectQuestion = React.useCallback(
     async (next: number) => {
-      if (!data || next === index) return;
-      await flush();
-      setData((prev) => {
-        if (!prev) return prev;
-        const questions = prev.questions.slice();
-        const current = questions[index];
-        if (current) questions[index] = { ...current, attempt: { ...current.attempt, ...code } };
-        return { ...prev, questions };
-      });
-      const target = data.questions[next];
-      if (!target) return;
-      setIndex(next);
-      setCode(codeOf(target));
-      setOutcome(null);
-      setRunError(null);
-      setConsoleLines([]);
-      setPreviewKey((k) => k + 1);
-      setPane('html');
+      if (!data || next === index || switchingRef.current) return;
+      switchingRef.current = true;
+      setSwitchingQuestion(true);
+      try {
+        await flush();
+        setData((prev) => {
+          if (!prev) return prev;
+          const questions = prev.questions.slice();
+          const current = questions[index];
+          if (current) questions[index] = { ...current, attempt: { ...current.attempt, ...code } };
+          return { ...prev, questions };
+        });
+        const target = data.questions[next];
+        if (!target) return;
+        setIndex(next);
+        setCode(codeOf(target));
+        setOutcome(null);
+        setRunError(null);
+        setConsoleLines([]);
+        setPreviewKey((k) => k + 1);
+        setPane('html');
+      } finally {
+        switchingRef.current = false;
+        setSwitchingQuestion(false);
+      }
     },
     [data, index, code, flush],
   );
@@ -651,7 +667,11 @@ export function ExamWorkspace({
 
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-ink-950 text-slate-400">
+      <div
+        className="flex h-screen items-center justify-center bg-ink-950 text-slate-400"
+        role="status"
+        aria-live="polite"
+      >
         <Spinner className="mr-2 h-5 w-5" /> Preparing your test…
       </div>
     );
@@ -659,11 +679,18 @@ export function ExamWorkspace({
 
   if (fatal || !data || !slot || !attempt) {
     return (
-      <div className="flex h-screen flex-col items-center justify-center gap-4 bg-ink-950 px-6 text-center">
+      <div
+        className="flex h-screen flex-col items-center justify-center gap-4 bg-ink-950 px-6 text-center"
+        role="alert"
+        aria-live="assertive"
+      >
         <p className="text-sm text-rose-300">{fatal ?? 'This test is not available.'}</p>
-        <Button variant="secondary" onClick={() => router.push('/dashboard')}>
-          Back to dashboard
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button variant="secondary" onClick={() => router.push('/dashboard')}>
+            Back to dashboard
+          </Button>
+          <Button onClick={reloadTest}>Try again</Button>
+        </div>
       </div>
     );
   }
@@ -730,7 +757,8 @@ export function ExamWorkspace({
             type="button"
             onClick={() => setConfirmEndExam(true)}
             disabled={expired || endingExam}
-            className="shadow-xs flex cursor-pointer items-center gap-1.5 rounded-[4px] bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:opacity-50"
+            aria-busy={endingExam || undefined}
+            className="shadow-xs flex cursor-pointer items-center gap-1.5 rounded-[4px] bg-rose-600 px-3.5 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
             title="End and submit entire test"
           >
             {endingExam ? 'Ending…' : 'End Test'}
@@ -789,12 +817,13 @@ export function ExamWorkspace({
                 <button
                   key={q.question.id}
                   type="button"
+                  disabled={switchingQuestion}
                   onClick={() => {
                     void selectQuestion(i);
                     setCurrentView('workspace');
                   }}
                   className={cn(
-                    'relative flex h-8 w-full items-center justify-between border-b border-slate-50 px-2 text-xs transition',
+                    'relative flex h-8 w-full items-center justify-between border-b border-slate-50 px-2 text-xs transition disabled:cursor-not-allowed disabled:opacity-50',
                     isCurrent
                       ? 'bg-blue-50/60 font-semibold text-blue-600'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
@@ -883,11 +912,12 @@ export function ExamWorkspace({
                             <td className="px-4 py-3 text-right">
                               <button
                                 type="button"
+                                disabled={switchingQuestion}
                                 onClick={() => {
                                   void selectQuestion(i);
                                   setCurrentView('workspace');
                                 }}
-                                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700"
+                                className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                               >
                                 Solve now
                               </button>
@@ -1073,14 +1103,29 @@ export function ExamWorkspace({
                       />
                     </div>
                     {/* Status footer */}
-                    <div className="flex h-6 items-center border-t border-[#1a2d46] bg-[#0d1724] px-3 text-[11px] text-slate-400">
+                    <div
+                      className="flex h-6 items-center justify-between border-t border-[#1a2d46] bg-[#0d1724] px-3 text-[11px] text-slate-400"
+                      role="status"
+                      aria-live="polite"
+                    >
                       <span>
                         {saveState === 'saving'
                           ? 'Saving…'
-                          : saveState === 'error'
-                            ? 'Save error'
-                            : 'Your Code is Saved'}
+                          : saveState === 'retrying'
+                            ? 'Not saved yet — retrying…'
+                            : saveState === 'error'
+                              ? "Couldn't save —"
+                              : 'Your Code is Saved'}
                       </span>
+                      {saveState === 'error' && (
+                        <button
+                          type="button"
+                          onClick={() => void retry()}
+                          className="ml-2 text-amber-400 underline transition hover:text-amber-300"
+                        >
+                          Retry
+                        </button>
+                      )}
                     </div>
                   </div>
 
@@ -1174,10 +1219,12 @@ export function ExamWorkspace({
                       type="button"
                       onClick={() => void runTests()}
                       disabled={locked || running}
-                      className="text-xs text-slate-500 transition hover:text-blue-600"
+                      aria-busy={running || undefined}
+                      className="inline-flex items-center gap-1.5 text-xs text-slate-500 transition hover:text-blue-600 disabled:cursor-not-allowed disabled:opacity-50"
                       title="Run test cases"
                     >
-                      {running ? 'Running…' : 'Run Tests'}
+                      {running && <Spinner className="h-3 w-3" />}
+                      <span>{running ? 'Running…' : 'Run Tests'}</span>
                     </button>
                     <button
                       type="button"
@@ -1197,6 +1244,7 @@ export function ExamWorkspace({
                         outcome={outcome}
                         running={running || submitting}
                         error={runError}
+                        onRetry={() => void runTests()}
                         expectedTests={slot.question.tests}
                         theme="light"
                       />
@@ -1214,7 +1262,8 @@ export function ExamWorkspace({
                     type="button"
                     onClick={() => setConfirmSubmit(true)}
                     disabled={locked || submitting}
-                    className="rounded-[4px] bg-[#0066d6] px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0052b3] disabled:opacity-50"
+                    aria-busy={submitting || undefined}
+                    className="rounded-[4px] bg-[#0066d6] px-5 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-[#0052b3] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {submitting
                       ? 'Submitting…'

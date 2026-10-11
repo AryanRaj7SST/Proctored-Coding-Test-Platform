@@ -86,12 +86,14 @@ export function TestResults({
   error,
   expectedTests = [],
   theme = 'light',
+  onRetry,
 }: {
   outcome: RunOutcome | null;
   running: boolean;
   error: string | null;
   expectedTests?: ExpectedTest[];
   theme?: 'dark' | 'light';
+  onRetry?: () => void;
 }) {
   const isLight = theme === 'light';
 
@@ -130,6 +132,8 @@ export function TestResults({
       {/* Top Header / Status Bar */}
       {running ? (
         <div
+          role="status"
+          aria-live="polite"
           className={cn(
             'flex items-center gap-2 border-b px-4 py-2 text-xs font-medium',
             isLight
@@ -142,6 +146,8 @@ export function TestResults({
         </div>
       ) : outcome ? (
         <div
+          role="status"
+          aria-live="polite"
           className={cn(
             'flex flex-wrap items-center gap-2 border-b px-4 py-2 text-xs',
             isLight ? 'border-slate-200 bg-slate-50' : 'border-ink-700 bg-ink-850',
@@ -167,6 +173,15 @@ export function TestResults({
         <div className="border-b border-rose-200 bg-rose-50 p-3 text-xs text-rose-800" role="alert">
           <div className="font-semibold text-rose-700">Test Execution Notice:</div>
           <p className="mt-0.5">{error}</p>
+          {onRetry && !running ? (
+            <button
+              type="button"
+              onClick={onRetry}
+              className="mt-2 inline-flex items-center gap-1.5 rounded bg-rose-600 px-2.5 py-1 text-xs font-medium text-white transition hover:bg-rose-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-rose-500"
+            >
+              Try again
+            </button>
+          ) : null}
         </div>
       )}
 

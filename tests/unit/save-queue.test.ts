@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { SaveQueue, isTransientSaveError } from '@/lib/save-queue';
+import { ApiError } from '@/lib/api';
 
 /**
  * B6 regression: an autosave queued for question 1 must never be written to
@@ -132,18 +133,55 @@ describe('SaveQueue keeps every save bound to its own attempt', () => {
 });
 
 describe('SaveQueue failure handling', () => {
-  it('retries a transient failure and then succeeds', async () => {
+  it('retries when api() throws ApiError(0, ..., NETWORK_ERROR) with backoff and then succeeds', async () => {
     let n = 0;
     const events: string[] = [];
+    const delays: number[] = [];
+    const q = new SaveQueue<string>(
+      async () => {
+        n += 1;
+        if (n < 3) throw new ApiError(0, 'Network request failed.', 'NETWORK_ERROR');
+      },
+      {
+        retryDelayMs: (attempt) => {
+          const d = 100 * 2 ** (attempt - 1);
+          delays.push(d);
+          return d;
+        },
+        sleep: noSleep,
+        onEvent: (e) => events.push(e.type),
+      },
+    );
+    await q.enqueue('A', 'v');
+    expect(n).toBe(3);
+    expect(delays).toEqual([100, 200]);
+    expect(events).toContain('retrying');
+    expect(events.at(-1)).toBe('saved');
+  });
+
+  it('retries a plain TypeError from fetch and then succeeds', async () => {
+    let n = 0;
+    const events: string[] = [];
+    const delays: number[] = [];
     const q = new SaveQueue<string>(
       async () => {
         n += 1;
         if (n < 3) throw new TypeError('Failed to fetch');
       },
-      { sleep: noSleep, onEvent: (e) => events.push(e.type) },
+      {
+        retryDelayMs: (attempt) => {
+          const d = 50 * attempt;
+          delays.push(d);
+          return d;
+        },
+        sleep: noSleep,
+        onEvent: (e) => events.push(e.type),
+      },
     );
     await q.enqueue('A', 'v');
     expect(n).toBe(3);
+    expect(delays).toEqual([50, 100]);
+    expect(events).toContain('retrying');
     expect(events.at(-1)).toBe('saved');
   });
 
@@ -195,9 +233,16 @@ describe('SaveQueue failure handling', () => {
 
   it('classifies errors: network/5xx/429 transient, other 4xx final', () => {
     expect(isTransientSaveError(new TypeError('Failed to fetch'))).toBe(true);
+    expect(isTransientSaveError(new ApiError(0, 'Network request failed', 'NETWORK_ERROR'))).toBe(true);
+    expect(isTransientSaveError({ status: 0 })).toBe(true);
+    expect(isTransientSaveError({ code: 'NETWORK_ERROR' })).toBe(true);
     expect(isTransientSaveError({ status: 502 })).toBe(true);
     expect(isTransientSaveError({ status: 429 })).toBe(true);
+    expect(isTransientSaveError({ status: 408 })).toBe(true);
+    expect(isTransientSaveError({ status: 400 })).toBe(false);
+    expect(isTransientSaveError({ status: 401 })).toBe(false);
     expect(isTransientSaveError({ status: 403 })).toBe(false);
+    expect(isTransientSaveError({ status: 404 })).toBe(false);
     expect(isTransientSaveError({ status: 409 })).toBe(false);
   });
 });

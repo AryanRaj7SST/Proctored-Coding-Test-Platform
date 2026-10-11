@@ -23,14 +23,23 @@ export class ApiError extends Error {
 }
 
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const res = await fetch(path, {
-    credentials: 'same-origin',
-    ...init,
-    headers: {
-      ...(init.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
-      ...(init.headers ?? {}),
-    },
-  });
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      credentials: 'same-origin',
+      ...init,
+      headers: {
+        ...(init.body && !(init.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
+        ...(init.headers ?? {}),
+      },
+    });
+  } catch {
+    throw new ApiError(
+      0,
+      'Network request failed. Please check your internet connection and try again.',
+      'NETWORK_ERROR',
+    );
+  }
 
   if (res.status === 204) return undefined as T;
 
@@ -50,10 +59,24 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
 export function apiErrorFrom(
   status: number,
   payload: unknown,
-  fallback = 'Something went wrong. Please try again.',
+  fallback?: string,
 ) {
   const body = (payload ?? {}) as Partial<ApiErrorBody>;
-  return new ApiError(status, body.message ?? fallback, body.code, body.details);
+  let defaultMessage = fallback;
+  if (!defaultMessage) {
+    if (status === 429) {
+      defaultMessage = 'Too many requests. Please wait a moment and try again.';
+    } else if (status === 409) {
+      defaultMessage = 'Action could not be completed due to a conflict. Please try again.';
+    } else if (status === 502 || status === 503 || status === 504) {
+      defaultMessage = 'The service is temporarily unavailable. Please try again in a few moments.';
+    } else if (status >= 500) {
+      defaultMessage = 'A server error occurred. Please try again.';
+    } else {
+      defaultMessage = 'Something went wrong. Please try again.';
+    }
+  }
+  return new ApiError(status, body.message ?? defaultMessage, body.code, body.details);
 }
 
 export const apiGet = <T>(path: string) => api<T>(path);

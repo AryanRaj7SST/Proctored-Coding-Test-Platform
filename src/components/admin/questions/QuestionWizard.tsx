@@ -14,6 +14,8 @@ import { CodeStep } from './CodeStep';
 import { PreviewStep } from './PreviewStep';
 import { ProblemStep } from './ProblemStep';
 import { PublishStep, type StatusAction } from './PublishStep';
+import { RegradeDiffModal } from './RegradeDiffModal';
+import type { RegradeQuestionSummary } from '@/server/grading/grade-attempt';
 import { Stepper, type StepState } from './Stepper';
 import { ValidationStep } from './ValidationStep';
 import { isRunnerErrorCode } from './ValidationResults';
@@ -114,6 +116,57 @@ export function QuestionWizard({
   const [confirmPublishedSave, setConfirmPublishedSave] = React.useState(false);
   const confirmResolver = React.useRef<((ok: boolean) => void) | null>(null);
   const [confirmLeave, setConfirmLeave] = React.useState(false);
+  const [regrading, setRegrading] = React.useState(false);
+  const [confirmRegradeCount, setConfirmRegradeCount] = React.useState<number | null>(null);
+  const [regradeSummary, setRegradeSummary] = React.useState<RegradeQuestionSummary | null>(null);
+
+  const handleStartRepublishAndRegrade = async () => {
+    if (!question || regrading) return;
+    try {
+      const res = await apiGet<{ totalAttempts: number }>(`/api/questions/${question.id}/regrade`);
+      setConfirmRegradeCount(res.totalAttempts);
+    } catch (err) {
+      toast.push(err instanceof ApiError ? err.message : 'Could not check affected attempts.', 'error');
+    }
+  };
+
+  const executeRepublishAndRegrade = async () => {
+    if (!question) return;
+    setConfirmRegradeCount(null);
+    setRegrading(true);
+    try {
+      let target = question;
+      if (dirty) {
+        const saved = await save();
+        if (!saved) {
+          setRegrading(false);
+          return;
+        }
+        target = saved;
+      }
+
+      const valResult = await apiPost<ValidationRun>(`/api/questions/${target.id}/validate`);
+      setRun(valResult);
+      if (!valResult.ok) {
+        toast.push(
+          `Save & Republish blocked: validation failed (${valResult.passedCount}/${valResult.totalCount} tests passed). Fix reference solution or test suite before regrading.`,
+          'error',
+        );
+        setRegrading(false);
+        goTo('validate');
+        return;
+      }
+
+      const summary = await apiPost<RegradeQuestionSummary>(`/api/questions/${target.id}/regrade`);
+      setQuestion(normalizeQuestion(await apiGet<object>(`/api/questions/${target.id}`)));
+      setRegradeSummary(summary);
+      toast.push(`Republish and regrade completed. ${summary.changedCount} attempt score(s) updated.`, 'success');
+    } catch (err) {
+      toast.push(err instanceof ApiError ? err.message : 'Republish and regrade failed.', 'error');
+    } finally {
+      setRegrading(false);
+    }
+  };
 
   const isNew = question === null;
   const readOnly = question?.status === 'ARCHIVED';
@@ -626,6 +679,8 @@ export function QuestionWizard({
               onAction={changeStatus}
               onDelete={remove}
               onSave={() => void save()}
+              onRepublishAndRegrade={() => void handleStartRepublishAndRegrade()}
+              regrading={regrading}
             />
           ) : null}
         </CardBody>
@@ -673,6 +728,21 @@ export function QuestionWizard({
           setConfirmLeave(false);
           router.push('/admin/questions');
         }}
+      />
+      <ConfirmDialog
+        open={confirmRegradeCount !== null}
+        theme="dark"
+        title="Save & Republish (recalculate affected students)?"
+        message={`This will re-grade ${confirmRegradeCount ?? 0} existing attempt(s) that used the previous version of this question. Some students' scores may change. This is logged and cannot be silently undone.`}
+        confirmLabel="Save & Republish"
+        busy={regrading}
+        onCancel={() => setConfirmRegradeCount(null)}
+        onConfirm={() => void executeRepublishAndRegrade()}
+      />
+      <RegradeDiffModal
+        open={regradeSummary !== null}
+        onClose={() => setRegradeSummary(null)}
+        summary={regradeSummary}
       />
     </div>
   );

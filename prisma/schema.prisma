@@ -218,9 +218,10 @@ model Question {
   createdAt         DateTime         @default(now())
   updatedAt         DateTime         @updatedAt
 
-  tests         QuestionTest[]
-  examQuestions ExamQuestion[]
-  attempts      Attempt[]
+  tests          QuestionTest[]
+  examQuestions  ExamQuestion[]
+  attempts       Attempt[]
+  scoreHistories AttemptScoreHistory[]
 
   @@index([type])
   @@index([status])
@@ -365,9 +366,10 @@ model Attempt {
   session  ExamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   question Question    @relation(fields: [questionId], references: [id], onDelete: Restrict)
 
-  testResults TestResult[]
-  testRuns    TestRun[]
-  events      ProctorEvent[]
+  testResults    TestResult[]
+  testRuns       TestRun[]
+  events         ProctorEvent[]
+  scoreHistories AttemptScoreHistory[]
 
   @@unique([sessionId, questionId])
   @@index([examId, status])
@@ -504,4 +506,25 @@ model AuditLog {
   @@index([userId, createdAt])
   @@index([action])
   @@map("audit_logs")
+}
+
+model AttemptScoreHistory {
+  id               String                @id @default(cuid())
+  attemptId        String
+  questionId       String
+  oldScore         Decimal               @db.Decimal(12, 4)
+  newScore         Decimal               @db.Decimal(12, 4)
+  oldResultStatus  QuestionResultStatus?
+  newResultStatus  QuestionResultStatus?
+  changedAt        DateTime              @default(now())
+  changedByAdminId String?
+  reason           String?               @db.Text
+
+  attempt  Attempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([attemptId])
+  @@index([questionId])
+  @@index([changedAt])
+  @@map("attempt_score_histories")
 }

@@ -1,3 +1,4 @@
+import { Suspense, cache } from 'react';
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/authz';
 import { dashboardStats, recentActivity, recentSubmissions } from '@/server/services/dashboard';
@@ -21,16 +22,44 @@ function Section({ title, href, children }: { title: string; href: string; child
   );
 }
 
+/**
+ * The runner is a separate service; surface its health here rather than
+ * letting an admin discover it is down mid-test. It is checked OUTSIDE the
+ * page's data fetch and streamed in behind <Suspense>: a slow or sleeping
+ * runner (up to 2 x 4 s of timeouts) must never hold up the whole dashboard.
+ * `cache()` makes the badge and the alert share a single health check.
+ */
+const getRunnerHealth = cache(
+  (): Promise<{ ok: boolean; detail?: string }> =>
+    runnerHealth().catch(() => ({ ok: false, detail: 'unreachable' })),
+);
+
+async function RunnerBadge() {
+  const runner = await getRunnerHealth();
+  return <Badge tone={runner.ok ? 'ok' : 'bad'}>Runner {runner.ok ? 'online' : 'offline'}</Badge>;
+}
+
+async function RunnerAlert() {
+  const runner = await getRunnerHealth();
+  if (runner.ok) return null;
+  return (
+    <div className="rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30" role="alert">
+      The test runner is not usable
+      {runner.detail ? <>: {runner.detail}</> : '.'} Students can still write and save code, but running
+      tests, grading and question validation will wait until it is fixed (submissions show &ldquo;grading
+      pending&rdquo;, never 0). Check <code>RUNNER_URL</code>, <code>RUNNER_SECRET</code> and the runner
+      service.
+    </div>
+  );
+}
+
 export default async function AdminDashboardPage() {
   await requireAdmin();
 
-  // The runner is a separate service; surface its health here rather than
-  // letting an admin discover it is down mid-test.
-  const [stats, submissions, activity, runner] = await Promise.all([
+  const [stats, submissions, activity] = await Promise.all([
     dashboardStats(),
     recentSubmissions(8),
     recentActivity(12),
-    runnerHealth().catch(() => ({ ok: false, detail: 'unreachable' })),
   ]);
 
   return (
@@ -40,18 +69,14 @@ export default async function AdminDashboardPage() {
           <h1 className="text-xl font-semibold text-slate-50">Dashboard</h1>
           <p className="mt-1 text-sm text-slate-400">Questions, tests and results at a glance.</p>
         </div>
-        <Badge tone={runner.ok ? 'ok' : 'bad'}>Runner {runner.ok ? 'online' : 'offline'}</Badge>
+        <Suspense fallback={<Badge tone="neutral">Checking runner…</Badge>}>
+          <RunnerBadge />
+        </Suspense>
       </div>
 
-      {!runner.ok ? (
-        <div className="rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30" role="alert">
-          The test runner is not usable
-          {runner.detail ? <>: {runner.detail}</> : '.'} Students can still write and save code, but running
-          tests, grading and question validation will wait until it is fixed (submissions show &ldquo;grading
-          pending&rdquo;, never 0). Check <code>RUNNER_URL</code>, <code>RUNNER_SECRET</code> and the runner
-          service.
-        </div>
-      ) : null}
+      <Suspense fallback={null}>
+        <RunnerAlert />
+      </Suspense>
 
       <Section title="Questions" href="/admin/questions">
         <div className="grid gap-3 sm:grid-cols-3">

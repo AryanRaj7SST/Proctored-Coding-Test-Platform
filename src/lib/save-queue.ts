@@ -20,6 +20,7 @@ export type SaveFn<T> = (key: string, value: T) => Promise<void>;
 
 export type SaveQueueEvent =
   | { type: 'saving'; key: string }
+  | { type: 'retrying'; key: string; attempt: number }
   | { type: 'saved'; key: string }
   | { type: 'error'; key: string; error: unknown };
 
@@ -38,8 +39,9 @@ interface Job<T> {
 
 /** Retry network failures and server-side errors; never retry a 4xx verdict. */
 export function isTransientSaveError(error: unknown): boolean {
-  const status = (error as { status?: unknown } | null)?.status;
-  if (typeof status !== 'number') return true; // fetch threw: offline / network
+  const err = error as { status?: unknown; code?: unknown } | null;
+  const status = err?.status;
+  if (typeof status !== 'number' || status === 0 || err?.code === 'NETWORK_ERROR') return true; // fetch threw: offline / network failure
   return status >= 500 || status === 429 || status === 408;
 }
 
@@ -99,7 +101,11 @@ export class SaveQueue<T> {
 
   private async runJob(job: Job<T>): Promise<void> {
     for (let attempt = 0; ; attempt += 1) {
-      this.opts.onEvent?.({ type: 'saving', key: job.key });
+      if (attempt === 0) {
+        this.opts.onEvent?.({ type: 'saving', key: job.key });
+      } else {
+        this.opts.onEvent?.({ type: 'retrying', key: job.key, attempt });
+      }
       try {
         await this.save(job.key, job.value);
         this.opts.onEvent?.({ type: 'saved', key: job.key });
@@ -109,6 +115,7 @@ export class SaveQueue<T> {
         // this one, so retrying the stale value would be wasted (or harmful).
         if (this.queue.some((j) => j.key === job.key)) return;
         if (attempt < this.opts.retries && this.opts.shouldRetry(error)) {
+          this.opts.onEvent?.({ type: 'retrying', key: job.key, attempt: attempt + 1 });
           await this.opts.sleep(this.opts.retryDelayMs(attempt + 1));
           continue;
         }

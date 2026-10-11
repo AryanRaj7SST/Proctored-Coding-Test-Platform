@@ -3,7 +3,7 @@ import type { Exam } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { logger, sanitizeError } from '@/lib/logger';
 import { sittingNeedsFinalization, unboundedWindow, withinSubmitDeadline } from '@/lib/timing';
-import { gradeAttempt } from '@/server/grading/grade-attempt';
+import { gradeAttempt, type GradeResult } from '@/server/grading/grade-attempt';
 import { refreshSittingTotals } from '@/server/grading/sitting-totals';
 import { claimAttempt } from './attempts';
 import { currentSession, getExamTimeState, hasOpenTestAccess } from './sessions';
@@ -54,6 +54,52 @@ async function afterResponse(work: () => Promise<void>): Promise<'deferred' | 'd
   } catch {
     await guarded();
     return 'done';
+  }
+}
+
+/**
+ * Maximum retry attempts during finalisation when the runner queue is full or busy.
+ * Bounded with jittered exponential backoff so bursts drain automatically without
+ * hammering the runner or marking unscored attempts as 0.
+ */
+export const FINALIZATION_MAX_RETRIES = 3;
+export const FINALIZATION_BASE_BACKOFF_MS = 1_000;
+export const FINALIZATION_MAX_JITTER_MS = 1_000;
+
+export async function gradeAttemptWithRetry(
+  attemptId: string,
+  opts: { reason?: string; keepBest?: boolean } = {},
+  retries = FINALIZATION_MAX_RETRIES,
+  baseBackoffMs = FINALIZATION_BASE_BACKOFF_MS,
+  maxJitterMs = FINALIZATION_MAX_JITTER_MS,
+): Promise<GradeResult> {
+  let attempt = 0;
+  while (true) {
+    const res = await gradeAttempt(attemptId, opts);
+    if (res.graded) return res;
+
+    // Do not retry if another worker is actively holding the lease.
+    if (res.busy) return res;
+
+    attempt += 1;
+    if (attempt > retries) {
+      return res;
+    }
+
+    // Exponential backoff + full jitter to desynchronise retry waves.
+    const backoff = baseBackoffMs * Math.pow(2, attempt - 1);
+    const jitter = Math.floor(Math.random() * maxJitterMs);
+    const delay = backoff + jitter;
+
+    logger.info('finalization.grading_retry', {
+      attemptId,
+      retry: attempt,
+      maxRetries: retries,
+      delayMs: delay,
+      error: res.error,
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
   }
 }
 
@@ -132,7 +178,7 @@ async function finalizeSession(session: SittingRef, reason: SittingEndReason): P
   let gradedCount = 0;
   const gradeClaimed = async () => {
     for (const id of claimed) {
-      const result = await gradeAttempt(id, {
+      const result = await gradeAttemptWithRetry(id, {
         reason: reason === 'STUDENT_ENDED' ? 'submission' : 'auto-submit',
       });
       if (result.graded) gradedCount += 1;
@@ -195,7 +241,7 @@ async function gradeEditedSubmissions(sessionId: string, alreadyGraded: string[]
   });
   for (const a of submitted) {
     if (sameCode(a, await lastGradedCode(a.id))) continue;
-    await gradeAttempt(a.id, { reason: 'final code', keepBest: true });
+    await gradeAttemptWithRetry(a.id, { reason: 'final code', keepBest: true });
   }
 }
 
@@ -350,14 +396,14 @@ export async function finalizeOverdueSittings(
     finalised += 1;
   }
 
-  await retryStalledGrading({ userId: opts.userId, limit: 5 });
+  await retryStalledGrading({ userId: opts.userId, limit: Math.min(50, Math.max(5, opts.limit ?? 25)) });
   return finalised;
 }
 
 /** Grading that never started (e.g. the process stopped mid-way) gets picked up after this long. */
 const STALLED_AFTER_MS = 2 * 60_000;
-/** A runner failure is retried automatically after this long; an admin can always regrade sooner. */
-const RUNNER_RETRY_AFTER_MS = 5 * 60_000;
+/** A runner failure is retried automatically after this long (1 min so bursts drain quickly); an admin can always regrade sooner. */
+const RUNNER_RETRY_AFTER_MS = 60_000;
 
 /**
  * Pick up submitted attempts whose grading stalled: never attempted (the work
@@ -385,5 +431,5 @@ async function retryStalledGrading(opts: { userId?: string; limit: number }): Pr
     orderBy: { submittedAt: 'asc' },
     take: opts.limit,
   });
-  for (const a of stalled) await gradeAttempt(a.id, { reason: 'automatic retry' });
+  for (const a of stalled) await gradeAttemptWithRetry(a.id, { reason: 'automatic retry' });
 }

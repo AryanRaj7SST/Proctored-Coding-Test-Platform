@@ -1,4 +1,26 @@
+import path from 'node:path';
+import fs from 'node:fs';
 import express, { type NextFunction, type Request, type Response } from 'express';
+
+// Load parent .env if present
+try {
+  const envPath = path.resolve(__dirname, '../../.env');
+  if (fs.existsSync(envPath)) {
+    const lines = fs.readFileSync(envPath, 'utf8').split('\n');
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
+        const [k, ...v] = trimmed.split('=');
+        const key = k?.trim();
+        const val = v.join('=').trim().replace(/^["']|["']$/g, '');
+        if (key && !process.env[key]) {
+          process.env[key] = val;
+        }
+      }
+    }
+  }
+} catch {}
+
 import { config, assertConfig } from './config';
 import { log, safeError } from './logger';
 import { authenticate } from './auth';

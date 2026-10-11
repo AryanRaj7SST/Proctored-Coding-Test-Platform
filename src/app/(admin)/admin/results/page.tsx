@@ -1,8 +1,10 @@
+import { after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
 import { resultsListInput } from '@/lib/validation';
 import { listResults } from '@/server/services/results';
 import { finalizeOverdueSittings } from '@/server/services/finalization';
+import { logger, sanitizeError } from '@/lib/logger';
 import { Card, CardBody, CardHeader } from '@/components/ui';
 import { Pagination } from '@/components/admin/shared/Pagination';
 import { ResultsTable } from '@/components/admin/ResultsTable';
@@ -39,9 +41,12 @@ function summaryLine(total: number, view: 'best' | 'all'): string {
 export default async function ResultsPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   await requireAdmin();
   const filter = parseFilter(await searchParams);
-  // Grade sittings their students abandoned before listing, so nothing shows as
-  // "in progress" long after its time ran out (the attempts page does the same).
-  await finalizeOverdueSittings(filter.examId ? { examId: filter.examId, limit: 200 } : {});
+  // Grade sittings their students abandoned without blocking page render (safe and idempotent).
+  after(() =>
+    finalizeOverdueSittings(filter.examId ? { examId: filter.examId, limit: 200 } : {}).catch((err) =>
+      logger.warn('finalize.results_sweep_failed', { error: sanitizeError(err) }),
+    ),
+  );
 
   const [data, exams, batchRows] = await Promise.all([
     listResults(filter),
