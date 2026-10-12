@@ -64,7 +64,7 @@ export function ResultsFilters({
         e.preventDefault();
         navigate(draft);
       }}
-      className="grid gap-3 rounded-xl bg-white p-4 border border-slate-200 shadow-xs sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.4fr_auto]"
+      className="shadow-xs grid gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:grid-cols-2 lg:grid-cols-[1.4fr_1fr_1fr_1fr_1.4fr_auto]"
     >
       <Field label="Test" htmlFor="results-exam">
         <Select id="results-exam" value={draft.examId} onChange={(e) => update('examId', e.target.value)}>
@@ -127,7 +127,7 @@ export function ResultsFilters({
         {filtered ? (
           <Link
             href="/admin/results"
-            className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+            className="shadow-xs inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
           >
             Reset
           </Link>

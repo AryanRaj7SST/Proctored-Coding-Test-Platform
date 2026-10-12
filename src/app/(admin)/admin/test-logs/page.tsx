@@ -71,7 +71,7 @@ export default async function TestLogsPage({
           <a
             key={f.href}
             href={f.href}
-            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+            className="shadow-xs rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 transition hover:bg-slate-50"
           >
             {f.label}
           </a>
@@ -88,7 +88,7 @@ export default async function TestLogsPage({
             />
           ) : (
             runs.map((r) => (
-              <details key={r.id} className="rounded-lg bg-white p-3 border border-slate-200 shadow-xs">
+              <details key={r.id} className="shadow-xs rounded-lg border border-slate-200 bg-white p-3">
                 <summary className="flex cursor-pointer flex-wrap items-center gap-2 text-sm">
                   <Badge tone={statusTone(r.status)}>{r.status.toLowerCase()}</Badge>
                   <Badge tone="neutral">{r.kind.toLowerCase()}</Badge>
@@ -102,18 +102,18 @@ export default async function TestLogsPage({
                       ? `${r.attempt.user.name ?? r.attempt.user.email} · ${r.attempt.exam.title}`
                       : 'admin validation'}
                   </span>
-                  <span className="ml-auto text-xs font-mono text-slate-500">
+                  <span className="ml-auto font-mono text-xs text-slate-500">
                     {r.passedCount}/{r.totalCount} · {formatDuration(r.durationMs)} ·{' '}
                     {formatDateTime(r.startedAt)}
                   </span>
                 </summary>
 
                 {r.error ? (
-                  <p className="mt-2 rounded-lg bg-rose-50 border border-rose-200 p-2 text-xs text-rose-800">
+                  <p className="mt-2 rounded-lg border border-rose-200 bg-rose-50 p-2 text-xs text-rose-800">
                     {r.error}
                   </p>
                 ) : null}
-                <pre className="mt-2 max-h-64 overflow-auto rounded bg-slate-50 border border-slate-200 p-2 font-mono text-[11px] leading-5 text-slate-700">
+                <pre className="mt-2 max-h-64 overflow-auto rounded border border-slate-200 bg-slate-50 p-2 font-mono text-[11px] leading-5 text-slate-700">
                   {r.logs || '(no console output captured)'}
                 </pre>
               </details>

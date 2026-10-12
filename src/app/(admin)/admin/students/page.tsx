@@ -106,7 +106,10 @@ export default async function StudentsPage({
                 Search
               </Button>
               {q ? (
-                <Link href="/admin/students" className="text-xs font-medium text-slate-500 hover:text-slate-800">
+                <Link
+                  href="/admin/students"
+                  className="text-xs font-medium text-slate-500 hover:text-slate-800"
+                >
                   Clear
                 </Link>
               ) : null}
@@ -149,7 +152,7 @@ export default async function StudentsPage({
                   const max = marksToNumber(score?._sum.maxScore ?? 0);
                   const v = violations.find((x) => x.userId === u.id)?._count._all ?? 0;
                   return (
-                    <tr key={u.id} className="hover:bg-slate-50 transition">
+                    <tr key={u.id} className="transition hover:bg-slate-50">
                       <Td>
                         <p className="font-semibold text-slate-900">{u.name ?? u.email}</p>
                         <p className="text-xs text-slate-500">{u.email}</p>
@@ -180,7 +183,7 @@ export default async function StudentsPage({
                         {u._count.attempts > 0 ? (
                           <Link
                             href={`/admin/attempts?userId=${u.id}`}
-                            className="text-xs text-blue-600 hover:underline font-medium"
+                            className="text-xs font-medium text-blue-600 hover:underline"
                           >
                             Review ({u._count.attempts})
                           </Link>

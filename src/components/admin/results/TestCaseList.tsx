@@ -9,7 +9,7 @@ import type { SittingTestCase } from './types';
  */
 export function TestCaseList({ testCases }: { testCases: SittingTestCase[] }) {
   return (
-    <ul className="divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
+    <ul className="shadow-xs divide-y divide-slate-100 overflow-hidden rounded-lg border border-slate-200 bg-white">
       {testCases.map((t, i) => (
         <li key={`${t.testName}-${i}`}>
           <details className="group" open={!t.passed}>
@@ -25,9 +25,15 @@ export function TestCaseList({ testCases }: { testCases: SittingTestCase[] }) {
                 {t.passed ? '✓' : '✗'}
               </span>
               <span className="sr-only">{t.passed ? 'Passed:' : 'Failed:'}</span>
-              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">{t.testName}</span>
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-900">
+                {t.testName}
+              </span>
               <span
-                className={t.passed ? 'font-mono text-xs font-semibold text-slate-800' : 'font-mono text-xs text-slate-500'}
+                className={
+                  t.passed
+                    ? 'font-mono text-xs font-semibold text-slate-800'
+                    : 'font-mono text-xs text-slate-500'
+                }
                 title={`${t.pointsAwarded} of ${t.points} marks`}
               >
                 {formatMarks(t.pointsAwarded)} / {formatMarks(t.points)}
@@ -35,7 +41,10 @@ export function TestCaseList({ testCases }: { testCases: SittingTestCase[] }) {
               <span className="hidden w-12 text-right text-xs text-slate-500 sm:inline">
                 {formatDuration(t.durationMs)}
               </span>
-              <span aria-hidden="true" className="text-slate-400 font-bold transition-transform group-open:rotate-90">
+              <span
+                aria-hidden="true"
+                className="font-bold text-slate-400 transition-transform group-open:rotate-90"
+              >
                 ›
               </span>
             </summary>
@@ -55,7 +64,13 @@ function TestCaseDetail({ testCase: t }: { testCase: SittingTestCase }) {
       {t.message ? (
         <div>
           <p className="font-semibold uppercase tracking-wide text-slate-500">Result</p>
-          <p className={t.passed ? 'mt-1 whitespace-pre-wrap text-slate-700' : 'mt-1 whitespace-pre-wrap font-medium text-rose-700'}>
+          <p
+            className={
+              t.passed
+                ? 'mt-1 whitespace-pre-wrap text-slate-700'
+                : 'mt-1 whitespace-pre-wrap font-medium text-rose-700'
+            }
+          >
             {t.message}
           </p>
         </div>
@@ -80,7 +95,7 @@ function TestCaseDetail({ testCase: t }: { testCase: SittingTestCase }) {
           ) : null}
           {d.steps.length > 0 ? (
             <div>
-              <p className="text-slate-500 font-medium">Steps</p>
+              <p className="font-medium text-slate-500">Steps</p>
               <ol className="mt-1 list-decimal space-y-0.5 pl-5 text-slate-700">
                 {d.steps.map((s, i) => (
                   <li key={i}>{s}</li>
@@ -90,7 +105,7 @@ function TestCaseDetail({ testCase: t }: { testCase: SittingTestCase }) {
           ) : null}
           {d.checks.length > 0 ? (
             <div>
-              <p className="text-slate-500 font-medium">Checks</p>
+              <p className="font-medium text-slate-500">Checks</p>
               <ul className="mt-1 list-disc space-y-0.5 pl-5 text-slate-700">
                 {d.checks.map((c, i) => (
                   <li key={i}>{c}</li>
@@ -112,7 +127,7 @@ function ValueBox({ label, value }: { label: string; value: string | null }) {
   return (
     <div className="min-w-0">
       <p className="font-semibold uppercase tracking-wide text-slate-500">{label}</p>
-      <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-white border border-slate-200 px-2 py-1.5 font-mono text-[11px] text-slate-800 shadow-xs">
+      <pre className="shadow-xs mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded border border-slate-200 bg-white px-2 py-1.5 font-mono text-[11px] text-slate-800">
         {value ?? '—'}
       </pre>
     </div>

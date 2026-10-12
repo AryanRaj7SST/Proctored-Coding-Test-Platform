@@ -527,7 +527,10 @@ export function QuestionWizard({
             {question ? (
               <>
                 <StatusBadge status={question.status} />
-                <Badge tone="neutral" className="font-mono text-[11px] bg-slate-100 text-slate-700 border border-slate-200">
+                <Badge
+                  tone="neutral"
+                  className="border border-slate-200 bg-slate-100 font-mono text-[11px] text-slate-700"
+                >
                   ID: {question.id} (Immutable)
                 </Badge>
                 <Badge
@@ -548,7 +551,7 @@ export function QuestionWizard({
               <Badge tone="neutral">not saved yet</Badge>
             )}
             {dirty ? (
-              <span className="inline-flex items-center gap-1.5 text-amber-600 font-medium" role="status">
+              <span className="inline-flex items-center gap-1.5 font-medium text-amber-600" role="status">
                 <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                 Unsaved changes
               </span>
@@ -559,7 +562,7 @@ export function QuestionWizard({
           {question ? (
             <Link
               href={`/admin/questions/${question.id}/preview`}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900"
+              className="shadow-xs inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900"
             >
               <Eye className="h-4 w-4" aria-hidden="true" />
               Preview

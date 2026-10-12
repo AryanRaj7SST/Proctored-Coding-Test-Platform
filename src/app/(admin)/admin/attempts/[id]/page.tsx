@@ -88,7 +88,7 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
       <div className="grid gap-3 sm:grid-cols-4">
         {attempt.status !== 'IN_PROGRESS' && !attempt.gradedAt ? (
           <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-            <p className="text-xs uppercase tracking-wide text-amber-700 font-semibold">Score</p>
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Score</p>
             <p className="mt-1 text-sm font-semibold text-amber-900">Grading pending</p>
             <p className="mt-1 text-xs text-amber-700">The runner failed; code is saved.</p>
             <div className="mt-2">
@@ -186,10 +186,10 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
                       <Td>
                         <Badge tone={statusTone(r.status)}>{r.status.toLowerCase()}</Badge>
                       </Td>
-                      <Td className="text-slate-700 font-mono text-xs">
+                      <Td className="font-mono text-xs text-slate-700">
                         {r.passedCount}/{r.totalCount}
                       </Td>
-                      <Td className="text-slate-500 text-xs">{formatDuration(r.durationMs)}</Td>
+                      <Td className="text-xs text-slate-500">{formatDuration(r.durationMs)}</Td>
                       <Td className="text-xs text-slate-500">{formatDateTime(r.startedAt)}</Td>
                     </tr>
                   ))}
@@ -203,7 +203,10 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
             <CardBody className="max-h-80 overflow-auto p-0">
               <ul className="divide-y divide-slate-100">
                 {timeline.map((e) => (
-                  <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-slate-50 transition">
+                  <li
+                    key={e.id}
+                    className="flex items-center gap-3 px-4 py-2 text-xs transition hover:bg-slate-50"
+                  >
                     <Badge tone={e.violation ? 'bad' : 'neutral'}>{eventLabel(e.type)}</Badge>
                     {e.durationMs ? (
                       <span className="text-slate-500">away {formatDuration(e.durationMs)}</span>

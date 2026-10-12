@@ -16,7 +16,7 @@ export function StudentPreview({ question, summary }: { question: StudentQuestio
       <div className="grid gap-4 lg:grid-cols-2">
         <section aria-label="Question panel as students see it" className="min-w-0 space-y-1.5">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Question panel</p>
-          <div className="h-[560px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
+          <div className="shadow-xs h-[560px] overflow-hidden rounded-lg border border-slate-200 bg-white">
             <QuestionPanel question={question} />
           </div>
         </section>
@@ -24,7 +24,7 @@ export function StudentPreview({ question, summary }: { question: StudentQuestio
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Test cases ({question.tests.length})
           </p>
-          <div className="h-[560px] overflow-hidden rounded-lg bg-white border border-slate-200 shadow-xs">
+          <div className="shadow-xs h-[560px] overflow-hidden rounded-lg border border-slate-200 bg-white">
             {question.tests.length > 0 ? (
               <TestResults outcome={null} running={false} error={null} expectedTests={question.tests} />
             ) : (

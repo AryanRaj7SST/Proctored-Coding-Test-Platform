@@ -85,7 +85,7 @@ export default async function ResultsPage({ searchParams }: { searchParams: Prom
           ) : null}
           <a
             href={`/api/admin/results/export${exportQuery ? `?${exportQuery}` : ''}`}
-            className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+            className="shadow-xs inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             Export CSV
           </a>

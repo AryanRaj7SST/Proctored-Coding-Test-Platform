@@ -98,8 +98,8 @@ export function Sidebar() {
                       className={cn(
                         'block whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition',
                         active
-                          ? 'bg-blue-50 font-semibold text-blue-700 shadow-xs border-l-2 border-blue-600 pl-2.5'
-                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium',
+                          ? 'shadow-xs border-l-2 border-blue-600 bg-blue-50 pl-2.5 font-semibold text-blue-700'
+                          : 'font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900',
                       )}
                     >
                       {link.label}

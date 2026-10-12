@@ -36,7 +36,7 @@ export function Notice({
     <div
       role={role}
       className={cn(
-        'flex flex-wrap items-start justify-between gap-3 rounded-md p-3 text-xs ring-1 shadow-xs',
+        'shadow-xs flex flex-wrap items-start justify-between gap-3 rounded-md p-3 text-xs ring-1',
         NOTICE_TONES[tone],
         className,
       )}
@@ -77,13 +77,13 @@ export function Switch({
       <span
         aria-hidden="true"
         className={cn(
-          'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition shadow-xs',
+          'shadow-xs relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition',
           checked ? 'bg-blue-600' : 'bg-slate-300',
         )}
       >
         <span
           className={cn(
-            'inline-block h-4 w-4 rounded-full bg-white shadow-xs transition',
+            'shadow-xs inline-block h-4 w-4 rounded-full bg-white transition',
             checked ? 'translate-x-[18px]' : 'translate-x-0.5',
           )}
         />

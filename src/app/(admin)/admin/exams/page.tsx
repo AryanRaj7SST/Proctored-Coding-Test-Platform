@@ -83,7 +83,7 @@ export default async function TestsPage({
         </div>
         <Link
           href="/admin/exams/new"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-blue-700 transition"
+          className="shadow-xs rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
         >
           Create test
         </Link>
@@ -106,7 +106,10 @@ export default async function TestsPage({
                 description={empty.description}
                 action={
                   !q && (phase === '' || phase === 'DRAFT') ? (
-                    <Link href="/admin/exams/new" className="text-xs font-medium text-blue-600 hover:underline">
+                    <Link
+                      href="/admin/exams/new"
+                      className="text-xs font-medium text-blue-600 hover:underline"
+                    >
                       Create a test
                     </Link>
                   ) : undefined
@@ -134,7 +137,7 @@ export default async function TestsPage({
                 {data.items.map((t) => {
                   const zoneAt = new Date(t.startTime ?? t.endTime ?? t.publishedAt ?? Date.now()).getTime();
                   return (
-                    <tr key={t.id} className="hover:bg-slate-50 transition">
+                    <tr key={t.id} className="transition hover:bg-slate-50">
                       <Td className="max-w-[16rem]">
                         <Link
                           href={`/admin/exams/${t.id}`}
@@ -187,7 +190,10 @@ export default async function TestsPage({
                       </Td>
                       <Td className="whitespace-nowrap text-xs">
                         <div className="flex gap-3">
-                          <Link href={`/admin/exams/${t.id}`} className="font-medium text-blue-600 hover:underline">
+                          <Link
+                            href={`/admin/exams/${t.id}`}
+                            className="font-medium text-blue-600 hover:underline"
+                          >
                             Edit
                           </Link>
                           <Link
@@ -216,7 +222,7 @@ export default async function TestsPage({
             {data.page > 1 ? (
               <Link
                 href={testsHref({ phase, q, page: data.page - 1 })}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+                className="shadow-xs rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 ← Previous
               </Link>
@@ -224,7 +230,7 @@ export default async function TestsPage({
             {data.page < pages ? (
               <Link
                 href={testsHref({ phase, q, page: data.page + 1 })}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+                className="shadow-xs rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 Next →
               </Link>

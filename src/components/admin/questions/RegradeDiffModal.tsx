@@ -29,20 +29,20 @@ export function RegradeDiffModal({
     >
       <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1 text-slate-800">
         <div className="grid grid-cols-4 gap-2 text-center text-xs">
-          <div className="rounded bg-slate-50 p-2.5 border border-slate-200 shadow-xs">
-            <div className="text-slate-500 font-semibold uppercase text-[10px]">Total</div>
+          <div className="shadow-xs rounded border border-slate-200 bg-slate-50 p-2.5">
+            <div className="text-[10px] font-semibold uppercase text-slate-500">Total</div>
             <div className="text-lg font-bold text-slate-900">{summary.totalAttempts}</div>
           </div>
-          <div className="rounded bg-emerald-50 p-2.5 border border-emerald-200 shadow-xs">
-            <div className="text-emerald-700 font-semibold uppercase text-[10px]">Changed</div>
+          <div className="shadow-xs rounded border border-emerald-200 bg-emerald-50 p-2.5">
+            <div className="text-[10px] font-semibold uppercase text-emerald-700">Changed</div>
             <div className="text-lg font-bold text-emerald-800">{summary.changedCount}</div>
           </div>
-          <div className="rounded bg-slate-50 p-2.5 border border-slate-200 shadow-xs">
-            <div className="text-slate-500 font-semibold uppercase text-[10px]">Unchanged</div>
+          <div className="shadow-xs rounded border border-slate-200 bg-slate-50 p-2.5">
+            <div className="text-[10px] font-semibold uppercase text-slate-500">Unchanged</div>
             <div className="text-lg font-bold text-slate-700">{summary.unchangedCount}</div>
           </div>
-          <div className="rounded bg-rose-50 p-2.5 border border-rose-200 shadow-xs">
-            <div className="text-rose-700 font-semibold uppercase text-[10px]">Failed</div>
+          <div className="shadow-xs rounded border border-rose-200 bg-rose-50 p-2.5">
+            <div className="text-[10px] font-semibold uppercase text-rose-700">Failed</div>
             <div className="text-lg font-bold text-rose-800">{summary.failedCount}</div>
           </div>
         </div>
@@ -56,7 +56,7 @@ export function RegradeDiffModal({
             </h4>
             <div className="overflow-x-auto rounded border border-slate-200">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
+                <thead className="border-b border-slate-200 bg-slate-50 font-semibold text-slate-600">
                   <tr>
                     <th className="p-2.5">Student</th>
                     <th className="p-2.5">Before</th>

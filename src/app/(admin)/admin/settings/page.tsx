@@ -53,7 +53,8 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-xl font-semibold text-slate-900">Settings</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Read-only. These come from environment variables — change them in <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800">.env</code> and restart.
+          Read-only. These come from environment variables — change them in{' '}
+          <code className="rounded bg-slate-100 px-1 py-0.5 text-slate-800">.env</code> and restart.
         </p>
       </div>
 
@@ -77,7 +78,7 @@ export default async function SettingsPage() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.label}>
-                  <Td className="text-slate-800 font-medium">{r.label}</Td>
+                  <Td className="font-medium text-slate-800">{r.label}</Td>
                   <Td className="font-mono text-xs text-slate-700">{r.value}</Td>
                   <Td className="text-xs text-slate-500">{r.note ?? ''}</Td>
                 </tr>
@@ -102,7 +103,7 @@ export default async function SettingsPage() {
             <tbody>
               {audits.map((a) => (
                 <tr key={a.id}>
-                  <Td className="text-slate-800 font-medium">{a.action}</Td>
+                  <Td className="font-medium text-slate-800">{a.action}</Td>
                   <Td className="text-xs text-slate-500">
                     {a.entity}
                     {a.entityId ? ` · ${a.entityId.slice(0, 8)}` : ''}

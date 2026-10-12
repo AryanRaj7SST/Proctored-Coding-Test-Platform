@@ -112,7 +112,7 @@ export function QuestionsStep({
                   <li
                     key={q.questionId}
                     className={cn(
-                      'flex items-center gap-3 rounded-lg bg-white px-3.5 py-2.5 border shadow-xs transition',
+                      'shadow-xs flex items-center gap-3 rounded-lg border bg-white px-3.5 py-2.5 transition',
                       unpublished ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200',
                     )}
                   >
@@ -126,7 +126,9 @@ export function QuestionsStep({
                         <span>{plural(q.enabledTests, 'enabled test')}</span>
                         <span>·</span>
                         <VersionLabel q={q} />
-                        <span className="font-medium text-slate-700">· {formatMarks(Number(q.marks) || 0)} marks</span>
+                        <span className="font-medium text-slate-700">
+                          · {formatMarks(Number(q.marks) || 0)} marks
+                        </span>
                         {unpublished ? (
                           <Badge tone="warn">
                             {q.status.toLowerCase()} · must be published before this test can be published

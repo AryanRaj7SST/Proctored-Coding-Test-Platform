@@ -33,7 +33,7 @@ export function Stepper({
 }) {
   return (
     <nav aria-label="Question editor steps" className="overflow-x-auto">
-      <ol className="flex min-w-max gap-1 rounded-lg bg-white p-1.5 border border-slate-200 shadow-xs">
+      <ol className="shadow-xs flex min-w-max gap-1 rounded-lg border border-slate-200 bg-white p-1.5">
         {WIZARD_STEPS.map((step, index) => {
           const state = states[step.id] ?? {};
           const active = step.id === current;
@@ -48,7 +48,7 @@ export function Stepper({
                 className={cn(
                   'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left transition',
                   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500',
-                  active ? 'bg-blue-50/80 border border-blue-200/80 shadow-xs' : 'hover:bg-slate-50',
+                  active ? 'shadow-xs border border-blue-200/80 bg-blue-50/80' : 'hover:bg-slate-50',
                   state.locked && 'cursor-not-allowed opacity-50 hover:bg-transparent',
                 )}
               >
@@ -59,7 +59,7 @@ export function Stepper({
                     state.hasErrors
                       ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
                       : active
-                        ? 'bg-blue-600 text-white shadow-xs'
+                        ? 'shadow-xs bg-blue-600 text-white'
                         : 'bg-slate-100 text-slate-600',
                   )}
                 >

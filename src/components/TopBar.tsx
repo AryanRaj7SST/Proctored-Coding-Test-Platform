@@ -5,10 +5,10 @@ import type { SessionUser } from '@/lib/authz';
 /** Shared application header for the non-exam surfaces. */
 export function TopBar({ user, title }: { user: SessionUser; title: string }) {
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur shadow-xs">
+    <header className="shadow-xs sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center gap-4 px-4 py-3">
         <Link href={user.role === 'ADMIN' ? '/admin' : '/dashboard'} className="flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-xs font-bold text-white shadow-xs">
+          <span className="shadow-xs flex h-7 w-7 items-center justify-center rounded bg-blue-600 text-xs font-bold text-white">
             &lt;/&gt;
           </span>
           <span className="text-sm font-semibold text-slate-900">{title}</span>
@@ -28,7 +28,7 @@ export function TopBar({ user, title }: { user: SessionUser; title: string }) {
             <Link
               key={l.href}
               href={l.href}
-              className="rounded-md px-2.5 py-1.5 text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium"
+              className="rounded-md px-2.5 py-1.5 font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-900"
             >
               {l.label}
             </Link>
@@ -46,7 +46,7 @@ export function TopBar({ user, title }: { user: SessionUser; title: string }) {
           <form action={signOutAction}>
             <button
               type="submit"
-              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition"
+              className="shadow-xs rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
             >
               Sign out
             </button>

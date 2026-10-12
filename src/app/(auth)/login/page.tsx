@@ -43,7 +43,7 @@ export default async function LoginPage({
     <main id="main" className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-lg font-bold text-white shadow-xs">
+          <div className="shadow-xs mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-lg font-bold text-white">
             &lt;/&gt;
           </div>
           <h1 className="text-lg font-semibold text-slate-900">Coding Assessment Platform</h1>

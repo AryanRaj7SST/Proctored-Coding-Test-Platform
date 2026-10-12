@@ -38,9 +38,7 @@ describe('JsonTestImporter & buildLlmPrompt', () => {
 
   it('rejects an invalid assertion type', () => {
     const testBody = {
-      assertions: [
-        { type: 'invalidType', selector: '#count' },
-      ],
+      assertions: [{ type: 'invalidType', selector: '#count' }],
     };
 
     const res = validateTestCaseBody(testBody);

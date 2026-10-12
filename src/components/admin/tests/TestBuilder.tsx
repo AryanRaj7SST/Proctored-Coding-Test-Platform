@@ -284,7 +284,9 @@ export function TestBuilder({
               {isNew ? 'Create a test' : form.title.trim() || detail.title}
             </h1>
             {detail ? <PhaseBadge phase={detail.phase} /> : null}
-            {isDirty && !isNew ? <span className="text-xs font-medium text-amber-700">Unsaved changes</span> : null}
+            {isDirty && !isNew ? (
+              <span className="text-xs font-medium text-amber-700">Unsaved changes</span>
+            ) : null}
           </div>
           <p className="mt-1 text-sm text-slate-500">
             {isNew
@@ -301,7 +303,7 @@ export function TestBuilder({
                   e.preventDefault();
                 }
               }}
-              className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+              className="shadow-xs rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
             >
               Assignments ({assignedCount})
             </Link>
@@ -325,7 +327,11 @@ export function TestBuilder({
         <Notice tone="bad" title="Not saved">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <span role="alert">{saveError}</span>
-            <button type="button" className="text-rose-700 font-medium underline" onClick={() => setSaveError(null)}>
+            <button
+              type="button"
+              className="font-medium text-rose-700 underline"
+              onClick={() => setSaveError(null)}
+            >
               Dismiss
             </button>
           </div>

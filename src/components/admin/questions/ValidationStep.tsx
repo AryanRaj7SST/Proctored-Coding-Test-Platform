@@ -26,7 +26,7 @@ function ChecklistItem({ ok, children }: { ok: boolean; children: React.ReactNod
         {ok ? <Check className="h-3 w-3" aria-hidden="true" /> : <X className="h-3 w-3" aria-hidden="true" />}
         <span className="sr-only">{ok ? 'Done:' : 'Missing:'}</span>
       </span>
-      <span className={ok ? 'text-slate-700 font-medium' : 'text-slate-600'}>{children}</span>
+      <span className={ok ? 'font-medium text-slate-700' : 'text-slate-600'}>{children}</span>
     </li>
   );
 }
@@ -65,14 +65,14 @@ export function ValidationStep({
   return (
     <div className="space-y-5">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="space-y-3 rounded-lg bg-white p-4 border border-slate-200 shadow-xs">
+        <div className="shadow-xs space-y-3 rounded-lg border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current state</p>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={state.tone}>Validation: {state.label}</Badge>
             <StatusBadge status={question.status} />
             <span className="text-xs text-slate-500">version {question.version}</span>
           </div>
-          <p className="text-xs text-slate-600 leading-relaxed">
+          <p className="text-xs leading-relaxed text-slate-600">
             {question.validatedAt
               ? `Last validated ${formatDateTime(question.validatedAt)}.`
               : 'This version has not been validated yet.'}{' '}
@@ -80,13 +80,13 @@ export function ValidationStep({
             solution or test cases clears the result.
           </p>
           {question.validation === 'FAILED' && question.validationMessage && !run ? (
-            <p className="rounded-md bg-rose-50 p-2.5 text-xs text-rose-800 border border-rose-200">
+            <p className="rounded-md border border-rose-200 bg-rose-50 p-2.5 text-xs text-rose-800">
               Last failure: {question.validationMessage}
             </p>
           ) : null}
         </div>
 
-        <div className="space-y-3 rounded-lg bg-white p-4 border border-slate-200 shadow-xs">
+        <div className="shadow-xs space-y-3 rounded-lg border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Before validating</p>
           <ul className="space-y-1.5">
             <ChecklistItem ok={hasReference}>
@@ -118,7 +118,9 @@ export function ValidationStep({
             </ChecklistItem>
           </ul>
           {dirty ? (
-            <p className="text-xs font-medium text-amber-700">Unsaved changes will be saved before validating.</p>
+            <p className="text-xs font-medium text-amber-700">
+              Unsaved changes will be saved before validating.
+            </p>
           ) : null}
           <Button onClick={onValidate} loading={validating} disabled={!ready || readOnly}>
             {!validating ? <Play className="h-3.5 w-3.5" aria-hidden="true" /> : null}

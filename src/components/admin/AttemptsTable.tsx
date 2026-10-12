@@ -131,7 +131,7 @@ export function AttemptsTable({
             initialUserId || initialExamId ? (
               <Link
                 href="/admin/attempts"
-                className="text-xs text-blue-600 hover:text-blue-700 hover:underline font-medium"
+                className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
               >
                 Clear URL filters
               </Link>
@@ -194,7 +194,7 @@ export function AttemptsTable({
                 onClick={() => setBatch('')}
                 className={`rounded px-2.5 py-1 text-xs transition ${
                   batch === ''
-                    ? 'bg-blue-600 font-semibold text-white shadow-xs'
+                    ? 'shadow-xs bg-blue-600 font-semibold text-white'
                     : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
@@ -207,7 +207,7 @@ export function AttemptsTable({
                   onClick={() => setBatch(b)}
                   className={`rounded px-2.5 py-1 text-xs transition ${
                     batch === b
-                      ? 'bg-blue-600 font-semibold text-white shadow-xs'
+                      ? 'shadow-xs bg-blue-600 font-semibold text-white'
                       : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
@@ -281,7 +281,7 @@ export function AttemptsTable({
                       <Td className="text-right">
                         <Link
                           href={`/admin/attempts/${a.id}`}
-                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-600 shadow-xs transition hover:bg-blue-50 hover:border-blue-300"
+                          className="shadow-xs inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-600 transition hover:border-blue-300 hover:bg-blue-50"
                         >
                           Review Code &rarr;
                         </Link>

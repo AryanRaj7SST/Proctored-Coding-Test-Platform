@@ -120,8 +120,10 @@ export function BulkRegradeDialog({ examId, examTitle }: { examId: string; examT
               <label
                 key={m.value}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition shadow-xs',
-                  mode === m.value ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:bg-slate-50',
+                  'shadow-xs flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition',
+                  mode === m.value
+                    ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+                    : 'border-slate-200 bg-white hover:bg-slate-50',
                 )}
               >
                 <input
@@ -160,7 +162,7 @@ export function BulkRegradeDialog({ examId, examTitle }: { examId: string; examT
             />
           </Field>
 
-          <label className="flex items-start gap-2 text-sm text-slate-800 font-medium">
+          <label className="flex items-start gap-2 text-sm font-medium text-slate-800">
             <input
               type="checkbox"
               checked={force}
@@ -246,7 +248,10 @@ function RegradeSummary({ summary }: { summary: ExamRegradeResponse }) {
       </p>
       <dl className="grid grid-cols-2 gap-2">
         {items.map((i) => (
-          <div key={i.label} className="rounded-lg bg-slate-50 px-3.5 py-2.5 border border-slate-200 shadow-xs">
+          <div
+            key={i.label}
+            className="shadow-xs rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5"
+          >
             <dt className="text-xs text-slate-500">{i.label}</dt>
             <dd className={cn('mt-0.5 text-lg font-bold', i.tone)}>{i.value}</dd>
           </div>

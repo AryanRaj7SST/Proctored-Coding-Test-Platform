@@ -45,7 +45,7 @@ export default async function AssignmentsOverviewPage() {
         {items.map((r) => {
           const phase = testPhase(r);
           return (
-            <tr key={r.id} className="hover:bg-slate-50 transition">
+            <tr key={r.id} className="transition hover:bg-slate-50">
               <Td className="font-semibold text-slate-900">{r.title}</Td>
               <Td>
                 <Badge tone={PHASE_TONE[phase]}>{phase.toLowerCase()}</Badge>

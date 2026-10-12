@@ -13,7 +13,8 @@ const VARIANTS: Record<ButtonVariant, string> = {
   primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-xs focus-visible:outline-blue-500',
   secondary:
     'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 shadow-xs focus-visible:outline-blue-500',
-  ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-blue-500',
+  ghost:
+    'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-blue-500',
   danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs focus-visible:outline-rose-500',
   success: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs focus-visible:outline-emerald-500',
 };
@@ -157,7 +158,10 @@ export function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
+      <label
+        htmlFor={htmlFor}
+        className="block text-xs font-semibold uppercase tracking-wider text-slate-600"
+      >
         {label}
         {required ? <span className="ml-1 text-bad">*</span> : null}
       </label>
@@ -176,7 +180,9 @@ export function Field({
 /* -------------------------------------------------------------------- Card */
 
 export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn('rounded-lg border border-slate-200 bg-white shadow-xs', className)}>{children}</div>;
+  return (
+    <div className={cn('shadow-xs rounded-lg border border-slate-200 bg-white', className)}>{children}</div>
+  );
 }
 
 export function CardHeader({
@@ -261,7 +267,7 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-xs">
+    <div className="shadow-xs flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
       <p className="text-sm font-semibold text-slate-900">{title}</p>
       {description ? <p className="mt-1 max-w-md text-xs text-slate-500">{description}</p> : null}
       {action ? <div className="mt-4">{action}</div> : null}
@@ -393,9 +399,7 @@ export function Modal({
         aria-label={title}
         className={cn(
           'relative z-10 w-full max-w-lg animate-fade-in rounded-xl shadow-2xl transition-all',
-          isLight
-            ? 'border border-slate-200 bg-white shadow-xl ring-0'
-            : 'bg-ink-850 ring-1 ring-ink-600',
+          isLight ? 'border border-slate-200 bg-white shadow-xl ring-0' : 'bg-ink-850 ring-1 ring-ink-600',
           className,
         )}
       >
@@ -487,7 +491,7 @@ export function ConfirmDialog({
             className={cn(
               'rounded-md px-3.5 py-2 text-xs font-semibold transition',
               isLight
-                ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 shadow-xs'
+                ? 'shadow-xs border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50'
                 : 'border border-ink-600 bg-ink-800 text-slate-200 hover:bg-ink-700 disabled:opacity-50',
             )}
           >
@@ -526,7 +530,10 @@ export function Tabs({
   className?: string;
 }) {
   return (
-    <div role="tablist" className={cn('flex items-center gap-1 border-b border-slate-200 bg-white px-1', className)}>
+    <div
+      role="tablist"
+      className={cn('flex items-center gap-1 border-b border-slate-200 bg-white px-1', className)}
+    >
       {tabs.map((t) => (
         <button
           key={t.id}
@@ -538,8 +545,8 @@ export function Tabs({
             'inline-flex items-center gap-2 px-3 py-2 text-xs font-medium transition',
             'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500',
             active === t.id
-              ? 'border-b-2 border-blue-600 font-semibold text-blue-600 bg-white'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
+              ? 'border-b-2 border-blue-600 bg-white font-semibold text-blue-600'
+              : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900',
           )}
         >
           {t.label}

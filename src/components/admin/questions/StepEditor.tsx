@@ -45,7 +45,7 @@ export function StepEditor({
   const viewport = (value.viewport ?? {}) as Record<string, unknown>;
 
   return (
-    <div className="rounded-md bg-slate-50 p-3 border border-slate-200 shadow-xs">
+    <div className="shadow-xs rounded-md border border-slate-200 bg-slate-50 p-3">
       <div className="flex flex-wrap items-end gap-2">
         <span className="mb-1.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-slate-200 text-[11px] font-semibold text-slate-700">
           {index + 1}
@@ -133,7 +133,7 @@ export function StepEditor({
                 </Select>
               )}
             </MiniField>
-            <label className="mb-2 inline-flex items-center gap-1.5 text-xs text-slate-700 font-medium">
+            <label className="mb-2 inline-flex items-center gap-1.5 text-xs font-medium text-slate-700">
               <input
                 type="checkbox"
                 checked={value.exact === true}

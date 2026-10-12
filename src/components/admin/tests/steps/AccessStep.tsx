@@ -87,7 +87,7 @@ export function AccessStep({
                     e.preventDefault();
                   }
                 }}
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+                className="shadow-xs rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 Manage assignments
               </Link>

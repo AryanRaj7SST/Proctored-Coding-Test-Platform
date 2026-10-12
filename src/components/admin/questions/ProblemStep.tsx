@@ -105,7 +105,7 @@ export function ProblemStep({
         className="min-w-0 space-y-2 lg:sticky lg:top-4 lg:self-start"
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Student view (live)</p>
-        <div className="h-[560px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
+        <div className="shadow-xs h-[560px] overflow-hidden rounded-lg border border-slate-200 bg-white">
           <QuestionPanel question={studentQuestion} />
         </div>
         <p className="text-[11px] leading-relaxed text-slate-500">

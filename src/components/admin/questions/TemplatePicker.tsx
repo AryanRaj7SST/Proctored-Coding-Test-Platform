@@ -22,10 +22,12 @@ export function TemplatePicker({
         Pick a template below, start blank, or import via JSON and AI prompts.
       </p>
       {onOpenJsonModal ? (
-        <div className="mb-3 p-3 rounded-lg border border-blue-200 bg-blue-50/70 shadow-2xs flex items-center justify-between gap-3">
+        <div className="shadow-2xs mb-3 flex items-center justify-between gap-3 rounded-lg border border-blue-200 bg-blue-50/70 p-3">
           <div>
             <p className="text-xs font-semibold text-blue-950">Have test cases from AI or JSON?</p>
-            <p className="text-[11px] text-blue-800">Import structured JSON or copy a pre-made prompt for ChatGPT/Claude.</p>
+            <p className="text-[11px] text-blue-800">
+              Import structured JSON or copy a pre-made prompt for ChatGPT/Claude.
+            </p>
           </div>
           <button
             type="button"
@@ -33,7 +35,7 @@ export function TemplatePicker({
               onClose();
               onOpenJsonModal();
             }}
-            className="shrink-0 text-xs px-3 py-1.5 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-xs transition"
+            className="shadow-xs shrink-0 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-blue-700"
           >
             Import JSON / AI
           </button>
@@ -44,7 +46,7 @@ export function TemplatePicker({
           <button
             type="button"
             onClick={() => onPick(null)}
-            className="w-full rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-xs transition hover:border-blue-300 hover:bg-blue-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+            className="shadow-xs w-full rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-left transition hover:border-blue-300 hover:bg-blue-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
           >
             <span className="block text-sm font-semibold text-slate-900">Blank test case</span>
             <span className="block text-xs text-slate-500">One empty check to fill in yourself.</span>
@@ -55,7 +57,7 @@ export function TemplatePicker({
             <button
               type="button"
               onClick={() => onPick(t)}
-              className="w-full rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-xs transition hover:border-blue-300 hover:bg-blue-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
+              className="shadow-xs w-full rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-left transition hover:border-blue-300 hover:bg-blue-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
             >
               <span className="block text-sm font-semibold text-slate-900">{t.label}</span>
               <span className="block text-xs text-slate-500">{t.summary}</span>

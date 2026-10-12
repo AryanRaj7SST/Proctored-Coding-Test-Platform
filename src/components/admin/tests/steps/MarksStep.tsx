@@ -88,7 +88,7 @@ export function MarksStep({
                         </Td>
                         <Td className="text-slate-700">
                           {q.enabledTests === 0 ? (
-                            <span className="text-amber-700 font-medium">0 — cannot award marks</span>
+                            <span className="font-medium text-amber-700">0 — cannot award marks</span>
                           ) : (
                             q.enabledTests
                           )}
@@ -153,7 +153,7 @@ export function MarksStep({
                 onChange={(e) => update('passingPercentage', e.target.value)}
               />
             </Field>
-            <div className="rounded-md bg-slate-50 px-3 py-2.5 border border-slate-200 shadow-xs sm:mt-6">
+            <div className="shadow-xs rounded-md border border-slate-200 bg-slate-50 px-3 py-2.5 sm:mt-6">
               <p className="text-sm font-semibold text-slate-900" aria-live="polite">
                 {passMarkText(total, form.passingPercentage)}
               </p>

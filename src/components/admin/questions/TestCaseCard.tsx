@@ -53,7 +53,7 @@ export function TestCaseCard({
   return (
     <li
       className={cn(
-        'rounded-lg bg-white border shadow-xs transition',
+        'shadow-xs rounded-lg border bg-white transition',
         valid ? 'border-slate-200' : 'border-rose-300 ring-1 ring-rose-200',
         !test.enabled && 'opacity-80',
       )}
@@ -71,8 +71,10 @@ export function TestCaseCard({
           ) : (
             <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
           )}
-          <span className="text-xs text-slate-500 font-mono">#{index + 1}</span>
-          <span className={cn('truncate text-sm', test.enabled ? 'text-slate-900 font-medium' : 'text-slate-400')}>
+          <span className="font-mono text-xs text-slate-500">#{index + 1}</span>
+          <span
+            className={cn('truncate text-sm', test.enabled ? 'font-medium text-slate-900' : 'text-slate-400')}
+          >
             {test.name.trim() || 'Untitled test case'}
           </span>
           {!valid ? (
@@ -83,7 +85,7 @@ export function TestCaseCard({
           {!test.enabled ? <Badge tone="neutral">disabled · not counted</Badge> : null}
         </button>
 
-        {shareText ? <span className="font-mono text-xs text-slate-500 font-medium">{shareText}</span> : null}
+        {shareText ? <span className="font-mono text-xs font-medium text-slate-500">{shareText}</span> : null}
 
         <div className="flex items-center gap-1">
           <Switch
@@ -189,7 +191,10 @@ export function TestCaseCard({
               </p>
             ) : null}
             {allProblems.length > 0 ? (
-              <div className="rounded-md bg-rose-50 p-3 text-xs text-rose-800 border border-rose-200 shadow-xs" role="alert">
+              <div
+                className="shadow-xs rounded-md border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"
+                role="alert"
+              >
                 <p className="font-semibold text-rose-900">Fix before saving:</p>
                 <ul className="mt-1 list-disc space-y-0.5 pl-4 text-rose-700">
                   {allProblems.map((p, i) => (

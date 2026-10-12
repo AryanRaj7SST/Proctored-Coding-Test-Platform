@@ -60,7 +60,10 @@ export function ResultsTable({
           return (
             <ClickableRow key={r.sessionId} href={href}>
               <Td>
-                <Link href={href} className="font-semibold text-slate-900 hover:text-blue-600 hover:underline">
+                <Link
+                  href={href}
+                  className="font-semibold text-slate-900 hover:text-blue-600 hover:underline"
+                >
                   {r.studentName}
                 </Link>
                 <p className="text-xs text-slate-500">
@@ -68,20 +71,20 @@ export function ResultsTable({
                   {r.batch ? ` · ${r.batch}` : ''}
                 </p>
               </Td>
-              <Td className="text-slate-700 font-medium">{r.examTitle}</Td>
+              <Td className="font-medium text-slate-700">{r.examTitle}</Td>
               <Td className="whitespace-nowrap">
-                <span className="text-slate-800 font-medium">#{r.attemptNumber}</span>
+                <span className="font-medium text-slate-800">#{r.attemptNumber}</span>
                 {sittings > 1 ? <p className="text-xs text-slate-500">best of {sittings}</p> : null}
               </Td>
               <Td>
                 <Badge tone={state.tone}>{state.label}</Badge>
               </Td>
-              <Td className="whitespace-nowrap text-right font-mono text-xs text-slate-900 font-semibold">
+              <Td className="whitespace-nowrap text-right font-mono text-xs font-semibold text-slate-900">
                 <span title={r.score !== null ? `${r.score} / ${r.maxScore}` : 'No score yet'}>
                   {formatScore(r.score, r.maxScore)}
                 </span>
               </Td>
-              <Td className="whitespace-nowrap text-right font-mono text-xs text-slate-800 font-medium">
+              <Td className="whitespace-nowrap text-right font-mono text-xs font-medium text-slate-800">
                 {formatPercent(r.percentage)}
               </Td>
               <Td className="whitespace-nowrap text-xs text-slate-500">

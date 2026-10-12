@@ -88,7 +88,7 @@ export function TestBodyBuilder({
       </div>
 
       {mode === 'json' ? (
-        <div className="overflow-hidden rounded-md border border-slate-200 shadow-xs">
+        <div className="shadow-xs overflow-hidden rounded-md border border-slate-200">
           <CodeEditor
             value={testCode}
             language="javascript"

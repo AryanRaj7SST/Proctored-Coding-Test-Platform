@@ -33,7 +33,7 @@ export function RenderedOutput({ starter, reference }: { starter: Source; refere
           Reload
         </Button>
       </div>
-      <div className="h-72 overflow-hidden rounded-md bg-white border border-slate-200 shadow-xs">
+      <div className="shadow-xs h-72 overflow-hidden rounded-md border border-slate-200 bg-white">
         {which === 'reference' && !hasReference ? (
           <div className="flex h-full items-center justify-center bg-slate-50 px-6 text-center text-xs text-slate-500">
             No reference solution yet. Add one in the Starter code step.
