@@ -60,7 +60,10 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ s
             {result.student.email}
             {result.student.batch ? ` · batch ${result.student.batch}` : ''}
             {' · '}
-            <Link href={`/admin/exams/${result.examId}`} className="font-medium text-blue-600 hover:underline">
+            <Link
+              href={`/admin/exams/${result.examId}`}
+              className="font-medium text-blue-600 hover:underline"
+            >
               {result.examTitle}
             </Link>
             {' · '}
@@ -104,11 +107,14 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ s
           ) : (
             <ol className="divide-y divide-slate-100">
               {events.map((e) => (
-                <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-slate-50 transition">
+                <li
+                  key={e.id}
+                  className="flex items-center gap-3 px-4 py-2 text-xs transition hover:bg-slate-50"
+                >
                   <time className="w-16 shrink-0 font-mono tabular-nums text-slate-500">
                     {clock.format(e.occurredAt)}
                   </time>
-                  <span className={e.violation ? 'text-rose-600 font-medium' : 'text-slate-800'}>
+                  <span className={e.violation ? 'font-medium text-rose-600' : 'text-slate-800'}>
                     {eventLabel(e.type)}
                   </span>
                   {e.violation ? <Badge tone="bad">violation</Badge> : null}

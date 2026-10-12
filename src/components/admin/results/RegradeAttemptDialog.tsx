@@ -166,24 +166,30 @@ function RegradeOutcome({ outcome, maxScore }: { outcome: AttemptRegradeResponse
     : outcome.skipped
       ? { text: 'Skipped: this answer already has full marks.', tone: 'text-slate-700' }
       : outcome.busy
-        ? { text: 'This answer is already being graded. Try again in a moment.', tone: 'text-amber-600 font-semibold' }
-        : { text: 'Grading could not finish. The previous grade was kept.', tone: 'text-rose-600 font-semibold' };
+        ? {
+            text: 'This answer is already being graded. Try again in a moment.',
+            tone: 'text-amber-600 font-semibold',
+          }
+        : {
+            text: 'Grading could not finish. The previous grade was kept.',
+            tone: 'text-rose-600 font-semibold',
+          };
 
   return (
     <div className="space-y-3" role="status">
       <p className={cn('text-sm', headline.tone)}>{headline.text}</p>
       <dl className="grid gap-2 sm:grid-cols-2">
-        <div className="rounded-lg bg-slate-50 px-3.5 py-2.5 border border-slate-200 shadow-xs">
+        <div className="shadow-xs rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5">
           <dt className="text-xs text-slate-500">Before</dt>
           <dd className="mt-0.5 font-mono text-sm text-slate-700">{describe(outcome.before)}</dd>
         </div>
-        <div className="rounded-lg bg-slate-50 px-3.5 py-2.5 border border-slate-200 shadow-xs">
+        <div className="shadow-xs rounded-lg border border-slate-200 bg-slate-50 px-3.5 py-2.5">
           <dt className="text-xs text-slate-500">After</dt>
           <dd className="mt-0.5 font-mono text-sm font-semibold text-slate-900">{describe(outcome.after)}</dd>
         </div>
       </dl>
       {outcome.error ? (
-        <p className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 font-mono text-xs text-rose-800">
+        <p className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 font-mono text-xs text-rose-800">
           {outcome.error}
         </p>
       ) : null}

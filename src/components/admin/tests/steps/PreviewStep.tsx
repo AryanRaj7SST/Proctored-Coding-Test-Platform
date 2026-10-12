@@ -73,28 +73,28 @@ export function PreviewStep({
             <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
               <div>
                 <dt className="inline">Duration: </dt>
-                <dd className="inline text-slate-700 font-medium">
+                <dd className="inline font-medium text-slate-700">
                   {Number.isFinite(duration) ? `${duration} min` : '--'}
                 </dd>
               </div>
               <div>
                 <dt className="inline">Questions: </dt>
-                <dd className="inline text-slate-700 font-medium">{form.questions.length}</dd>
+                <dd className="inline font-medium text-slate-700">{form.questions.length}</dd>
               </div>
               <div>
                 <dt className="inline">Total marks: </dt>
-                <dd className="inline text-slate-700 font-medium">{formatMarks(total)}</dd>
+                <dd className="inline font-medium text-slate-700">{formatMarks(total)}</dd>
               </div>
               {start ? (
                 <div>
                   <dt className="inline">Opens: </dt>
-                  <dd className="inline text-slate-700 font-medium">{formatInZone(start, tz)}</dd>
+                  <dd className="inline font-medium text-slate-700">{formatInZone(start, tz)}</dd>
                 </div>
               ) : null}
               {end ? (
                 <div>
                   <dt className="inline">Closes: </dt>
-                  <dd className="inline text-slate-700 font-medium">{formatInZone(end, tz)}</dd>
+                  <dd className="inline font-medium text-slate-700">{formatInZone(end, tz)}</dd>
                 </div>
               ) : null}
               {start || end ? (
@@ -109,7 +109,7 @@ export function PreviewStep({
           </div>
           <span
             aria-hidden="true"
-            className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white shadow-xs"
+            className="shadow-xs shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white"
           >
             Start test
           </span>
@@ -169,11 +169,16 @@ export function PreviewStep({
           ) : (
             <ol className="divide-y divide-slate-100">
               {form.questions.map((q, i) => (
-                <li key={q.questionId} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition">
+                <li
+                  key={q.questionId}
+                  className="flex items-center gap-3 px-4 py-2.5 transition hover:bg-slate-50"
+                >
                   <span className="w-5 text-right text-xs tabular-nums text-slate-400">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">{q.title}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">
+                    {q.title}
+                  </span>
                   <Badge tone={DIFFICULTY_TONE[q.difficulty]}>{q.difficulty.toLowerCase()}</Badge>
-                  <span className="w-20 text-right text-xs tabular-nums font-medium text-slate-600">
+                  <span className="w-20 text-right text-xs font-medium tabular-nums text-slate-600">
                     {formatMarks(Number(q.marks) || 0)} marks
                   </span>
                 </li>

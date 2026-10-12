@@ -26,7 +26,7 @@ export default function GlobalError({
         not the browser.
       </p>
       {error?.digest ? (
-        <p className="rounded bg-slate-100 px-3 py-1 font-mono text-xs text-slate-600 border border-slate-200">
+        <p className="rounded border border-slate-200 bg-slate-100 px-3 py-1 font-mono text-xs text-slate-600">
           Error digest: {error.digest}
         </p>
       ) : null}

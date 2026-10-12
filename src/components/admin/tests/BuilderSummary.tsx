@@ -23,7 +23,9 @@ export function BuilderSummary({ form, assignedCount }: { form: BuilderForm; ass
             <span className="font-semibold tabular-nums text-slate-900">{formatMarks(total)}</span>
           </SummaryRow>
           <SummaryRow label="Pass mark">
-            <span className="font-medium text-slate-700">{passMarkShort(total, form.passingPercentage) || '--'}</span>
+            <span className="font-medium text-slate-700">
+              {passMarkShort(total, form.passingPercentage) || '--'}
+            </span>
           </SummaryRow>
           <SummaryRow label="Duration">
             {Number(form.durationMinutes) > 0 ? `${form.durationMinutes} min` : '--'}

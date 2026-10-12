@@ -21,15 +21,16 @@ const SAMPLE_TEST_CASES_JSON = JSON.stringify(
     {
       name: 'Initial button and counter exist',
       description: 'Checks that key DOM elements are present upon load',
-      expectedBehavior: 'The page should display a counter element with id "count" and an increment button with id "btn-inc"',
+      expectedBehavior:
+        'The page should display a counter element with id "count" and an increment button with id "btn-inc"',
       enabled: true,
       testCode: {
         assertions: [
           { type: 'exists', selector: '#count', message: 'Element #count is missing' },
           { type: 'exists', selector: '#btn-inc', message: 'Element #btn-inc is missing' },
-          { type: 'text', selector: '#count', equals: '0' }
-        ]
-      }
+          { type: 'text', selector: '#count', equals: '0' },
+        ],
+      },
     },
     {
       name: 'Clicking button increments counter',
@@ -37,22 +38,26 @@ const SAMPLE_TEST_CASES_JSON = JSON.stringify(
       expectedBehavior: 'When the user clicks #btn-inc, the text of #count should become "1"',
       enabled: true,
       testCode: {
-        steps: [
-          { action: 'click', selector: '#btn-inc' }
-        ],
+        steps: [{ action: 'click', selector: '#btn-inc' }],
         assertions: [
-          { type: 'text', selector: '#count', equals: '1', message: 'Counter did not update to 1 after click' }
-        ]
-      }
-    }
+          {
+            type: 'text',
+            selector: '#count',
+            equals: '1',
+            message: 'Counter did not update to 1 after click',
+          },
+        ],
+      },
+    },
   ],
   null,
-  2
+  2,
 );
 
 export function buildLlmPrompt(draft?: Partial<QuestionDraft>): string {
   const title = draft?.title?.trim() || 'Interactive Web Component';
-  const description = draft?.description?.trim() || 'Build an interactive web component matching the requirements.';
+  const description =
+    draft?.description?.trim() || 'Build an interactive web component matching the requirements.';
   const instructions = draft?.instructions?.trim() || '';
   const starterHtml = draft?.starterHtml?.trim() || '';
   const starterCss = draft?.starterCss?.trim() || '';
@@ -251,7 +256,11 @@ export function JsonTestImporterModal({
         items = [obj];
       }
     } else {
-      return { valid: false, error: 'Expected a JSON array of test cases or a single test case object.', tests: [] };
+      return {
+        valid: false,
+        error: 'Expected a JSON array of test cases or a single test case object.',
+        tests: [],
+      };
     }
 
     if (items.length === 0) {
@@ -268,7 +277,10 @@ export function JsonTestImporterModal({
       }
 
       const rec = item as Record<string, unknown>;
-      const name = typeof rec.name === 'string' && rec.name.trim() ? rec.name.trim() : `Test case ${existingNames.length + candidates.length + 1}`;
+      const name =
+        typeof rec.name === 'string' && rec.name.trim()
+          ? rec.name.trim()
+          : `Test case ${existingNames.length + candidates.length + 1}`;
       const description = typeof rec.description === 'string' ? rec.description : '';
       const expectedBehavior = typeof rec.expectedBehavior === 'string' ? rec.expectedBehavior : '';
       const enabled = rec.enabled !== false;
@@ -371,28 +383,26 @@ export function JsonTestImporterModal({
     >
       <div className="space-y-4">
         {/* Navigation Tabs */}
-        <div className="flex border-b border-slate-200 gap-4 text-sm font-medium">
+        <div className="flex gap-4 border-b border-slate-200 text-sm font-medium">
           <button
             type="button"
             onClick={() => setTab('import')}
-            className={`flex items-center gap-2 pb-2.5 border-b-2 transition ${
+            className={`flex items-center gap-2 border-b-2 pb-2.5 transition ${
               tab === 'import'
-                ? 'border-blue-600 text-blue-600 font-semibold'
+                ? 'border-blue-600 font-semibold text-blue-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
             <Code2 className="h-4 w-4" />
             Paste & Import JSON
-            {parseResult.valid ? (
-              <Badge tone="ok">{parseResult.tests.length} valid</Badge>
-            ) : null}
+            {parseResult.valid ? <Badge tone="ok">{parseResult.tests.length} valid</Badge> : null}
           </button>
           <button
             type="button"
             onClick={() => setTab('prompt')}
-            className={`flex items-center gap-2 pb-2.5 border-b-2 transition ${
+            className={`flex items-center gap-2 border-b-2 pb-2.5 transition ${
               tab === 'prompt'
-                ? 'border-blue-600 text-blue-600 font-semibold'
+                ? 'border-blue-600 font-semibold text-blue-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
             }`}
           >
@@ -406,14 +416,15 @@ export function JsonTestImporterModal({
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs text-slate-500">
-                Paste a single test case object or an array of test cases generated by an LLM or copied from another question.
+                Paste a single test case object or an array of test cases generated by an LLM or copied from
+                another question.
               </p>
               <div className="flex items-center gap-2">
                 <Button variant="secondary" size="sm" onClick={handleFormat} disabled={!jsonText.trim()}>
                   Format JSON
                 </Button>
                 <Button variant="secondary" size="sm" onClick={handleLoadSample}>
-                  <RotateCcw className="h-3.5 w-3.5 mr-1" />
+                  <RotateCcw className="mr-1 h-3.5 w-3.5" />
                   Load Sample
                 </Button>
               </div>
@@ -424,13 +435,13 @@ export function JsonTestImporterModal({
               onChange={(e) => setJsonText(e.target.value)}
               placeholder={`Paste test cases JSON here (e.g. from ChatGPT/Claude)...\n[\n  {\n    "name": "Check heading",\n    "testCode": {\n      "assertions": [\n        { "type": "exists", "selector": "h1" }\n      ]\n    }\n  }\n]`}
               rows={12}
-              className="w-full font-mono text-xs p-3 rounded-lg border border-slate-300 bg-slate-50/50 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-2xs transition leading-relaxed"
+              className="shadow-2xs w-full rounded-lg border border-slate-300 bg-slate-50/50 p-3 font-mono text-xs leading-relaxed text-slate-900 transition focus:border-blue-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
 
             {/* Validation Feedback */}
             {jsonText.trim() && parseResult.error ? (
-              <div className="rounded-lg bg-rose-50 border border-rose-200 p-3 text-xs text-rose-800 flex items-start gap-2 shadow-2xs">
-                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600 mt-0.5" />
+              <div className="shadow-2xs flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">
+                <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-rose-600" />
                 <div className="space-y-1">
                   <p className="font-semibold text-rose-900">Validation Error:</p>
                   <pre className="whitespace-pre-wrap font-sans text-rose-700">{parseResult.error}</pre>
@@ -439,13 +450,14 @@ export function JsonTestImporterModal({
             ) : null}
 
             {parseResult.valid ? (
-              <div className="rounded-lg bg-emerald-50 border border-emerald-200 p-3 text-xs text-emerald-800 flex items-start gap-2 shadow-2xs">
-                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 mt-0.5" />
+              <div className="shadow-2xs flex items-start gap-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" />
                 <div className="space-y-1">
                   <p className="font-semibold text-emerald-900">
-                    Ready to add {parseResult.tests.length} test case{parseResult.tests.length === 1 ? '' : 's'}:
+                    Ready to add {parseResult.tests.length} test case
+                    {parseResult.tests.length === 1 ? '' : 's'}:
                   </p>
-                  <ul className="list-disc list-inside space-y-0.5 text-emerald-700 font-medium">
+                  <ul className="list-inside list-disc space-y-0.5 font-medium text-emerald-700">
                     {parseResult.tests.map((t, idx) => (
                       <li key={idx} className="truncate">
                         {t.name}
@@ -456,14 +468,11 @@ export function JsonTestImporterModal({
               </div>
             ) : null}
 
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-2">
               <Button variant="secondary" onClick={onClose}>
                 Cancel
               </Button>
-              <Button
-                onClick={handleImport}
-                disabled={!parseResult.valid || parseResult.tests.length === 0}
-              >
+              <Button onClick={handleImport} disabled={!parseResult.valid || parseResult.tests.length === 0}>
                 Import {parseResult.tests.length > 0 ? `${parseResult.tests.length} Test Case(s)` : ''}
               </Button>
             </div>
@@ -475,46 +484,47 @@ export function JsonTestImporterModal({
           <div className="space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-xs text-slate-600">
-                Copy this pre-formatted prompt and send it to any AI model (ChatGPT, Claude, Gemini, DeepSeek). It includes all DSL rules and the current question&apos;s details so the AI produces exact, valid test cases.
+                Copy this pre-formatted prompt and send it to any AI model (ChatGPT, Claude, Gemini,
+                DeepSeek). It includes all DSL rules and the current question&apos;s details so the AI
+                produces exact, valid test cases.
               </p>
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => void copyPrompt()}
-                className="shrink-0"
-              >
+              <Button variant="primary" size="sm" onClick={() => void copyPrompt()} className="shrink-0">
                 {copied ? (
                   <>
-                    <Check className="h-3.5 w-3.5 mr-1" />
+                    <Check className="mr-1 h-3.5 w-3.5" />
                     Copied!
                   </>
                 ) : (
                   <>
-                    <Copy className="h-3.5 w-3.5 mr-1" />
+                    <Copy className="mr-1 h-3.5 w-3.5" />
                     Copy LLM Prompt
                   </>
                 )}
               </Button>
             </div>
 
-            <div className="relative rounded-lg border border-slate-300 bg-slate-900 p-4 text-slate-100 font-mono text-xs max-h-[50vh] overflow-y-auto leading-relaxed select-all">
+            <div className="relative max-h-[50vh] select-all overflow-y-auto rounded-lg border border-slate-300 bg-slate-900 p-4 font-mono text-xs leading-relaxed text-slate-100">
               <pre className="whitespace-pre-wrap font-mono">{promptText}</pre>
             </div>
 
-            <div className="rounded-lg bg-blue-50 border border-blue-200 p-3 text-xs text-blue-900 space-y-1">
-              <p className="font-semibold text-blue-950 flex items-center gap-1.5">
+            <div className="space-y-1 rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs text-blue-900">
+              <p className="flex items-center gap-1.5 font-semibold text-blue-950">
                 <Sparkles className="h-3.5 w-3.5 text-blue-600" />
                 How to use:
               </p>
-              <ol className="list-decimal list-inside space-y-1 text-blue-800">
-                <li>Click <strong>Copy LLM Prompt</strong> above.</li>
+              <ol className="list-inside list-decimal space-y-1 text-blue-800">
+                <li>
+                  Click <strong>Copy LLM Prompt</strong> above.
+                </li>
                 <li>Paste it into your favorite LLM (e.g. Claude 3.5 Sonnet, GPT-4o, or Gemini).</li>
                 <li>Copy the JSON output returned by the LLM.</li>
-                <li>Switch to the <strong>Paste & Import JSON</strong> tab and paste it in to import instantly.</li>
+                <li>
+                  Switch to the <strong>Paste & Import JSON</strong> tab and paste it in to import instantly.
+                </li>
               </ol>
             </div>
 
-            <div className="flex justify-end pt-2 border-t border-slate-100">
+            <div className="flex justify-end border-t border-slate-100 pt-2">
               <Button variant="secondary" onClick={() => setTab('import')}>
                 Back to Import
               </Button>

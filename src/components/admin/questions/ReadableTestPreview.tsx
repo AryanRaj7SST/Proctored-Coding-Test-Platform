@@ -25,7 +25,7 @@ export function ReadableTestPreview({
   const summary = expectedBehavior.trim() || description.trim();
 
   return (
-    <div className="space-y-2 rounded-md bg-slate-50 p-3 text-xs border border-slate-200 shadow-xs">
+    <div className="shadow-xs space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
       <div className="flex items-start justify-between gap-2">
         <p className="font-semibold text-slate-900">{name.trim() || 'Untitled test case'}</p>
         {shareText ? (

@@ -90,8 +90,8 @@ function Consequences({ action, detail }: { action: PendingAction; detail: TestD
     case 'delete':
       return (
         <p>
-          <strong className="text-slate-900 font-semibold">{detail.title}</strong> will be permanently deleted with its
-          question list and assignments. This cannot be undone.
+          <strong className="font-semibold text-slate-900">{detail.title}</strong> will be permanently deleted
+          with its question list and assignments. This cannot be undone.
         </p>
       );
   }
@@ -203,7 +203,7 @@ export function PublishStep({
                   className={cn(
                     'rounded-full px-3 py-1 ring-1 ring-inset',
                     s.status === status
-                      ? 'bg-blue-600 font-semibold text-white ring-blue-600 shadow-xs'
+                      ? 'shadow-xs bg-blue-600 font-semibold text-white ring-blue-600'
                       : 'bg-slate-100 text-slate-600 ring-slate-200',
                   )}
                 >

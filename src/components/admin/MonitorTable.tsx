@@ -135,7 +135,10 @@ export function MonitorTable({
       </CardBody>
       <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
         Snapshot at {formatDateTime(snapshot.at)} ·{' '}
-        <Link href="/admin/attempts" className="text-blue-600 hover:text-blue-700 hover:underline font-medium">
+        <Link
+          href="/admin/attempts"
+          className="font-medium text-blue-600 hover:text-blue-700 hover:underline"
+        >
           review individual attempts
         </Link>
       </div>

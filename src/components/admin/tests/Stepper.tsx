@@ -22,7 +22,7 @@ export function Stepper({
 }) {
   return (
     <nav aria-label="Test builder steps" className="overflow-x-auto">
-      <ol className="flex min-w-max items-center gap-1 rounded-lg bg-white p-1.5 border border-slate-200 shadow-xs">
+      <ol className="shadow-xs flex min-w-max items-center gap-1 rounded-lg border border-slate-200 bg-white p-1.5">
         {STEPS.map((step, i) => {
           const active = step.id === current;
           const reachable = enabled || i === 0;
@@ -38,7 +38,9 @@ export function Stepper({
                 className={cn(
                   'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition',
                   'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600',
-                  active ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
+                  active
+                    ? 'shadow-xs bg-blue-50 font-semibold text-blue-700'
+                    : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
                   !reachable && 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-slate-400',
                 )}
               >

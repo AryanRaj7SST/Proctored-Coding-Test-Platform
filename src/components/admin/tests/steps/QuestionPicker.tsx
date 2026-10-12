@@ -177,13 +177,16 @@ export function QuestionPicker({
         />
       ) : (
         <ul
-          className={`divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white shadow-xs ${loading ? 'opacity-60' : ''}`}
+          className={`shadow-xs divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white ${loading ? 'opacity-60' : ''}`}
           aria-busy={loading || undefined}
         >
           {data?.items.map((item) => {
             const added = selectedIds.has(item.id);
             return (
-              <li key={item.id} className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 transition">
+              <li
+                key={item.id}
+                className="flex items-center gap-3 px-3.5 py-2.5 transition hover:bg-slate-50"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">

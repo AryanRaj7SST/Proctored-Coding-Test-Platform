@@ -123,8 +123,8 @@ export async function validateQuestion(questionId: string): Promise<QuestionVali
   const status: QuestionStatus = ok ? (question.status === 'DRAFT' ? 'VALIDATED' : question.status) : 'DRAFT';
 
   await prisma.$transaction(
-    [
-      prisma.testRun.update({
+    async (tx) => {
+      await tx.testRun.update({
         where: { id: testRun.id },
         data: {
           status: 'COMPLETED',
@@ -134,8 +134,8 @@ export async function validateQuestion(questionId: string): Promise<QuestionVali
           completedAt: new Date(),
           logs: logs.join('\n').slice(0, 8000) || null,
         },
-      }),
-      prisma.question.update({
+      });
+      await tx.question.update({
         where: { id: questionId },
         data: {
           validation: ok ? 'PASSED' : 'FAILED',
@@ -149,8 +149,8 @@ export async function validateQuestion(questionId: string): Promise<QuestionVali
                 .join(' | ')
                 .slice(0, 2000),
         },
-      }),
-    ],
+      });
+    },
     {
       maxWait: 15000,
       timeout: 30000,

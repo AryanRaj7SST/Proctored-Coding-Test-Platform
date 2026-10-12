@@ -87,7 +87,7 @@ function TestCard({ test, practice }: { test: StudentTest; practice: PracticeLin
           { label: 'Marks', value: test.totalMarks },
           { label: 'Minutes', value: test.durationMinutes },
         ].map((item) => (
-          <div key={item.label} className="rounded-md bg-slate-50 px-2 py-2 border border-slate-200">
+          <div key={item.label} className="rounded-md border border-slate-200 bg-slate-50 px-2 py-2">
             <dd className="text-lg font-semibold text-slate-900">{item.value}</dd>
             <dt className="text-[11px] uppercase tracking-wide text-slate-500">{item.label}</dt>
           </div>
@@ -120,13 +120,13 @@ function TestCard({ test, practice }: { test: StudentTest; practice: PracticeLin
         {test.msRemaining !== null ? (
           <div className="flex justify-between gap-2">
             <dt>Time left</dt>
-            <dd className="text-amber-600 font-medium">{formatDuration(test.msRemaining)}</dd>
+            <dd className="font-medium text-amber-600">{formatDuration(test.msRemaining)}</dd>
           </div>
         ) : null}
         {test.score !== null ? (
           <div className="flex justify-between gap-2">
             <dt>Best result</dt>
-            <dd className="text-slate-800 font-medium">
+            <dd className="font-medium text-slate-800">
               {displayMarks(test.score)}/{displayMarks(test.maxScore)} ({displayMarks(test.percentage)}%){' '}
               <span className={test.result === 'PASSED' ? 'text-ok' : 'text-bad'}>
                 {test.result?.toLowerCase()}
@@ -136,7 +136,7 @@ function TestCard({ test, practice }: { test: StudentTest; practice: PracticeLin
         ) : test.gradingPending > 0 ? (
           <div className="flex justify-between gap-2">
             <dt>Result</dt>
-            <dd className="text-amber-600 font-medium">Grading pending</dd>
+            <dd className="font-medium text-amber-600">Grading pending</dd>
           </div>
         ) : null}
       </dl>
@@ -155,7 +155,7 @@ function TestCard({ test, practice }: { test: StudentTest; practice: PracticeLin
         {resultHref ? (
           <Link
             href={resultHref}
-            className="rounded-md px-3 py-1.5 text-xs font-medium text-slate-700 border border-slate-300 hover:bg-slate-50"
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50"
           >
             View result
           </Link>
@@ -194,7 +194,9 @@ function TestSection({
         {title} <span className="text-slate-400">({tests.length})</span>
       </h2>
       {tests.length === 0 ? (
-        <p className="rounded-md border border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">{empty}</p>
+        <p className="rounded-md border border-dashed border-slate-200 bg-white px-4 py-3 text-sm text-slate-500">
+          {empty}
+        </p>
       ) : (
         <ul className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
           {tests.map((t) => (

@@ -141,8 +141,10 @@ export function ChoiceCard({
     <label
       htmlFor={id}
       className={cn(
-        'flex cursor-pointer gap-3 rounded-lg p-3 border transition shadow-xs',
-        checked ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:bg-slate-50',
+        'shadow-xs flex cursor-pointer gap-3 rounded-lg border p-3 transition',
+        checked
+          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-500'
+          : 'border-slate-200 bg-white hover:bg-slate-50',
         disabled && 'cursor-not-allowed opacity-60',
       )}
     >

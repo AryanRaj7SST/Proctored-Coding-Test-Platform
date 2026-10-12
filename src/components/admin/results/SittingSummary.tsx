@@ -137,10 +137,10 @@ export function SittingSwitcher({ result }: { result: SittingResult }) {
             href={`/admin/results/${s.sessionId}`}
             aria-current={isCurrent ? 'page' : undefined}
             className={cn(
-              'inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs border transition shadow-xs',
+              'shadow-xs inline-flex items-center gap-2 rounded-md border px-2.5 py-1 text-xs transition',
               isCurrent
-                ? 'bg-blue-50 text-blue-700 font-semibold border-blue-500'
-                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50 hover:text-slate-900',
+                ? 'border-blue-500 bg-blue-50 font-semibold text-blue-700'
+                : 'border-slate-300 bg-white text-slate-700 hover:bg-slate-50 hover:text-slate-900',
             )}
           >
             <span className="font-medium">#{s.attemptNumber}</span>

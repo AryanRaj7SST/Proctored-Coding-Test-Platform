@@ -86,7 +86,7 @@ export function PublishStep({
 
   return (
     <div className="space-y-5">
-      <div className="space-y-3 rounded-lg bg-white p-4 border border-slate-200 shadow-xs">
+      <div className="shadow-xs space-y-3 rounded-lg border border-slate-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={status} />
           <Badge
@@ -107,7 +107,9 @@ export function PublishStep({
                 aria-current={s === status ? 'step' : undefined}
                 className={cn(
                   'rounded-md px-2.5 py-0.5 text-xs transition',
-                  s === status ? 'bg-blue-600 font-semibold text-white shadow-xs' : 'bg-slate-100 font-medium text-slate-600',
+                  s === status
+                    ? 'shadow-xs bg-blue-600 font-semibold text-white'
+                    : 'bg-slate-100 font-medium text-slate-600',
                 )}
               >
                 {s.toLowerCase()}
@@ -121,7 +123,9 @@ export function PublishStep({
               aria-current={status === 'ARCHIVED' ? 'step' : undefined}
               className={cn(
                 'rounded-md px-2.5 py-0.5 text-xs transition',
-                status === 'ARCHIVED' ? 'bg-blue-600 font-semibold text-white shadow-xs' : 'bg-slate-100 font-medium text-slate-600',
+                status === 'ARCHIVED'
+                  ? 'shadow-xs bg-blue-600 font-semibold text-white'
+                  : 'bg-slate-100 font-medium text-slate-600',
               )}
             >
               archived
@@ -173,7 +177,7 @@ export function PublishStep({
         {onRepublishAndRegrade && status !== 'ARCHIVED' ? (
           <Button
             variant="secondary"
-            className="hover:bg-blue-50 hover:text-blue-700 border-blue-300 text-blue-600 bg-white shadow-xs font-medium"
+            className="shadow-xs border-blue-300 bg-white font-medium text-blue-600 hover:bg-blue-50 hover:text-blue-700"
             onClick={onRepublishAndRegrade}
             loading={regrading}
             disabled={busy !== null || regrading}

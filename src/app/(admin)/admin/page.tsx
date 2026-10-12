@@ -42,7 +42,10 @@ async function RunnerAlert() {
   const runner = await getRunnerHealth();
   if (runner.ok) return null;
   return (
-    <div className="rounded-md bg-rose-50 p-3 text-xs text-rose-800 border border-rose-200 shadow-xs" role="alert">
+    <div
+      className="shadow-xs rounded-md border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"
+      role="alert"
+    >
       The test runner is not usable
       {runner.detail ? <>: {runner.detail}</> : '.'} Students can still write and save code, but running
       tests, grading and question validation will wait until it is fixed (submissions show &ldquo;grading
@@ -133,7 +136,10 @@ export default async function AdminDashboardPage() {
             ) : (
               <ul className="divide-y divide-slate-100">
                 {submissions.map((s) => (
-                  <li key={s.sessionId} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/80 transition-colors">
+                  <li
+                    key={s.sessionId}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-slate-50/80"
+                  >
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/admin/results/${s.sessionId}`}
@@ -149,7 +155,7 @@ export default async function AdminDashboardPage() {
                     </div>
                     {s.result ? (
                       <>
-                        <span className="font-mono text-xs text-slate-700 font-medium">
+                        <span className="font-mono text-xs font-medium text-slate-700">
                           {displayMarks(s.score)}/{displayMarks(s.maxScore)} ({displayMarks(s.percentage)}%)
                         </span>
                         <Badge tone={s.result === 'PASSED' ? 'ok' : 'bad'}>{s.result.toLowerCase()}</Badge>
@@ -169,7 +175,10 @@ export default async function AdminDashboardPage() {
             title="Recent activity"
             subtitle="From the audit log"
             action={
-              <Link href="/admin/audit-logs" className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
+              <Link
+                href="/admin/audit-logs"
+                className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+              >
                 Full audit log
               </Link>
             }
@@ -185,7 +194,10 @@ export default async function AdminDashboardPage() {
             ) : (
               <ul className="divide-y divide-slate-100">
                 {activity.map((item) => (
-                  <li key={item.id} className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50/80 transition-colors">
+                  <li
+                    key={item.id}
+                    className="flex items-start gap-3 px-4 py-3 transition-colors hover:bg-slate-50/80"
+                  >
                     <p className="min-w-0 flex-1 text-sm text-slate-600">
                       <span className="font-semibold text-slate-900">{item.actor}</span> {item.text}
                     </p>
@@ -213,7 +225,7 @@ export default async function AdminDashboardPage() {
             <Link
               key={a.href}
               href={a.href}
-              className="rounded-md border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition"
+              className="shadow-xs rounded-md border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
             >
               {a.label}
             </Link>

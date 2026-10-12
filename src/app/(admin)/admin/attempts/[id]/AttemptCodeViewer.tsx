@@ -97,12 +97,14 @@ export function AttemptCodeViewer({
         action={
           <div className="flex items-center gap-2">
             {tab === 'preview' ? (
-              <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 text-xs text-slate-600 border border-slate-200">
+              <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs text-slate-600">
                 <button
                   type="button"
                   onClick={() => setViewport('desktop')}
                   className={`rounded-md px-2 py-0.5 transition ${
-                    viewport === 'desktop' ? 'bg-white font-semibold text-slate-900 shadow-xs' : 'hover:text-slate-900'
+                    viewport === 'desktop'
+                      ? 'shadow-xs bg-white font-semibold text-slate-900'
+                      : 'hover:text-slate-900'
                   }`}
                   title="Desktop (100%)"
                 >
@@ -112,7 +114,9 @@ export function AttemptCodeViewer({
                   type="button"
                   onClick={() => setViewport('tablet')}
                   className={`rounded-md px-2 py-0.5 transition ${
-                    viewport === 'tablet' ? 'bg-white font-semibold text-slate-900 shadow-xs' : 'hover:text-slate-900'
+                    viewport === 'tablet'
+                      ? 'shadow-xs bg-white font-semibold text-slate-900'
+                      : 'hover:text-slate-900'
                   }`}
                   title="Tablet (768px)"
                 >
@@ -122,7 +126,9 @@ export function AttemptCodeViewer({
                   type="button"
                   onClick={() => setViewport('mobile')}
                   className={`rounded-md px-2 py-0.5 transition ${
-                    viewport === 'mobile' ? 'bg-white font-semibold text-slate-900 shadow-xs' : 'hover:text-slate-900'
+                    viewport === 'mobile'
+                      ? 'shadow-xs bg-white font-semibold text-slate-900'
+                      : 'hover:text-slate-900'
                   }`}
                   title="Mobile (375px)"
                 >
@@ -131,7 +137,7 @@ export function AttemptCodeViewer({
                 <button
                   type="button"
                   onClick={() => setKey((k) => k + 1)}
-                  className="ml-1 rounded-md px-2 py-0.5 text-xs font-medium text-blue-600 hover:bg-white hover:text-blue-700 transition"
+                  className="ml-1 rounded-md px-2 py-0.5 text-xs font-medium text-blue-600 transition hover:bg-white hover:text-blue-700"
                   title="Reload sandbox preview"
                 >
                   ↻ Reload
@@ -140,12 +146,14 @@ export function AttemptCodeViewer({
             ) : (
               <div className="flex items-center gap-2">
                 {starterCode ? (
-                  <div className="flex items-center gap-1 rounded-lg bg-slate-100 p-0.5 text-xs text-slate-600 border border-slate-200">
+                  <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-100 p-0.5 text-xs text-slate-600">
                     <button
                       type="button"
                       onClick={() => setCodeMode('submitted')}
                       className={`rounded-md px-2 py-0.5 transition ${
-                        codeMode === 'submitted' ? 'bg-white font-semibold text-slate-900 shadow-xs' : 'hover:text-slate-900'
+                        codeMode === 'submitted'
+                          ? 'shadow-xs bg-white font-semibold text-slate-900'
+                          : 'hover:text-slate-900'
                       }`}
                     >
                       Submitted
@@ -154,7 +162,9 @@ export function AttemptCodeViewer({
                       type="button"
                       onClick={() => setCodeMode('starter')}
                       className={`rounded-md px-2 py-0.5 transition ${
-                        codeMode === 'starter' ? 'bg-white font-semibold text-slate-900 shadow-xs' : 'hover:text-slate-900'
+                        codeMode === 'starter'
+                          ? 'shadow-xs bg-white font-semibold text-slate-900'
+                          : 'hover:text-slate-900'
                       }`}
                     >
                       Starter
@@ -163,7 +173,9 @@ export function AttemptCodeViewer({
                       type="button"
                       onClick={() => setCodeMode('side-by-side')}
                       className={`rounded-md px-2 py-0.5 transition ${
-                        codeMode === 'side-by-side' ? 'bg-white font-semibold text-slate-900 shadow-xs' : 'hover:text-slate-900'
+                        codeMode === 'side-by-side'
+                          ? 'shadow-xs bg-white font-semibold text-slate-900'
+                          : 'hover:text-slate-900'
                       }`}
                     >
                       Compare
@@ -174,7 +186,7 @@ export function AttemptCodeViewer({
                 <button
                   type="button"
                   onClick={handleCopy}
-                  className="rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 hover:text-slate-900"
+                  className="shadow-xs rounded-lg border border-slate-300 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 transition hover:bg-slate-50 hover:text-slate-900"
                 >
                   {copied ? '✓ Copied' : 'Copy Code'}
                 </button>
@@ -202,7 +214,7 @@ export function AttemptCodeViewer({
               <select
                 value={selectedRunId}
                 onChange={(e) => setSelectedRunId(e.target.value)}
-                className="rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900 shadow-xs focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
+                className="shadow-xs rounded-md border border-slate-300 bg-white px-2.5 py-1 text-xs text-slate-900 focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
               >
                 <option value="latest">Final Submitted Code</option>
                 {runsWithCode.map((r, idx) => (
@@ -217,14 +229,14 @@ export function AttemptCodeViewer({
         </div>
 
         {tab === 'preview' ? (
-          <div className="flex justify-center overflow-auto rounded-lg bg-slate-100 p-3 border border-slate-200">
+          <div className="flex justify-center overflow-auto rounded-lg border border-slate-200 bg-slate-100 p-3">
             <div
               style={{
                 width: viewport === 'mobile' ? '375px' : viewport === 'tablet' ? '768px' : '100%',
                 height: '420px',
                 transition: 'width 0.2s ease',
               }}
-              className="overflow-hidden rounded-md bg-white shadow-md border border-slate-200"
+              className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-md"
             >
               <PreviewFrame html={html} css={css} js={js} refreshKey={key} />
             </div>
@@ -236,7 +248,7 @@ export function AttemptCodeViewer({
                 <span className="text-xs font-semibold text-slate-700">Original Starter Code</span>
                 <Badge tone="neutral">starter</Badge>
               </div>
-              <div className="h-96 overflow-hidden rounded-lg border border-slate-200 shadow-xs">
+              <div className="shadow-xs h-96 overflow-hidden rounded-lg border border-slate-200">
                 <CodeEditor
                   value={starterCode}
                   language={language}
@@ -252,7 +264,7 @@ export function AttemptCodeViewer({
                 <span className="text-xs font-semibold text-blue-700">Student Submitted Code</span>
                 <Badge tone="ok">student submission</Badge>
               </div>
-              <div className="h-96 overflow-hidden rounded-lg border border-slate-200 shadow-xs">
+              <div className="shadow-xs h-96 overflow-hidden rounded-lg border border-slate-200">
                 <CodeEditor
                   value={submittedCode}
                   language={language}
@@ -264,7 +276,7 @@ export function AttemptCodeViewer({
             </div>
           </div>
         ) : (
-          <div className="h-96 overflow-hidden rounded-lg border border-slate-200 shadow-xs">
+          <div className="shadow-xs h-96 overflow-hidden rounded-lg border border-slate-200">
             <CodeEditor
               value={codeMode === 'starter' ? starterCode : submittedCode}
               language={language}

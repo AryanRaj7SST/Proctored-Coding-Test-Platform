@@ -109,7 +109,7 @@ export function QuestionFilters({
               setQ('');
               startTransition(() => router.push(questionListHref({ status: filters.status })));
             }}
-            className="whitespace-nowrap rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition"
+            className="shadow-xs whitespace-nowrap rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
           >
             Clear filters
           </button>

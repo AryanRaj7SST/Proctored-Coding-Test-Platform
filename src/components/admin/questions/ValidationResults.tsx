@@ -12,8 +12,10 @@ export function ValidationResults({ run, stale }: { run: ValidationRun; stale?: 
     <div className="space-y-3">
       <div
         className={cn(
-          'flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md px-3.5 py-2.5 text-sm border shadow-xs',
-          run.ok ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200',
+          'shadow-xs flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border px-3.5 py-2.5 text-sm',
+          run.ok
+            ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+            : 'border-rose-200 bg-rose-50 text-rose-800',
         )}
         role="status"
       >
@@ -29,12 +31,12 @@ export function ValidationResults({ run, stale }: { run: ValidationRun; stale?: 
         <span className="ml-auto font-mono text-xs opacity-80">{formatDuration(run.durationMs)}</span>
       </div>
       {stale ? (
-        <p className="text-xs text-amber-700 font-medium">
+        <p className="text-xs font-medium text-amber-700">
           You have changed the question since this run. Validate again to check the current version.
         </p>
       ) : null}
 
-      <ul className="divide-y divide-slate-100 rounded-md bg-white border border-slate-200 shadow-xs">
+      <ul className="shadow-xs divide-y divide-slate-100 rounded-md border border-slate-200 bg-white">
         {run.results.map((r, i) => (
           <li key={`${r.testName}-${i}`} className="px-3.5 py-3">
             <div className="flex items-start gap-2.5">
@@ -53,7 +55,12 @@ export function ValidationResults({ run, stale }: { run: ValidationRun; stale?: 
               </span>
               <div className="min-w-0 flex-1 space-y-1.5">
                 <div className="flex items-start justify-between gap-3">
-                  <p className={cn('text-sm', r.passed ? 'text-slate-800 font-medium' : 'font-semibold text-rose-800')}>
+                  <p
+                    className={cn(
+                      'text-sm',
+                      r.passed ? 'font-medium text-slate-800' : 'font-semibold text-rose-800',
+                    )}
+                  >
                     {r.testName}
                   </p>
                   <span className="shrink-0 font-mono text-[11px] text-slate-500">
@@ -63,17 +70,19 @@ export function ValidationResults({ run, stale }: { run: ValidationRun; stale?: 
                 {r.message ? <p className="text-xs text-slate-600">{r.message}</p> : null}
                 {!r.passed && (r.expected !== undefined || r.actual !== undefined) ? (
                   <dl className="grid gap-2 text-xs sm:grid-cols-2">
-                    <div className="rounded bg-slate-50 p-2.5 border border-slate-200 shadow-xs">
+                    <div className="shadow-xs rounded border border-slate-200 bg-slate-50 p-2.5">
                       <dt className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                         Expected
                       </dt>
                       <dd className="mt-0.5 break-words font-mono text-slate-800">{r.expected ?? '—'}</dd>
                     </div>
-                    <div className="rounded bg-slate-50 p-2.5 border border-slate-200 shadow-xs">
+                    <div className="shadow-xs rounded border border-slate-200 bg-slate-50 p-2.5">
                       <dt className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                         Actual
                       </dt>
-                      <dd className="mt-0.5 break-words font-mono text-rose-700 font-semibold">{r.actual ?? '—'}</dd>
+                      <dd className="mt-0.5 break-words font-mono font-semibold text-rose-700">
+                        {r.actual ?? '—'}
+                      </dd>
                     </div>
                   </dl>
                 ) : null}
@@ -84,7 +93,7 @@ export function ValidationResults({ run, stale }: { run: ValidationRun; stale?: 
       </ul>
 
       {run.consoleLogs.length > 0 ? (
-        <details className="rounded-md bg-white border border-slate-200 shadow-xs">
+        <details className="shadow-xs rounded-md border border-slate-200 bg-white">
           <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-slate-700">
             Console output ({run.consoleLogs.length} line{run.consoleLogs.length === 1 ? '' : 's'})
           </summary>

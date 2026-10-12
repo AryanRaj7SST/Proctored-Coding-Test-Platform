@@ -88,7 +88,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
         </div>
         <Link
           href="/admin/questions/new"
-          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-blue-700 transition"
+          className="shadow-xs inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Create question
@@ -141,7 +141,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                   action={
                     <Link
                       href="/admin/questions/new"
-                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 shadow-xs transition"
+                      className="shadow-xs rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
                     >
                       Create question
                     </Link>
@@ -156,7 +156,10 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                       : 'There is nothing on this page.'
                   }
                   action={
-                    <Link href="/admin/questions" className="text-sm font-medium text-blue-600 hover:underline">
+                    <Link
+                      href="/admin/questions"
+                      className="text-sm font-medium text-blue-600 hover:underline"
+                    >
                       Show all questions
                     </Link>
                   }
@@ -182,7 +185,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
               </thead>
               <tbody>
                 {list.items.map((q) => (
-                  <tr key={q.id} className="hover:bg-slate-50 transition">
+                  <tr key={q.id} className="transition hover:bg-slate-50">
                     <Td className="max-w-[18rem]">
                       <Link
                         href={`/admin/questions/${q.id}/edit`}
@@ -205,14 +208,19 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                       </div>
                     </Td>
                     <Td className="text-right font-mono text-slate-700">{formatMarks(q.marks)}</Td>
-                    <Td className={cn('text-right', q.enabledTests === 0 ? 'text-amber-600 font-medium' : 'text-slate-700')}>
+                    <Td
+                      className={cn(
+                        'text-right',
+                        q.enabledTests === 0 ? 'font-medium text-amber-600' : 'text-slate-700',
+                      )}
+                    >
                       {q.enabledTests}
                     </Td>
                     <Td className="text-slate-600">{q.difficulty.toLowerCase()}</Td>
                     <Td>
                       <div className="flex max-w-[14rem] flex-wrap items-center gap-1">
                         {q.category ? (
-                          <span className="mr-1 text-xs text-slate-700 font-medium">{q.category}</span>
+                          <span className="mr-1 text-xs font-medium text-slate-700">{q.category}</span>
                         ) : null}
                         {q.tags.slice(0, 3).map((t) => (
                           <Badge key={t} className="px-1.5 text-[11px]">
@@ -296,13 +304,16 @@ function PageLink({
   const className = 'rounded-md px-3 py-1.5 border border-slate-300 text-xs font-medium transition';
   if (disabled) {
     return (
-      <span aria-disabled="true" className={cn(className, 'cursor-not-allowed opacity-40 bg-slate-50 text-slate-400')}>
+      <span
+        aria-disabled="true"
+        className={cn(className, 'cursor-not-allowed bg-slate-50 text-slate-400 opacity-40')}
+      >
         {children}
       </span>
     );
   }
   return (
-    <Link href={href} className={cn(className, 'bg-white text-slate-700 hover:bg-slate-50 shadow-xs')}>
+    <Link href={href} className={cn(className, 'shadow-xs bg-white text-slate-700 hover:bg-slate-50')}>
       {children}
     </Link>
   );

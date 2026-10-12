@@ -102,11 +102,11 @@ export function TestCaseEditor({
             onClick={() => setJsonModalOpen(true)}
             disabled={readOnly || atLimit}
           >
-            <Sparkles className="h-3.5 w-3.5 mr-1 text-blue-600" aria-hidden="true" />
+            <Sparkles className="mr-1 h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
             AI Prompt / JSON
           </Button>
           <Button size="sm" onClick={() => setPicking(true)} disabled={readOnly || atLimit}>
-            <Plus className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+            <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
             Add test case
           </Button>
         </div>
@@ -150,7 +150,7 @@ export function TestCaseEditor({
           action={
             <div className="flex flex-wrap items-center justify-center gap-2">
               <Button size="sm" onClick={() => setPicking(true)} disabled={readOnly}>
-                <Plus className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
                 Add the first test case
               </Button>
               <Button
@@ -159,7 +159,7 @@ export function TestCaseEditor({
                 onClick={() => setJsonModalOpen(true)}
                 disabled={readOnly}
               >
-                <Sparkles className="h-3.5 w-3.5 mr-1 text-blue-600" aria-hidden="true" />
+                <Sparkles className="mr-1 h-3.5 w-3.5 text-blue-600" aria-hidden="true" />
                 Import via JSON / AI Prompt
               </Button>
             </div>

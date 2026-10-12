@@ -48,7 +48,9 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Questions
           </Link>
-          <h1 className="truncate text-xl font-bold tracking-tight text-slate-900">Preview: {question.title}</h1>
+          <h1 className="truncate text-xl font-bold tracking-tight text-slate-900">
+            Preview: {question.title}
+          </h1>
           <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <StatusBadge status={question.status} />
             <Badge
@@ -64,7 +66,7 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
         </div>
         <Link
           href={`/admin/questions/${question.id}/edit`}
-          className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+          className="shadow-xs inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
         >
           Edit
         </Link>
@@ -115,7 +117,7 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
             {question.tests.map((t, i) => {
               const readable = readableTest(t.testCode);
               return (
-                <details key={t.id} className="rounded-md bg-white border border-slate-200 shadow-xs">
+                <details key={t.id} className="shadow-xs rounded-md border border-slate-200 bg-white">
                   <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-sm font-medium text-slate-800">
                     <span className="text-xs text-slate-500">#{i + 1}</span>
                     {t.name}
@@ -149,9 +151,11 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
                         </ul>
                       </>
                     ) : (
-                      <p className="text-rose-600 font-medium">This test body is not a valid specification.</p>
+                      <p className="font-medium text-rose-600">
+                        This test body is not a valid specification.
+                      </p>
                     )}
-                    <pre className="max-h-64 overflow-auto rounded bg-slate-50 border border-slate-200 p-2 font-mono text-[11px] text-slate-700">
+                    <pre className="max-h-64 overflow-auto rounded border border-slate-200 bg-slate-50 p-2 font-mono text-[11px] text-slate-700">
                       {t.testCode}
                     </pre>
                   </div>

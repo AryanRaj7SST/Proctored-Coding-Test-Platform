@@ -32,7 +32,7 @@ export function PreviewStep({
         {questionId ? (
           <Link
             href={`/admin/questions/${questionId}/preview`}
-            className="inline-flex items-center gap-1.5 text-xs text-blue-600 hover:underline font-medium"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:underline"
           >
             Open the saved version’s preview page
             <ExternalLink className="h-3 w-3" aria-hidden="true" />

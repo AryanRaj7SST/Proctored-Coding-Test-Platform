@@ -41,7 +41,7 @@ export function QuestionResultCard({
       : `${q.passedCount}/${q.enabledCount} test${q.enabledCount === 1 ? '' : 's'} passed`;
 
   return (
-    <li className="rounded-lg bg-white border border-slate-200 shadow-xs">
+    <li className="shadow-xs rounded-lg border border-slate-200 bg-white">
       <h3>
         <button
           type="button"
@@ -52,7 +52,7 @@ export function QuestionResultCard({
         >
           <span
             aria-hidden="true"
-            className={cn('text-slate-400 transition-transform font-bold', open ? 'rotate-90' : undefined)}
+            className={cn('font-bold text-slate-400 transition-transform', open ? 'rotate-90' : undefined)}
           >
             ›
           </span>
@@ -65,7 +65,10 @@ export function QuestionResultCard({
             </span>
           </span>
           <span
-            className={cn('shrink-0 font-mono text-sm font-semibold', scored ? 'text-slate-900' : 'text-slate-400')}
+            className={cn(
+              'shrink-0 font-mono text-sm font-semibold',
+              scored ? 'text-slate-900' : 'text-slate-400',
+            )}
             title={scored ? `${q.score} of ${q.maxScore} marks` : 'No score recorded'}
           >
             {formatScore(scored ? q.score : null, q.maxScore)}
@@ -111,7 +114,7 @@ export function QuestionResultCard({
             <div className="flex items-center gap-3 pb-1.5">
               <Link
                 href={`/admin/attempts/${q.attemptId}`}
-                className="text-xs text-blue-600 hover:underline font-medium"
+                className="text-xs font-medium text-blue-600 hover:underline"
               >
                 Run history &amp; proctoring &rarr;
               </Link>

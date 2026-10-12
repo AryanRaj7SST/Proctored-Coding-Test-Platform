@@ -131,7 +131,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
               <a
                 href="/api/allowed-emails?format=csv"
                 download
-                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
+                className="shadow-xs rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-50"
               >
                 Export CSV
               </a>
@@ -199,7 +199,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
                       <button
                         type="button"
                         onClick={() => setPendingDelete(row)}
-                        className="text-xs text-rose-600 hover:underline font-medium"
+                        className="text-xs font-medium text-rose-600 hover:underline"
                       >
                         Remove
                       </button>
@@ -274,16 +274,16 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
               const file = e.target.files?.[0];
               if (file) void importCsv(file);
             }}
-            className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white file:shadow-xs file:hover:bg-blue-700"
+            className="file:shadow-xs block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white file:hover:bg-blue-700"
           />
           {importSummary ? (
-            <div className="rounded-lg bg-slate-50 p-3 text-xs border border-slate-200 shadow-xs">
+            <div className="shadow-xs rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs">
               <p className="font-semibold text-slate-800">
                 {importSummary.created} added · {importSummary.updated} updated · {importSummary.skipped}{' '}
                 skipped
               </p>
               {importSummary.errors.length > 0 ? (
-                <ul className="mt-2 list-disc space-y-0.5 pl-5 text-rose-600 font-medium">
+                <ul className="mt-2 list-disc space-y-0.5 pl-5 font-medium text-rose-600">
                   {importSummary.errors.slice(0, 10).map((e, i) => (
                     <li key={i}>
                       line {e.line}: {e.message}
@@ -292,7 +292,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
                 </ul>
               ) : null}
               {importSummary.duplicatesInFile.length > 0 ? (
-                <p className="mt-2 text-amber-700 font-medium">
+                <p className="mt-2 font-medium text-amber-700">
                   Duplicated inside the file: {importSummary.duplicatesInFile.slice(0, 5).join(', ')}
                 </p>
               ) : null}

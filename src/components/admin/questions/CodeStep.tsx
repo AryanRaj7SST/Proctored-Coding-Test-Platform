@@ -57,8 +57,8 @@ function CodeSet({
     <section
       aria-labelledby={`${id}-title`}
       className={cn(
-        'space-y-3 rounded-lg p-4 border transition-all',
-        tone === 'secret' ? 'bg-amber-50/40 border-amber-200' : 'bg-white border-slate-200 shadow-xs',
+        'space-y-3 rounded-lg border p-4 transition-all',
+        tone === 'secret' ? 'border-amber-200 bg-amber-50/40' : 'shadow-xs border-slate-200 bg-white',
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -83,7 +83,7 @@ function CodeSet({
           if (next === 'rendered') setRefreshKey((k) => k + 1);
         }}
       />
-      <div className="h-[340px] overflow-hidden rounded-md border border-slate-200 shadow-xs">
+      <div className="shadow-xs h-[340px] overflow-hidden rounded-md border border-slate-200">
         {part === 'rendered' ? (
           <PreviewFrame html={values.html} css={values.css} js={values.js} refreshKey={refreshKey} />
         ) : (
