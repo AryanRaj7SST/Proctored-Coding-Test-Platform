@@ -464,31 +464,37 @@ export async function regradeAttemptsForQuestion(
 
       if (bestOutcome) {
         // Mark the highest-scoring run as final and update attempt
-        await prisma.$transaction(async (tx) => {
-          await tx.testResult.updateMany({
-            where: { attemptId: attempt.id, final: true },
-            data: { final: false },
-          });
-          await tx.testResult.updateMany({
-            where: { testRunId: bestOutcome!.runId },
-            data: { final: true },
-          });
-          await tx.attempt.update({
-            where: { id: attempt.id },
-            data: {
-              html: bestCode.html,
-              css: bestCode.css,
-              js: bestCode.js,
-              score: fromMicro(toMicro(bestOutcome!.score)),
-              maxScore: fromMicro(toMicro(bestOutcome!.maxScore)),
-              resultStatus: bestOutcome!.questionStatus as QuestionResultStatus,
-              passedCount: bestOutcome!.passedCount,
-              enabledCount: bestOutcome!.totalCount,
-              gradingError: null,
-              gradedAt: new Date(),
-            },
-          });
-        });
+        await prisma.$transaction(
+          async (tx) => {
+            await tx.testResult.updateMany({
+              where: { attemptId: attempt.id, final: true },
+              data: { final: false },
+            });
+            await tx.testResult.updateMany({
+              where: { testRunId: bestOutcome!.runId },
+              data: { final: true },
+            });
+            await tx.attempt.update({
+              where: { id: attempt.id },
+              data: {
+                html: bestCode.html,
+                css: bestCode.css,
+                js: bestCode.js,
+                score: fromMicro(toMicro(bestOutcome!.score)),
+                maxScore: fromMicro(toMicro(bestOutcome!.maxScore)),
+                resultStatus: bestOutcome!.questionStatus as QuestionResultStatus,
+                passedCount: bestOutcome!.passedCount,
+                enabledCount: bestOutcome!.totalCount,
+                gradingError: null,
+                gradedAt: new Date(),
+              },
+            });
+          },
+          {
+            maxWait: 15000,
+            timeout: 30000,
+          },
+        );
         await refreshSittingTotals(attempt.sessionId);
         gradeRes = { graded: true, counted: true, outcome: bestOutcome };
       } else {

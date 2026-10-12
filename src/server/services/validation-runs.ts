@@ -106,14 +106,14 @@ export async function validateQuestion(questionId: string): Promise<QuestionVali
 
   const verdicts = outcome.verdicts;
   const results: ValidationTestResult[] = spec.tests.map((t) => {
-    const v = verdicts.get(t.id)!;
+    const v = verdicts?.get(t.id);
     return {
       testName: t.name,
-      passed: v.passed,
-      message: v.message,
-      expected: v.expected,
-      actual: v.actual,
-      durationMs: v.durationMs,
+      passed: v ? v.passed : false,
+      message: v ? v.message : 'No verdict returned from runner',
+      expected: v?.expected,
+      actual: v?.actual,
+      durationMs: v?.durationMs ?? 0,
     };
   });
   const passedCount = results.filter((r) => r.passed).length;
@@ -122,34 +122,40 @@ export async function validateQuestion(questionId: string): Promise<QuestionVali
   // published question back to DRAFT (tests that pinned it are unaffected).
   const status: QuestionStatus = ok ? (question.status === 'DRAFT' ? 'VALIDATED' : question.status) : 'DRAFT';
 
-  await prisma.$transaction([
-    prisma.testRun.update({
-      where: { id: testRun.id },
-      data: {
-        status: 'COMPLETED',
-        passedCount,
-        failedCount: results.length - passedCount,
-        durationMs,
-        completedAt: new Date(),
-        logs: logs.join('\n').slice(0, 8000) || null,
-      },
-    }),
-    prisma.question.update({
-      where: { id: questionId },
-      data: {
-        validation: ok ? 'PASSED' : 'FAILED',
-        validatedAt: new Date(),
-        status,
-        validationMessage: ok
-          ? null
-          : results
-              .filter((r) => !r.passed)
-              .map((r) => `${r.testName}: ${r.message ?? 'failed'}`)
-              .join(' | ')
-              .slice(0, 2000),
-      },
-    }),
-  ]);
+  await prisma.$transaction(
+    [
+      prisma.testRun.update({
+        where: { id: testRun.id },
+        data: {
+          status: 'COMPLETED',
+          passedCount,
+          failedCount: results.length - passedCount,
+          durationMs,
+          completedAt: new Date(),
+          logs: logs.join('\n').slice(0, 8000) || null,
+        },
+      }),
+      prisma.question.update({
+        where: { id: questionId },
+        data: {
+          validation: ok ? 'PASSED' : 'FAILED',
+          validatedAt: new Date(),
+          status,
+          validationMessage: ok
+            ? null
+            : results
+                .filter((r) => !r.passed)
+                .map((r) => `${r.testName}: ${r.message ?? 'failed'}`)
+                .join(' | ')
+                .slice(0, 2000),
+        },
+      }),
+    ],
+    {
+      maxWait: 15000,
+      timeout: 30000,
+    },
+  );
 
   return {
     ok,

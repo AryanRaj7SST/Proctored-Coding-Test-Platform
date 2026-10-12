@@ -385,89 +385,105 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
   const impact = questionChangeImpact(existing, input);
   const marksChanged = input.marks !== undefined && toMicro(input.marks) !== toMicro(existing.marks);
 
-  const question = await prisma.$transaction(async (tx) => {
-    // Unchanged tests are left alone, so their ids (and anything referencing
-    // them) survive a metadata-only save.
-    if (input.tests && impact.testsChanged) {
-      const keepIds = new Set(input.tests.map((t) => t.id).filter((v): v is string => Boolean(v)));
-      const deletingTests = existing.tests.filter((e) => !keepIds.has(e.id));
+  const question = await prisma.$transaction(
+    async (tx) => {
+      // Unchanged tests are left alone, so their ids (and anything referencing
+      // them) survive a metadata-only save.
+      if (input.tests && impact.testsChanged) {
+        const keepIds = new Set(input.tests.map((t) => t.id).filter((v): v is string => Boolean(v)));
+        const deletingTests = existing.tests.filter((e) => !keepIds.has(e.id));
 
-      if (deletingTests.length > 0) {
-        await tx.questionTest.deleteMany({
-          where: { questionId: id, id: { in: deletingTests.map((t) => t.id) } },
+        if (deletingTests.length > 0) {
+          await tx.questionTest.deleteMany({
+            where: { questionId: id, id: { in: deletingTests.map((t) => t.id) } },
+          });
+        }
+
+        // Two-phase rename guard: (questionId, name) is unique in DB.
+        // We only park an existing test if its current name is needed by another test in input.
+        const inputNames = new Set(input.tests.map((t) => t.name.trim().toLowerCase()));
+        const testsToPark = existing.tests.filter((e) => {
+          const match = input.tests?.find((t) => t.id === e.id);
+          const nameChanged = !match || match.name.trim().toLowerCase() !== e.name.toLowerCase();
+          return nameChanged && inputNames.has(e.name.toLowerCase());
         });
-      }
-
-      // Two-phase rename guard: (questionId, name) is unique, so park renamed rows first.
-      for (const t of input.tests) {
-        if (t.id && existing.tests.some((e) => e.id === t.id)) {
+        for (const t of testsToPark) {
           await tx.questionTest.update({ where: { id: t.id }, data: { name: `__renaming_${t.id}` } });
         }
-      }
-      for (const [i, t] of input.tests.entries()) {
-        const data = testRow(t, i);
-        if (t.id && existing.tests.some((e) => e.id === t.id)) {
-          await tx.questionTest.update({ where: { id: t.id }, data });
-        } else {
-          await tx.questionTest.create({ data: { ...data, questionId: id } });
+
+        const toCreate: Prisma.QuestionTestCreateManyInput[] = [];
+        for (const [i, t] of input.tests.entries()) {
+          const data = testRow(t, i);
+          if (t.id && existing.tests.some((e) => e.id === t.id)) {
+            await tx.questionTest.update({ where: { id: t.id }, data });
+          } else {
+            toCreate.push({ ...data, questionId: id });
+          }
+        }
+        if (toCreate.length > 0) {
+          await tx.questionTest.createMany({ data: toCreate });
         }
       }
-    }
 
-    const data: Prisma.QuestionUpdateInput = {
-      ...(input.title !== undefined ? { title: input.title } : {}),
-      slug,
-      ...(input.description !== undefined ? { description: input.description } : {}),
-      ...(input.instructions !== undefined ? { instructions: input.instructions || null } : {}),
-      ...(input.constraints !== undefined ? { constraints: input.constraints || null } : {}),
-      ...(input.expectedBehavior !== undefined ? { expectedBehavior: input.expectedBehavior || null } : {}),
-      ...(input.category !== undefined ? { category: input.category || null } : {}),
-      ...(input.marks !== undefined ? { marks: input.marks } : {}),
-      ...(input.suggestedMinutes !== undefined ? { suggestedMinutes: input.suggestedMinutes } : {}),
-      ...(input.starterHtml !== undefined ? { starterHtml: input.starterHtml } : {}),
-      ...(input.starterCss !== undefined ? { starterCss: input.starterCss } : {}),
-      ...(input.starterJs !== undefined ? { starterJs: input.starterJs } : {}),
-      ...(input.referenceHtml !== undefined ? { referenceHtml: input.referenceHtml || null } : {}),
-      ...(input.referenceCss !== undefined ? { referenceCss: input.referenceCss || null } : {}),
-      ...(input.referenceJs !== undefined ? { referenceJs: input.referenceJs || null } : {}),
-      ...(input.mediaUrl !== undefined ? { mediaUrl: input.mediaUrl || null } : {}),
-      ...(input.difficulty !== undefined ? { difficulty: input.difficulty } : {}),
-      ...(input.tags !== undefined ? { tags: input.tags } : {}),
-      ...(impact.bumpVersion ? { version: { increment: 1 } } : {}),
-      ...(impact.resetValidation
-        ? {
-            validation: 'NOT_VALIDATED' as const,
-            validatedAt: null,
-            validationMessage: null,
-            // Whatever proved it correct no longer applies: validate again.
-            ...(existing.status === 'VALIDATED' || existing.status === 'PUBLISHED'
-              ? { status: 'DRAFT' as const }
-              : {}),
-          }
-        : {}),
-    };
-    const updated = await tx.question.update({ where: { id }, data, include: orderedTests });
+      const data: Prisma.QuestionUpdateInput = {
+        ...(input.title !== undefined ? { title: input.title } : {}),
+        slug,
+        ...(input.description !== undefined ? { description: input.description } : {}),
+        ...(input.instructions !== undefined ? { instructions: input.instructions || null } : {}),
+        ...(input.constraints !== undefined ? { constraints: input.constraints || null } : {}),
+        ...(input.expectedBehavior !== undefined ? { expectedBehavior: input.expectedBehavior || null } : {}),
+        ...(input.category !== undefined ? { category: input.category || null } : {}),
+        ...(input.marks !== undefined ? { marks: input.marks } : {}),
+        ...(input.suggestedMinutes !== undefined ? { suggestedMinutes: input.suggestedMinutes } : {}),
+        ...(input.starterHtml !== undefined ? { starterHtml: input.starterHtml } : {}),
+        ...(input.starterCss !== undefined ? { starterCss: input.starterCss } : {}),
+        ...(input.starterJs !== undefined ? { starterJs: input.starterJs } : {}),
+        ...(input.referenceHtml !== undefined ? { referenceHtml: input.referenceHtml || null } : {}),
+        ...(input.referenceCss !== undefined ? { referenceCss: input.referenceCss || null } : {}),
+        ...(input.referenceJs !== undefined ? { referenceJs: input.referenceJs || null } : {}),
+        ...(input.mediaUrl !== undefined ? { mediaUrl: input.mediaUrl || null } : {}),
+        ...(input.difficulty !== undefined ? { difficulty: input.difficulty } : {}),
+        ...(input.tags !== undefined ? { tags: input.tags } : {}),
+        ...(impact.bumpVersion ? { version: { increment: 1 } } : {}),
+        ...(impact.resetValidation
+          ? {
+              validation: 'NOT_VALIDATED' as const,
+              validatedAt: null,
+              validationMessage: null,
+              // Whatever proved it correct no longer applies: validate again.
+              ...(existing.status === 'VALIDATED' || existing.status === 'PUBLISHED'
+                ? { status: 'DRAFT' as const }
+                : {}),
+            }
+          : {}),
+      };
+      const updated = await tx.question.update({ where: { id }, data, include: orderedTests });
 
-    // Update snapshots for all ExamQuestion and Attempt rows referencing this question
-    // so students reloading mid-exam immediately receive the newest content and test cases.
-    const newSnapshot = buildSnapshot(updated);
-    await tx.examQuestion.updateMany({
-      where: { questionId: id },
-      data: {
-        snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
-        questionVersion: updated.version,
-      },
-    });
-    await tx.attempt.updateMany({
-      where: { questionId: id },
-      data: {
-        snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
-        questionVersion: updated.version,
-      },
-    });
+      // Update snapshots for all ExamQuestion and Attempt rows referencing this question
+      // so students reloading mid-exam immediately receive the newest content and test cases.
+      const newSnapshot = buildSnapshot(updated);
+      await tx.examQuestion.updateMany({
+        where: { questionId: id },
+        data: {
+          snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
+          questionVersion: updated.version,
+        },
+      });
+      await tx.attempt.updateMany({
+        where: { questionId: id },
+        data: {
+          snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
+          questionVersion: updated.version,
+        },
+      });
 
-    return updated;
-  });
+      return updated;
+    },
+    {
+      maxWait: 15000,
+      timeout: 60000,
+    },
+  );
 
   // If test cases changed, automatically re-evaluate student code for that question
   // and award each student their highest score across all historical submissions.
