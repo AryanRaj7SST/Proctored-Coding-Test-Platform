@@ -104,8 +104,8 @@ export function ProblemStep({
         aria-label="Student panel preview"
         className="min-w-0 space-y-2 lg:sticky lg:top-4 lg:self-start"
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Student view (live)</p>
-        <div className="h-[560px] overflow-hidden rounded-lg ring-1 ring-ink-700">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Student view (live)</p>
+        <div className="h-[560px] overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
           <QuestionPanel question={studentQuestion} />
         </div>
         <p className="text-[11px] leading-relaxed text-slate-500">

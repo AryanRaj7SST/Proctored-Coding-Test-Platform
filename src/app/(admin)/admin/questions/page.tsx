@@ -80,15 +80,15 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-50">Questions</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Questions</h1>
+          <p className="mt-1 text-sm text-slate-500">
             Draft → validate against a reference solution → publish. Only published questions can be added to
             tests.
           </p>
         </div>
         <Link
           href="/admin/questions/new"
-          className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-blue-700 transition"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Create question
@@ -96,7 +96,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
       </div>
 
       <nav aria-label="Question status" className="overflow-x-auto">
-        <ul className="flex min-w-max items-center gap-1 border-b border-ink-700">
+        <ul className="flex min-w-max items-center gap-1 border-b border-slate-200">
           {STATUS_TABS.map((tab) => {
             const active = (filters.status ?? '') === tab.value;
             return (
@@ -105,17 +105,17 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                   href={questionListHref({ ...linkFilters, status: tab.value })}
                   aria-current={active ? 'page' : undefined}
                   className={cn(
-                    '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm transition',
+                    '-mb-px inline-flex items-center gap-2 border-b-2 px-3 py-2 text-sm font-medium transition',
                     active
-                      ? 'border-brand-500 font-medium text-white'
-                      : 'border-transparent text-slate-400 hover:text-slate-200',
+                      ? 'border-blue-600 text-blue-600'
+                      : 'border-transparent text-slate-500 hover:text-slate-800',
                   )}
                 >
                   {tab.label}
                   <span
                     className={cn(
-                      'rounded px-1.5 text-[11px]',
-                      active ? 'bg-brand-500/20 text-brand-100' : 'bg-ink-800 text-slate-400',
+                      'rounded-full px-2 py-0.5 text-[11px] font-semibold',
+                      active ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600',
                     )}
                   >
                     {countOf(tab.value)}
@@ -131,7 +131,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
         <CardBody className="space-y-3">
           <QuestionFilters filters={linkFilters} categories={taxonomy.categories} tags={taxonomy.tags} />
         </CardBody>
-        <div className="border-t border-ink-700">
+        <div className="border-t border-slate-200">
           {list.items.length === 0 ? (
             <div className="p-4">
               {bankSize === 0 ? (
@@ -141,7 +141,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                   action={
                     <Link
                       href="/admin/questions/new"
-                      className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+                      className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 shadow-xs transition"
                     >
                       Create question
                     </Link>
@@ -156,7 +156,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                       : 'There is nothing on this page.'
                   }
                   action={
-                    <Link href="/admin/questions" className="text-sm text-brand-300 hover:underline">
+                    <Link href="/admin/questions" className="text-sm font-medium text-blue-600 hover:underline">
                       Show all questions
                     </Link>
                   }
@@ -182,11 +182,11 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
               </thead>
               <tbody>
                 {list.items.map((q) => (
-                  <tr key={q.id} className="hover:bg-ink-800/40">
+                  <tr key={q.id} className="hover:bg-slate-50 transition">
                     <Td className="max-w-[18rem]">
                       <Link
                         href={`/admin/questions/${q.id}/edit`}
-                        className="block truncate font-medium text-slate-100 hover:underline"
+                        className="block truncate font-semibold text-slate-900 hover:text-blue-600 hover:underline"
                       >
                         {q.title}
                       </Link>
@@ -198,21 +198,21 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                       <div className="flex flex-col items-start gap-1">
                         <StatusBadge status={q.status} />
                         {q.validation === 'FAILED' ? (
-                          <span className="text-[11px] text-bad">validation failed</span>
+                          <span className="text-[11px] font-medium text-rose-600">validation failed</span>
                         ) : q.validation === 'NOT_VALIDATED' && q.status !== 'ARCHIVED' ? (
                           <span className="text-[11px] text-slate-500">not validated</span>
                         ) : null}
                       </div>
                     </Td>
-                    <Td className="text-right font-mono text-slate-300">{formatMarks(q.marks)}</Td>
-                    <Td className={cn('text-right', q.enabledTests === 0 ? 'text-warn' : 'text-slate-300')}>
+                    <Td className="text-right font-mono text-slate-700">{formatMarks(q.marks)}</Td>
+                    <Td className={cn('text-right', q.enabledTests === 0 ? 'text-amber-600 font-medium' : 'text-slate-700')}>
                       {q.enabledTests}
                     </Td>
-                    <Td className="text-slate-400">{q.difficulty.toLowerCase()}</Td>
+                    <Td className="text-slate-600">{q.difficulty.toLowerCase()}</Td>
                     <Td>
                       <div className="flex max-w-[14rem] flex-wrap items-center gap-1">
                         {q.category ? (
-                          <span className="mr-1 text-xs text-slate-300">{q.category}</span>
+                          <span className="mr-1 text-xs text-slate-700 font-medium">{q.category}</span>
                         ) : null}
                         {q.tags.slice(0, 3).map((t) => (
                           <Badge key={t} className="px-1.5 text-[11px]">
@@ -223,11 +223,11 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                           <span className="text-[11px] text-slate-500">+{q.tags.length - 3}</span>
                         ) : null}
                         {!q.category && q.tags.length === 0 ? (
-                          <span className="text-slate-600">—</span>
+                          <span className="text-slate-400">—</span>
                         ) : null}
                       </div>
                     </Td>
-                    <Td className="whitespace-nowrap text-right text-slate-400">
+                    <Td className="whitespace-nowrap text-right text-slate-600">
                       {q.usedInTests > 0 ? `${q.usedInTests} test${q.usedInTests === 1 ? '' : 's'}` : '—'}
                     </Td>
                     <Td className="whitespace-nowrap text-xs text-slate-500">
@@ -237,13 +237,13 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
                       <div className="flex justify-end gap-3 whitespace-nowrap text-xs">
                         <Link
                           href={`/admin/questions/${q.id}/edit`}
-                          className="text-brand-300 hover:underline"
+                          className="font-medium text-blue-600 hover:underline"
                         >
                           Edit
                         </Link>
                         <Link
                           href={`/admin/questions/${q.id}/preview`}
-                          className="text-brand-300 hover:underline"
+                          className="font-medium text-blue-600 hover:underline"
                         >
                           Preview
                         </Link>
@@ -256,7 +256,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
           )}
         </div>
         {list.total > 0 ? (
-          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-ink-700 px-4 py-3 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 px-4 py-3 text-xs text-slate-500">
             <span>
               {list.items.length > 0 ? `Showing ${first}–${last} of ${list.total}` : `${list.total} in total`}
             </span>
@@ -267,7 +267,7 @@ export default async function QuestionsPage({ searchParams }: { searchParams: Pr
               >
                 Previous
               </PageLink>
-              <span>
+              <span className="font-medium text-slate-700">
                 Page {Math.min(filters.page, totalPages)} of {totalPages}
               </span>
               <PageLink
@@ -293,16 +293,16 @@ function PageLink({
   disabled: boolean;
   children: React.ReactNode;
 }) {
-  const className = 'rounded-md px-3 py-1.5 ring-1 ring-inset ring-ink-600';
+  const className = 'rounded-md px-3 py-1.5 border border-slate-300 text-xs font-medium transition';
   if (disabled) {
     return (
-      <span aria-disabled="true" className={cn(className, 'cursor-not-allowed opacity-40')}>
+      <span aria-disabled="true" className={cn(className, 'cursor-not-allowed opacity-40 bg-slate-50 text-slate-400')}>
         {children}
       </span>
     );
   }
   return (
-    <Link href={href} className={cn(className, 'text-slate-200 hover:bg-ink-800')}>
+    <Link href={href} className={cn(className, 'bg-white text-slate-700 hover:bg-slate-50 shadow-xs')}>
       {children}
     </Link>
   );

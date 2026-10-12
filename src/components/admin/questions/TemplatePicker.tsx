@@ -9,25 +9,45 @@ export function TemplatePicker({
   open,
   onClose,
   onPick,
+  onOpenJsonModal,
 }: {
   open: boolean;
   onClose: () => void;
   onPick: (template: TestTemplate | null) => void;
+  onOpenJsonModal?: () => void;
 }) {
   return (
     <Modal open={open} title="Add a test case" onClose={onClose}>
-      <p className="mb-3 text-xs text-slate-400">
-        Pick a starting point, then adapt the selectors and values to your question in the builder.
+      <p className="mb-3 text-xs text-slate-500">
+        Pick a template below, start blank, or import via JSON and AI prompts.
       </p>
-      <ul className="-mx-1 max-h-[60vh] space-y-1 overflow-y-auto px-1">
+      {onOpenJsonModal ? (
+        <div className="mb-3 p-3 rounded-lg border border-blue-200 bg-blue-50/70 shadow-2xs flex items-center justify-between gap-3">
+          <div>
+            <p className="text-xs font-semibold text-blue-950">Have test cases from AI or JSON?</p>
+            <p className="text-[11px] text-blue-800">Import structured JSON or copy a pre-made prompt for ChatGPT/Claude.</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onOpenJsonModal();
+            }}
+            className="shrink-0 text-xs px-3 py-1.5 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 shadow-xs transition"
+          >
+            Import JSON / AI
+          </button>
+        </div>
+      ) : null}
+      <ul className="-mx-1 max-h-[55vh] space-y-1.5 overflow-y-auto px-1">
         <li>
           <button
             type="button"
             onClick={() => onPick(null)}
-            className="w-full rounded-md bg-ink-900 px-3 py-2 text-left ring-1 ring-ink-700 transition hover:bg-ink-800 hover:ring-brand-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+            className="w-full rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-xs transition hover:border-blue-300 hover:bg-blue-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
           >
-            <span className="block text-sm font-medium text-slate-100">Blank test case</span>
-            <span className="block text-xs text-slate-400">One empty check to fill in yourself.</span>
+            <span className="block text-sm font-semibold text-slate-900">Blank test case</span>
+            <span className="block text-xs text-slate-500">One empty check to fill in yourself.</span>
           </button>
         </li>
         {TEST_TEMPLATES.map((t) => (
@@ -35,10 +55,10 @@ export function TemplatePicker({
             <button
               type="button"
               onClick={() => onPick(t)}
-              className="w-full rounded-md bg-ink-900 px-3 py-2 text-left ring-1 ring-ink-700 transition hover:bg-ink-800 hover:ring-brand-500/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+              className="w-full rounded-md border border-slate-200 bg-white px-3.5 py-2.5 text-left shadow-xs transition hover:border-blue-300 hover:bg-blue-50/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
             >
-              <span className="block text-sm font-medium text-slate-100">{t.label}</span>
-              <span className="block text-xs text-slate-400">{t.summary}</span>
+              <span className="block text-sm font-semibold text-slate-900">{t.label}</span>
+              <span className="block text-xs text-slate-500">{t.summary}</span>
             </button>
           </li>
         ))}

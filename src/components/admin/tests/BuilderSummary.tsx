@@ -17,13 +17,13 @@ export function BuilderSummary({ form, assignedCount }: { form: BuilderForm; ass
     <Card>
       <CardHeader title="Summary" subtitle="Updates as you edit" />
       <CardBody className="py-2">
-        <dl className="divide-y divide-ink-800">
+        <dl className="divide-y divide-slate-100">
           <SummaryRow label="Questions">{form.questions.length}</SummaryRow>
           <SummaryRow label="Total marks">
-            <span className="font-semibold tabular-nums">{formatMarks(total)}</span>
+            <span className="font-semibold tabular-nums text-slate-900">{formatMarks(total)}</span>
           </SummaryRow>
           <SummaryRow label="Pass mark">
-            <span className="text-slate-300">{passMarkShort(total, form.passingPercentage) || '--'}</span>
+            <span className="font-medium text-slate-700">{passMarkShort(total, form.passingPercentage) || '--'}</span>
           </SummaryRow>
           <SummaryRow label="Duration">
             {Number(form.durationMinutes) > 0 ? `${form.durationMinutes} min` : '--'}

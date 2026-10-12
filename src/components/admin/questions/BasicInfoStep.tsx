@@ -145,7 +145,7 @@ export function BasicInfoStep({
           <p
             id="q-marks-split"
             aria-live="polite"
-            className="rounded-md bg-ink-900 px-3 py-2 text-xs text-slate-300 ring-1 ring-ink-700"
+            className="rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-700 border border-slate-200 shadow-xs"
           >
             {splitSummary(draft.marks, enabledCount)}
             <span className="mt-0.5 block text-slate-500">

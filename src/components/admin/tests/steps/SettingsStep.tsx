@@ -93,11 +93,11 @@ export function SettingsStep({
                 type="checkbox"
                 checked={form.shuffleQuestions}
                 onChange={(e) => update('shuffleQuestions', e.target.checked)}
-                className="mt-0.5 h-4 w-4 accent-brand-500"
+                className="mt-0.5 h-4 w-4 accent-blue-600"
               />
               <span>
-                <span className="block text-sm text-slate-100">Shuffle question order</span>
-                <span className="block text-xs text-slate-400">
+                <span className="block text-sm font-medium text-slate-900">Shuffle question order</span>
+                <span className="block text-xs text-slate-500">
                   Each student gets the questions in a different order. Marks are unaffected.
                 </span>
               </span>
@@ -107,7 +107,7 @@ export function SettingsStep({
               Copy and paste are blocked for every student. To exempt one student (an accommodation), use the
               clipboard toggle in{' '}
               {testId ? (
-                <Link href={`/admin/exams/${testId}/assignments`} className="text-brand-300 hover:underline">
+                <Link href={`/admin/exams/${testId}/assignments`} className="text-blue-600 hover:underline">
                   assignments
                 </Link>
               ) : (

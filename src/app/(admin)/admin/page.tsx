@@ -12,8 +12,8 @@ function Section({ title, href, children }: { title: string; href: string; child
   return (
     <section className="space-y-2">
       <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-400">{title}</h2>
-        <Link href={href} className="text-xs text-brand-300 hover:underline">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700">{title}</h2>
+        <Link href={href} className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
           View all
         </Link>
       </div>
@@ -42,7 +42,7 @@ async function RunnerAlert() {
   const runner = await getRunnerHealth();
   if (runner.ok) return null;
   return (
-    <div className="rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30" role="alert">
+    <div className="rounded-md bg-rose-50 p-3 text-xs text-rose-800 border border-rose-200 shadow-xs" role="alert">
       The test runner is not usable
       {runner.detail ? <>: {runner.detail}</> : '.'} Students can still write and save code, but running
       tests, grading and question validation will wait until it is fixed (submissions show &ldquo;grading
@@ -65,8 +65,8 @@ export default async function AdminDashboardPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-50">Dashboard</h1>
-          <p className="mt-1 text-sm text-slate-400">Questions, tests and results at a glance.</p>
+          <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
+          <p className="mt-1 text-sm text-slate-500">Questions, tests and results at a glance.</p>
         </div>
         <Suspense fallback={<Badge tone="neutral">Checking runner…</Badge>}>
           <RunnerBadge />
@@ -131,13 +131,13 @@ export default async function AdminDashboardPage() {
                 <EmptyState title="No submissions yet" description="Finished tests appear here." />
               </div>
             ) : (
-              <ul className="divide-y divide-ink-800">
+              <ul className="divide-y divide-slate-100">
                 {submissions.map((s) => (
-                  <li key={s.sessionId} className="flex items-center gap-3 px-4 py-2.5">
+                  <li key={s.sessionId} className="flex items-center gap-3 px-4 py-3 hover:bg-slate-50/80 transition-colors">
                     <div className="min-w-0 flex-1">
                       <Link
                         href={`/admin/results/${s.sessionId}`}
-                        className="block truncate text-sm text-slate-200 hover:underline"
+                        className="block truncate text-sm font-semibold text-slate-900 hover:text-blue-600 hover:underline"
                       >
                         {s.student}
                       </Link>
@@ -149,7 +149,7 @@ export default async function AdminDashboardPage() {
                     </div>
                     {s.result ? (
                       <>
-                        <span className="font-mono text-xs text-slate-300">
+                        <span className="font-mono text-xs text-slate-700 font-medium">
                           {displayMarks(s.score)}/{displayMarks(s.maxScore)} ({displayMarks(s.percentage)}%)
                         </span>
                         <Badge tone={s.result === 'PASSED' ? 'ok' : 'bad'}>{s.result.toLowerCase()}</Badge>
@@ -169,7 +169,7 @@ export default async function AdminDashboardPage() {
             title="Recent activity"
             subtitle="From the audit log"
             action={
-              <Link href="/admin/audit-logs" className="text-xs text-brand-300 hover:underline">
+              <Link href="/admin/audit-logs" className="text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline">
                 Full audit log
               </Link>
             }
@@ -183,11 +183,11 @@ export default async function AdminDashboardPage() {
                 />
               </div>
             ) : (
-              <ul className="divide-y divide-ink-800">
+              <ul className="divide-y divide-slate-100">
                 {activity.map((item) => (
-                  <li key={item.id} className="flex items-start gap-3 px-4 py-2.5">
-                    <p className="min-w-0 flex-1 text-sm text-slate-300">
-                      <span className="text-slate-100">{item.actor}</span> {item.text}
+                  <li key={item.id} className="flex items-start gap-3 px-4 py-3 hover:bg-slate-50/80 transition-colors">
+                    <p className="min-w-0 flex-1 text-sm text-slate-600">
+                      <span className="font-semibold text-slate-900">{item.actor}</span> {item.text}
                     </p>
                     <span className="whitespace-nowrap text-xs text-slate-500">
                       {formatDateTime(item.at)}
@@ -202,7 +202,7 @@ export default async function AdminDashboardPage() {
 
       <Card>
         <CardHeader title="Quick actions" />
-        <CardBody className="flex flex-wrap gap-2">
+        <CardBody className="flex flex-wrap gap-2.5 p-5">
           {[
             { href: '/admin/questions/new', label: 'Create a question' },
             { href: '/admin/exams/new', label: 'Create a test' },
@@ -213,7 +213,7 @@ export default async function AdminDashboardPage() {
             <Link
               key={a.href}
               href={a.href}
-              className="rounded-md px-3 py-2 text-sm text-slate-300 ring-1 ring-inset ring-ink-700 hover:bg-ink-800 hover:text-white"
+              className="rounded-md border border-slate-300 bg-white px-3.5 py-2 text-sm font-medium text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900 transition"
             >
               {a.label}
             </Link>

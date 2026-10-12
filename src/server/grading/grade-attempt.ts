@@ -1,4 +1,4 @@
-import type { Attempt, Prisma, QuestionResultStatus } from '@prisma/client';
+import { Prisma, type Attempt, type QuestionResultStatus } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { AppError, conflict, notFound } from '@/lib/errors';
 import { logger, sanitizeError } from '@/lib/logger';
@@ -399,10 +399,107 @@ export async function regradeAttemptsForQuestion(
       },
     });
 
-    const gradeRes = await gradeAttempt(attempt.id, {
-      reason: opts.reason ?? 'republish & regrade',
-      triggeredById: opts.adminId,
+    // Collect all candidate code submissions from historical test runs and current attempt
+    const codeCandidates: { html: string; css: string; js: string }[] = [];
+    const seen = new Set<string>();
+
+    const pushCode = (codeObj: unknown) => {
+      if (!codeObj || typeof codeObj !== 'object') return;
+      const c = codeObj as { html?: unknown; css?: unknown; js?: unknown };
+      const html = typeof c.html === 'string' ? c.html : '';
+      const css = typeof c.css === 'string' ? c.css : '';
+      const js = typeof c.js === 'string' ? c.js : '';
+      const key = `${html}___${css}___${js}`;
+      if (!seen.has(key)) {
+        seen.add(key);
+        codeCandidates.push({ html, css, js });
+      }
+    };
+
+    if (attempt.html || attempt.css || attempt.js) {
+      pushCode({ html: attempt.html, css: attempt.css, js: attempt.js });
+    }
+
+    const testRuns = await prisma.testRun.findMany({
+      where: { attemptId: attempt.id, code: { not: Prisma.DbNull } },
+      orderBy: { startedAt: 'asc' },
     });
+    for (const tr of testRuns) {
+      pushCode(tr.code);
+    }
+
+    let gradeRes: GradeResult;
+    if (codeCandidates.length > 1) {
+      // Re-evaluate every historical submission and select the highest score
+      let bestScoreMicro = -1;
+      let bestCode = codeCandidates[0]!;
+      let bestOutcome: (ExecutionOutcome & { counted: boolean }) | null = null;
+      let anyGraded = false;
+      let lastError: string | undefined;
+
+      const updatedAttempt = await prisma.attempt.findUniqueOrThrow({ where: { id: attempt.id } });
+
+      for (const cand of codeCandidates) {
+        try {
+          const outcome = await executeTests({
+            attempt: updatedAttempt,
+            code: cand,
+            kind: 'SUBMISSION',
+            final: false,
+            userId: attempt.userId,
+            reason: opts.reason ?? 'republish regrade (candidate)',
+            triggeredById: opts.adminId,
+          });
+          anyGraded = true;
+          const scoreMicro = toMicro(outcome.score);
+          if (scoreMicro > bestScoreMicro) {
+            bestScoreMicro = scoreMicro;
+            bestCode = cand;
+            bestOutcome = outcome;
+          }
+        } catch (err) {
+          lastError = err instanceof AppError ? err.message : 'Test execution failed.';
+        }
+      }
+
+      if (bestOutcome) {
+        // Mark the highest-scoring run as final and update attempt
+        await prisma.$transaction(async (tx) => {
+          await tx.testResult.updateMany({
+            where: { attemptId: attempt.id, final: true },
+            data: { final: false },
+          });
+          await tx.testResult.updateMany({
+            where: { testRunId: bestOutcome!.runId },
+            data: { final: true },
+          });
+          await tx.attempt.update({
+            where: { id: attempt.id },
+            data: {
+              html: bestCode.html,
+              css: bestCode.css,
+              js: bestCode.js,
+              score: fromMicro(toMicro(bestOutcome!.score)),
+              maxScore: fromMicro(toMicro(bestOutcome!.maxScore)),
+              resultStatus: bestOutcome!.questionStatus as QuestionResultStatus,
+              passedCount: bestOutcome!.passedCount,
+              enabledCount: bestOutcome!.totalCount,
+              gradingError: null,
+              gradedAt: new Date(),
+            },
+          });
+        });
+        await refreshSittingTotals(attempt.sessionId);
+        gradeRes = { graded: true, counted: true, outcome: bestOutcome };
+      } else {
+        gradeRes = { graded: anyGraded, error: lastError ?? 'Grading failed' };
+      }
+    } else {
+      gradeRes = await gradeAttempt(attempt.id, {
+        reason: opts.reason ?? 'republish & regrade',
+        triggeredById: opts.adminId,
+      });
+    }
 
     if (!gradeRes.graded) {
       failedCount += 1;

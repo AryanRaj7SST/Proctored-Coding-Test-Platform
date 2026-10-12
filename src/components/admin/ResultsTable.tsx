@@ -60,7 +60,7 @@ export function ResultsTable({
           return (
             <ClickableRow key={r.sessionId} href={href}>
               <Td>
-                <Link href={href} className="font-medium text-slate-100 hover:text-brand-300 hover:underline">
+                <Link href={href} className="font-semibold text-slate-900 hover:text-blue-600 hover:underline">
                   {r.studentName}
                 </Link>
                 <p className="text-xs text-slate-500">
@@ -68,29 +68,29 @@ export function ResultsTable({
                   {r.batch ? ` · ${r.batch}` : ''}
                 </p>
               </Td>
-              <Td className="text-slate-300">{r.examTitle}</Td>
+              <Td className="text-slate-700 font-medium">{r.examTitle}</Td>
               <Td className="whitespace-nowrap">
-                <span className="text-slate-200">#{r.attemptNumber}</span>
+                <span className="text-slate-800 font-medium">#{r.attemptNumber}</span>
                 {sittings > 1 ? <p className="text-xs text-slate-500">best of {sittings}</p> : null}
               </Td>
               <Td>
                 <Badge tone={state.tone}>{state.label}</Badge>
               </Td>
-              <Td className="whitespace-nowrap text-right font-mono text-xs text-slate-200">
+              <Td className="whitespace-nowrap text-right font-mono text-xs text-slate-900 font-semibold">
                 <span title={r.score !== null ? `${r.score} / ${r.maxScore}` : 'No score yet'}>
                   {formatScore(r.score, r.maxScore)}
                 </span>
               </Td>
-              <Td className="whitespace-nowrap text-right font-mono text-xs text-slate-200">
+              <Td className="whitespace-nowrap text-right font-mono text-xs text-slate-800 font-medium">
                 {formatPercent(r.percentage)}
               </Td>
-              <Td className="whitespace-nowrap text-xs text-slate-400">
+              <Td className="whitespace-nowrap text-xs text-slate-500">
                 {r.submittedAt ? (
                   <span title={formatInZone(r.submittedAt, zone, true)}>
                     {formatInZone(r.submittedAt, zone)}
                   </span>
                 ) : (
-                  <span className="text-slate-500">Not submitted</span>
+                  <span className="text-slate-400">Not submitted</span>
                 )}
               </Td>
               <Td className="text-right">

@@ -16,9 +16,9 @@ export interface StepState {
 
 const HINT_TONES = {
   neutral: 'text-slate-500',
-  ok: 'text-ok',
-  warn: 'text-warn',
-  bad: 'text-bad',
+  ok: 'text-emerald-600',
+  warn: 'text-amber-600',
+  bad: 'text-rose-600',
 } as const;
 
 /** Numbered, clickable wizard steps. Locked steps explain why they are locked. */
@@ -33,7 +33,7 @@ export function Stepper({
 }) {
   return (
     <nav aria-label="Question editor steps" className="overflow-x-auto">
-      <ol className="flex min-w-max gap-1 rounded-lg bg-ink-850 p-1 ring-1 ring-ink-700">
+      <ol className="flex min-w-max gap-1 rounded-lg bg-white p-1.5 border border-slate-200 shadow-xs">
         {WIZARD_STEPS.map((step, index) => {
           const state = states[step.id] ?? {};
           const active = step.id === current;
@@ -47,8 +47,8 @@ export function Stepper({
                 title={state.locked ? state.lockedReason : undefined}
                 className={cn(
                   'flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-left transition',
-                  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500',
-                  active ? 'bg-ink-700 ring-1 ring-inset ring-ink-600' : 'hover:bg-ink-800',
+                  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500',
+                  active ? 'bg-blue-50/80 border border-blue-200/80 shadow-xs' : 'hover:bg-slate-50',
                   state.locked && 'cursor-not-allowed opacity-50 hover:bg-transparent',
                 )}
               >
@@ -57,10 +57,10 @@ export function Stepper({
                   className={cn(
                     'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold',
                     state.hasErrors
-                      ? 'bg-bad/20 text-bad ring-1 ring-bad/40'
+                      ? 'bg-rose-50 text-rose-700 ring-1 ring-rose-200'
                       : active
-                        ? 'bg-brand-600 text-white'
-                        : 'bg-ink-700 text-slate-300',
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-600',
                   )}
                 >
                   {state.locked ? <Lock className="h-3 w-3" /> : state.hasErrors ? '!' : index + 1}
@@ -68,8 +68,8 @@ export function Stepper({
                 <span className="min-w-0">
                   <span
                     className={cn(
-                      'block whitespace-nowrap text-xs font-medium',
-                      active ? 'text-white' : 'text-slate-300',
+                      'block whitespace-nowrap text-xs',
+                      active ? 'font-semibold text-blue-900' : 'font-medium text-slate-600',
                     )}
                   >
                     {step.label}

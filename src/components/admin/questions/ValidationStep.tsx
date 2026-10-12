@@ -20,13 +20,13 @@ function ChecklistItem({ ok, children }: { ok: boolean; children: React.ReactNod
       <span
         className={cn(
           'mt-px flex h-4 w-4 shrink-0 items-center justify-center rounded-full',
-          ok ? 'bg-ok/20 text-ok' : 'bg-bad/20 text-bad',
+          ok ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700',
         )}
       >
         {ok ? <Check className="h-3 w-3" aria-hidden="true" /> : <X className="h-3 w-3" aria-hidden="true" />}
         <span className="sr-only">{ok ? 'Done:' : 'Missing:'}</span>
       </span>
-      <span className={ok ? 'text-slate-300' : 'text-slate-200'}>{children}</span>
+      <span className={ok ? 'text-slate-700 font-medium' : 'text-slate-600'}>{children}</span>
     </li>
   );
 }
@@ -65,14 +65,14 @@ export function ValidationStep({
   return (
     <div className="space-y-5">
       <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <div className="space-y-3 rounded-lg bg-ink-900 p-4 ring-1 ring-ink-700">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Current state</p>
+        <div className="space-y-3 rounded-lg bg-white p-4 border border-slate-200 shadow-xs">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Current state</p>
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone={state.tone}>Validation: {state.label}</Badge>
             <StatusBadge status={question.status} />
             <span className="text-xs text-slate-500">version {question.version}</span>
           </div>
-          <p className="text-xs text-slate-400">
+          <p className="text-xs text-slate-600 leading-relaxed">
             {question.validatedAt
               ? `Last validated ${formatDateTime(question.validatedAt)}.`
               : 'This version has not been validated yet.'}{' '}
@@ -80,14 +80,14 @@ export function ValidationStep({
             solution or test cases clears the result.
           </p>
           {question.validation === 'FAILED' && question.validationMessage && !run ? (
-            <p className="rounded bg-bad/10 p-2 text-xs text-rose-200 ring-1 ring-bad/30">
+            <p className="rounded-md bg-rose-50 p-2.5 text-xs text-rose-800 border border-rose-200">
               Last failure: {question.validationMessage}
             </p>
           ) : null}
         </div>
 
-        <div className="space-y-3 rounded-lg bg-ink-900 p-4 ring-1 ring-ink-700">
-          <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Before validating</p>
+        <div className="space-y-3 rounded-lg bg-white p-4 border border-slate-200 shadow-xs">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Before validating</p>
           <ul className="space-y-1.5">
             <ChecklistItem ok={hasReference}>
               Reference solution added{' '}
@@ -95,7 +95,7 @@ export function ValidationStep({
                 <button
                   type="button"
                   onClick={() => onGoTo('code')}
-                  className="text-brand-300 hover:underline"
+                  className="font-medium text-blue-600 hover:underline"
                 >
                   (add it in Starter code)
                 </button>
@@ -110,7 +110,7 @@ export function ValidationStep({
                 <button
                   type="button"
                   onClick={() => onGoTo('tests')}
-                  className="text-brand-300 hover:underline"
+                  className="font-medium text-blue-600 hover:underline"
                 >
                   ({invalidCount} to fix)
                 </button>
@@ -118,7 +118,7 @@ export function ValidationStep({
             </ChecklistItem>
           </ul>
           {dirty ? (
-            <p className="text-xs text-warn">Unsaved changes will be saved before validating.</p>
+            <p className="text-xs font-medium text-amber-700">Unsaved changes will be saved before validating.</p>
           ) : null}
           <Button onClick={onValidate} loading={validating} disabled={!ready || readOnly}>
             {!validating ? <Play className="h-3.5 w-3.5" aria-hidden="true" /> : null}
@@ -142,7 +142,7 @@ export function ValidationStep({
       {run ? (
         <ValidationResults run={run} stale={runStale} />
       ) : !runnerNotice ? (
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-500">
           Press “Validate Question” to run every enabled test case against the reference solution in the
           isolated runner. Every test case must pass before the question can be published.
         </p>

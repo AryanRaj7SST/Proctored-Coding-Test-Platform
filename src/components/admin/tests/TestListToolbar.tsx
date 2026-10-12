@@ -13,7 +13,7 @@ export function TestListToolbar({ phase, q }: { phase: '' | TestPhase; q: string
   React.useEffect(() => setQuery(q), [q]);
 
   return (
-    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-ink-700">
+    <div className="flex flex-wrap items-end justify-between gap-3 border-b border-slate-200">
       <Tabs
         tabs={PHASE_TABS.map((t) => ({ id: t.id || 'ALL', label: t.label }))}
         active={phase || 'ALL'}

@@ -72,8 +72,8 @@ export default async function ResultsPage({ searchParams }: { searchParams: Prom
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-50">Results</h1>
-          <p className="mt-1 max-w-2xl text-sm text-slate-400">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Results</h1>
+          <p className="mt-1 max-w-2xl text-sm text-slate-500">
             Each student is judged by their best graded sitting of a test. Scores are the stored grades
             &mdash; question marks split equally across enabled test cases &mdash; and are never edited by
             hand. Answers the runner could not grade show as &ldquo;grading pending&rdquo;, never 0.
@@ -85,7 +85,7 @@ export default async function ResultsPage({ searchParams }: { searchParams: Prom
           ) : null}
           <a
             href={`/api/admin/results/export${exportQuery ? `?${exportQuery}` : ''}`}
-            className="inline-flex h-9 items-center rounded-md bg-ink-800 px-4 text-sm font-medium text-slate-100 ring-1 ring-inset ring-ink-600 transition hover:bg-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500"
+            className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-xs transition hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
           >
             Export CSV
           </a>

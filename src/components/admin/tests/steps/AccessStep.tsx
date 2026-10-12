@@ -87,7 +87,7 @@ export function AccessStep({
                     e.preventDefault();
                   }
                 }}
-                className="rounded-md bg-ink-800 px-3 py-1.5 text-xs font-medium text-slate-100 ring-1 ring-inset ring-ink-600 hover:bg-ink-700"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
               >
                 Manage assignments
               </Link>
@@ -96,14 +96,14 @@ export function AccessStep({
         />
         <CardBody className="space-y-3">
           {!assignmentsHref ? (
-            <p className="text-xs text-slate-400">Save the draft first, then assign students.</p>
+            <p className="text-xs text-slate-500">Save the draft first, then assign students.</p>
           ) : assignedOnly ? (
             assignedCount === 0 ? (
               <Notice tone="warn" title="Nobody is assigned yet">
                 With “Assigned students only”, nobody can take this test until you assign students.
               </Notice>
             ) : (
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-500">
                 Assign more students, see who has started, and grant per-student clipboard accommodations.
               </p>
             )

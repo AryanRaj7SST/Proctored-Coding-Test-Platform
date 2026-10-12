@@ -25,20 +25,20 @@ export function ReadableTestPreview({
   const summary = expectedBehavior.trim() || description.trim();
 
   return (
-    <div className="space-y-2 rounded-md bg-ink-900 p-3 text-xs ring-1 ring-ink-700">
+    <div className="space-y-2 rounded-md bg-slate-50 p-3 text-xs border border-slate-200 shadow-xs">
       <div className="flex items-start justify-between gap-2">
-        <p className="font-medium text-slate-100">{name.trim() || 'Untitled test case'}</p>
+        <p className="font-semibold text-slate-900">{name.trim() || 'Untitled test case'}</p>
         {shareText ? (
-          <span className="shrink-0 font-mono text-[11px] text-slate-400">{shareText}</span>
+          <span className="shrink-0 font-mono text-[11px] font-medium text-slate-500">{shareText}</span>
         ) : null}
       </div>
-      {summary ? <p className="leading-relaxed text-slate-300">{summary}</p> : null}
+      {summary ? <p className="leading-relaxed text-slate-600">{summary}</p> : null}
       {readable ? (
         <>
           {readable.steps.length > 0 ? (
             <div>
-              <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Steps</p>
-              <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-slate-300">
+              <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Steps</p>
+              <ol className="mt-1 list-decimal space-y-0.5 pl-4 text-slate-700">
                 {readable.steps.map((s, i) => (
                   <li key={i}>{s}</li>
                 ))}
@@ -46,8 +46,8 @@ export function ReadableTestPreview({
             </div>
           ) : null}
           <div>
-            <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">Checks</p>
-            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-slate-300">
+            <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Checks</p>
+            <ul className="mt-1 list-disc space-y-0.5 pl-4 text-slate-700">
               {readable.checks.map((c, i) => (
                 <li key={i}>{c}</li>
               ))}

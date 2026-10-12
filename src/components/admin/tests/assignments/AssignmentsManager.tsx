@@ -40,16 +40,16 @@ export function AssignmentsManager({
   return (
     <div className="space-y-4">
       <div>
-        <Link href={`/admin/exams/${test.id}`} className="text-xs text-slate-400 hover:text-slate-200">
+        <Link href={`/admin/exams/${test.id}`} className="text-xs text-slate-500 hover:text-slate-800">
           ← Back to the test builder
         </Link>
         <div className="mt-1 flex flex-wrap items-center gap-2">
-          <h1 className="text-xl font-semibold text-slate-50">Assignments · {test.title}</h1>
+          <h1 className="text-xl font-semibold text-slate-900">Assignments · {test.title}</h1>
           <PhaseBadge phase={test.phase} />
         </div>
-        <p className="mt-1 text-sm text-slate-400">
+        <p className="mt-1 text-sm text-slate-500">
           Access: {ACCESS_LABEL[test.accessMode]}.{' '}
-          <Link href={`/admin/exams/${test.id}?step=access`} className="text-brand-300 hover:underline">
+          <Link href={`/admin/exams/${test.id}?step=access`} className="text-blue-600 hover:underline">
             Change
           </Link>
         </p>

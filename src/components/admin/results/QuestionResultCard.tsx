@@ -41,31 +41,31 @@ export function QuestionResultCard({
       : `${q.passedCount}/${q.enabledCount} test${q.enabledCount === 1 ? '' : 's'} passed`;
 
   return (
-    <li className="rounded-lg bg-ink-850 ring-1 ring-ink-700">
+    <li className="rounded-lg bg-white border border-slate-200 shadow-xs">
       <h3>
         <button
           type="button"
           aria-expanded={open}
           aria-controls={open ? panelId : undefined}
           onClick={() => setOpen((o) => !o)}
-          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-ink-800/50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+          className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left transition-colors hover:bg-slate-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600"
         >
           <span
             aria-hidden="true"
-            className={cn('text-slate-500 transition-transform', open ? 'rotate-90' : undefined)}
+            className={cn('text-slate-400 transition-transform font-bold', open ? 'rotate-90' : undefined)}
           >
             ›
           </span>
-          <span className="w-8 shrink-0 font-mono text-xs text-slate-500">{label}</span>
+          <span className="w-8 shrink-0 font-mono text-xs text-slate-400">{label}</span>
           <span className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-medium text-slate-100">{q.title}</span>
+            <span className="block truncate text-sm font-semibold text-slate-900">{q.title}</span>
             <span className="block text-xs text-slate-500">
               {subline}
               {q.reviewFeedback ? ' · feedback given' : ''}
             </span>
           </span>
           <span
-            className={cn('shrink-0 font-mono text-sm', scored ? 'text-slate-100' : 'text-slate-500')}
+            className={cn('shrink-0 font-mono text-sm font-semibold', scored ? 'text-slate-900' : 'text-slate-400')}
             title={scored ? `${q.score} of ${q.maxScore} marks` : 'No score recorded'}
           >
             {formatScore(scored ? q.score : null, q.maxScore)}
@@ -77,7 +77,7 @@ export function QuestionResultCard({
       </h3>
 
       {open ? (
-        <div id={panelId} className="space-y-3 border-t border-ink-700 px-4 pb-4 pt-3">
+        <div id={panelId} className="space-y-3 border-t border-slate-200 px-4 pb-4 pt-3">
           <GradingNotice question={q} pending={status.pending} />
 
           <p className="text-xs text-slate-500">
@@ -88,7 +88,7 @@ export function QuestionResultCard({
             {q.runCount} test run{q.runCount === 1 ? '' : 's'}
           </p>
 
-          <div className="flex flex-wrap items-end justify-between gap-2 border-b border-ink-700">
+          <div className="flex flex-wrap items-end justify-between gap-2 border-b border-slate-200">
             <Tabs
               tabs={[
                 {
@@ -101,7 +101,7 @@ export function QuestionResultCard({
                   id: 'feedback',
                   label: 'Feedback',
                   badge: q.reviewFeedback ? (
-                    <span aria-label="has feedback" className="h-1.5 w-1.5 rounded-full bg-brand-300" />
+                    <span aria-label="has feedback" className="h-1.5 w-1.5 rounded-full bg-blue-600" />
                   ) : undefined,
                 },
               ]}
@@ -111,7 +111,7 @@ export function QuestionResultCard({
             <div className="flex items-center gap-3 pb-1.5">
               <Link
                 href={`/admin/attempts/${q.attemptId}`}
-                className="text-xs text-brand-300 hover:underline"
+                className="text-xs text-blue-600 hover:underline font-medium"
               >
                 Run history &amp; proctoring &rarr;
               </Link>

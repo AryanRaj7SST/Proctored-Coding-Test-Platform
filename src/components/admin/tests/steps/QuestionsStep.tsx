@@ -34,7 +34,7 @@ export function VersionLabel({ q }: { q: Pick<SelectedQuestion, 'pinnedVersion' 
 }
 
 const iconButton =
-  'rounded px-1.5 py-1 text-xs text-slate-400 hover:bg-ink-800 hover:text-slate-100 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent';
+  'rounded-md p-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent transition';
 
 /** Step 2: choose PUBLISHED questions and put them in order. */
 export function QuestionsStep({
@@ -95,7 +95,7 @@ export function QuestionsStep({
         />
         <CardBody>
           {errors.questions ? (
-            <p className="mb-3 text-xs text-bad" role="alert">
+            <p className="mb-3 text-xs font-medium text-rose-600" role="alert">
               {errors.questions}
             </p>
           ) : null}
@@ -112,21 +112,21 @@ export function QuestionsStep({
                   <li
                     key={q.questionId}
                     className={cn(
-                      'flex items-center gap-3 rounded-md bg-ink-900 px-3 py-2 ring-1',
-                      unpublished ? 'ring-warn/40' : 'ring-ink-700',
+                      'flex items-center gap-3 rounded-lg bg-white px-3.5 py-2.5 border shadow-xs transition',
+                      unpublished ? 'border-amber-300 bg-amber-50/20' : 'border-slate-200',
                     )}
                   >
-                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-slate-500">
+                    <span className="w-5 shrink-0 text-right text-xs tabular-nums text-slate-400">
                       {i + 1}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm text-slate-100">{q.title}</p>
+                      <p className="truncate text-sm font-semibold text-slate-900">{q.title}</p>
                       <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                         <Badge tone={DIFFICULTY_TONE[q.difficulty]}>{q.difficulty.toLowerCase()}</Badge>
                         <span>{plural(q.enabledTests, 'enabled test')}</span>
                         <span>·</span>
                         <VersionLabel q={q} />
-                        <span>· {formatMarks(Number(q.marks) || 0)} marks</span>
+                        <span className="font-medium text-slate-700">· {formatMarks(Number(q.marks) || 0)} marks</span>
                         {unpublished ? (
                           <Badge tone="warn">
                             {q.status.toLowerCase()} · must be published before this test can be published

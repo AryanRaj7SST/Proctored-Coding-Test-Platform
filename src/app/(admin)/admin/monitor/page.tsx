@@ -19,8 +19,8 @@ export default async function MonitorPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Live monitor</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-xl font-semibold text-slate-900">Live monitor</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Updates every few seconds over a server-sent event stream. Reconnects automatically.
         </p>
       </div>

@@ -61,7 +61,14 @@ export const percentageSchema = z
  * equally between its enabled test cases. Every test case is student-visible.
  */
 export const questionTestInput = z.object({
-  id: idSchema.optional(),
+  id: z
+    .string()
+    .min(1)
+    .max(64)
+    .regex(/^[A-Za-z0-9_-]+$/, 'Invalid identifier.')
+    .optional()
+    .nullable()
+    .transform((v) => v || undefined),
   name: z.string().trim().min(1, 'Test name is required.').max(140),
   description: z.string().max(2000).optional().nullable(),
   testType: testTypeSchema.default('DECLARATIVE'),

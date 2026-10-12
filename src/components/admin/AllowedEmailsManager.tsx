@@ -131,7 +131,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
               <a
                 href="/api/allowed-emails?format=csv"
                 download
-                className="rounded-md px-3 py-1.5 text-xs text-slate-300 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
+                className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
               >
                 Export CSV
               </a>
@@ -186,20 +186,20 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
               <tbody>
                 {filtered.map((row) => (
                   <tr key={row.id}>
-                    <Td className="font-medium text-slate-100">{row.email}</Td>
-                    <Td className="text-slate-400">{row.batch ?? '—'}</Td>
+                    <Td className="font-medium text-slate-800">{row.email}</Td>
+                    <Td className="text-slate-600">{row.batch ?? '—'}</Td>
                     <Td>
                       <Badge tone={row.hasAccount ? 'ok' : 'neutral'}>
                         {row.hasAccount ? 'signed in' : 'never signed in'}
                       </Badge>
                     </Td>
-                    <Td className="max-w-[16rem] truncate text-xs text-slate-400">{row.note ?? '—'}</Td>
+                    <Td className="max-w-[16rem] truncate text-xs text-slate-500">{row.note ?? '—'}</Td>
                     <Td className="text-xs text-slate-500">{formatDateTime(row.createdAt)}</Td>
                     <Td>
                       <button
                         type="button"
                         onClick={() => setPendingDelete(row)}
-                        className="text-xs text-rose-400 hover:underline"
+                        className="text-xs text-rose-600 hover:underline font-medium"
                       >
                         Remove
                       </button>
@@ -274,16 +274,16 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
               const file = e.target.files?.[0];
               if (file) void importCsv(file);
             }}
-            className="block w-full text-xs text-slate-300 file:mr-3 file:rounded file:border-0 file:bg-brand-600 file:px-3 file:py-1.5 file:text-xs file:text-white"
+            className="block w-full text-xs text-slate-600 file:mr-3 file:rounded-lg file:border-0 file:bg-blue-600 file:px-3 file:py-1.5 file:text-xs file:font-medium file:text-white file:shadow-xs file:hover:bg-blue-700"
           />
           {importSummary ? (
-            <div className="rounded-md bg-ink-900 p-3 text-xs ring-1 ring-ink-700">
-              <p className="text-slate-200">
+            <div className="rounded-lg bg-slate-50 p-3 text-xs border border-slate-200 shadow-xs">
+              <p className="font-semibold text-slate-800">
                 {importSummary.created} added · {importSummary.updated} updated · {importSummary.skipped}{' '}
                 skipped
               </p>
               {importSummary.errors.length > 0 ? (
-                <ul className="mt-2 list-disc space-y-0.5 pl-5 text-rose-300">
+                <ul className="mt-2 list-disc space-y-0.5 pl-5 text-rose-600 font-medium">
                   {importSummary.errors.slice(0, 10).map((e, i) => (
                     <li key={i}>
                       line {e.line}: {e.message}
@@ -292,7 +292,7 @@ export function AllowedEmailsManager({ rows, batches }: { rows: AllowedEmailRowD
                 </ul>
               ) : null}
               {importSummary.duplicatesInFile.length > 0 ? (
-                <p className="mt-2 text-amber-300">
+                <p className="mt-2 text-amber-700 font-medium">
                   Duplicated inside the file: {importSummary.duplicatesInFile.slice(0, 5).join(', ')}
                 </p>
               ) : null}

@@ -27,7 +27,7 @@ export function ClickableRow({
         if (e.metaKey || e.ctrlKey) window.open(href, '_blank', 'noopener');
         else router.push(href);
       }}
-      className={cn('cursor-pointer transition-colors hover:bg-ink-800/60', className)}
+      className={cn('cursor-pointer transition-colors hover:bg-slate-50', className)}
     >
       {children}
     </tr>

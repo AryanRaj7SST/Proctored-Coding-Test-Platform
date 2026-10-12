@@ -45,21 +45,21 @@ export default async function AssignmentsOverviewPage() {
         {items.map((r) => {
           const phase = testPhase(r);
           return (
-            <tr key={r.id}>
-              <Td className="font-medium text-slate-100">{r.title}</Td>
+            <tr key={r.id} className="hover:bg-slate-50 transition">
+              <Td className="font-semibold text-slate-900">{r.title}</Td>
               <Td>
                 <Badge tone={PHASE_TONE[phase]}>{phase.toLowerCase()}</Badge>
               </Td>
-              <Td className="text-xs text-slate-400">
+              <Td className="text-xs text-slate-500">
                 {r.startTime ? formatDateTimeInZone(r.startTime, r.timezone) : 'Any time'}
               </Td>
-              <Td className="text-right font-mono">{r.assigned}</Td>
-              <Td className="text-right font-mono text-slate-400">{r.signedIn}</Td>
-              <Td className="text-right font-mono text-slate-400">{r.started}</Td>
+              <Td className="text-right font-mono font-semibold text-slate-900">{r.assigned}</Td>
+              <Td className="text-right font-mono text-slate-600">{r.signedIn}</Td>
+              <Td className="text-right font-mono text-slate-600">{r.started}</Td>
               <Td className="text-right">
                 <Link
                   href={`/admin/exams/${r.id}/assignments`}
-                  className="text-xs text-brand-300 hover:underline"
+                  className="text-xs font-medium text-blue-600 hover:underline"
                 >
                   Manage
                 </Link>
@@ -74,15 +74,15 @@ export default async function AssignmentsOverviewPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Assignments</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">Assignments</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Students can be assigned by account, email (even before their first sign-in), batch, or all at once.
         </p>
       </div>
 
       <Card>
         <CardBody className="p-0">
-          <p className="border-b border-ink-800 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+          <p className="border-b border-slate-200 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
             Restricted to assigned students
           </p>
           {restricted.length === 0 ? (
@@ -101,7 +101,7 @@ export default async function AssignmentsOverviewPage() {
       {open.length > 0 ? (
         <Card>
           <CardBody className="p-0">
-            <p className="border-b border-ink-800 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-400">
+            <p className="border-b border-slate-200 px-4 py-2.5 text-xs font-semibold uppercase tracking-wide text-slate-500">
               Open to every signed-in student (assignments only needed for accommodations)
             </p>
             {table(open)}

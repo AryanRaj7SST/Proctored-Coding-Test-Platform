@@ -90,7 +90,7 @@ function Consequences({ action, detail }: { action: PendingAction; detail: TestD
     case 'delete':
       return (
         <p>
-          <strong className="text-slate-100">{detail.title}</strong> will be permanently deleted with its
+          <strong className="text-slate-900 font-semibold">{detail.title}</strong> will be permanently deleted with its
           question list and assignments. This cannot be undone.
         </p>
       );
@@ -203,21 +203,21 @@ export function PublishStep({
                   className={cn(
                     'rounded-full px-3 py-1 ring-1 ring-inset',
                     s.status === status
-                      ? 'bg-brand-600 font-semibold text-white ring-brand-500'
-                      : 'bg-ink-900 text-slate-400 ring-ink-700',
+                      ? 'bg-blue-600 font-semibold text-white ring-blue-600 shadow-xs'
+                      : 'bg-slate-100 text-slate-600 ring-slate-200',
                   )}
                 >
                   {s.label}
                 </span>
                 {i < LIFECYCLE.length - 1 ? (
-                  <span aria-hidden="true" className="text-slate-600">
+                  <span aria-hidden="true" className="text-slate-400">
                     →
                   </span>
                 ) : null}
               </li>
             ))}
           </ol>
-          <dl className="divide-y divide-ink-800 sm:max-w-md">
+          <dl className="divide-y divide-slate-100 sm:max-w-md">
             <SummaryRow label="Phase">
               <PhaseBadge phase={detail.phase} />
             </SummaryRow>

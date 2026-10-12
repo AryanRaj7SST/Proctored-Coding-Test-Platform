@@ -53,8 +53,8 @@ export function TestCaseCard({
   return (
     <li
       className={cn(
-        'rounded-lg bg-ink-850 ring-1 transition',
-        valid ? 'ring-ink-700' : 'ring-bad/40',
+        'rounded-lg bg-white border shadow-xs transition',
+        valid ? 'border-slate-200' : 'border-rose-300 ring-1 ring-rose-200',
         !test.enabled && 'opacity-80',
       )}
     >
@@ -64,15 +64,15 @@ export function TestCaseCard({
           onClick={onToggleOpen}
           aria-expanded={open}
           aria-controls={panelId}
-          className="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500"
+          className="flex min-w-0 flex-1 items-center gap-2 rounded text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500"
         >
           {open ? (
-            <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+            <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
           ) : (
-            <ChevronRight className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
+            <ChevronRight className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
           )}
-          <span className="text-xs text-slate-500">#{index + 1}</span>
-          <span className={cn('truncate text-sm', test.enabled ? 'text-slate-100' : 'text-slate-400')}>
+          <span className="text-xs text-slate-500 font-mono">#{index + 1}</span>
+          <span className={cn('truncate text-sm', test.enabled ? 'text-slate-900 font-medium' : 'text-slate-400')}>
             {test.name.trim() || 'Untitled test case'}
           </span>
           {!valid ? (
@@ -83,7 +83,7 @@ export function TestCaseCard({
           {!test.enabled ? <Badge tone="neutral">disabled · not counted</Badge> : null}
         </button>
 
-        {shareText ? <span className="font-mono text-xs text-slate-400">{shareText}</span> : null}
+        {shareText ? <span className="font-mono text-xs text-slate-500 font-medium">{shareText}</span> : null}
 
         <div className="flex items-center gap-1">
           <Switch
@@ -123,7 +123,7 @@ export function TestCaseCard({
       {open ? (
         <div
           id={panelId}
-          className="grid gap-4 border-t border-ink-700 p-4 xl:grid-cols-[minmax(0,1fr)_300px]"
+          className="grid gap-4 border-t border-slate-100 p-4 xl:grid-cols-[minmax(0,1fr)_300px]"
         >
           <div className="min-w-0 space-y-4">
             <fieldset disabled={readOnly} className="space-y-4">
@@ -175,7 +175,7 @@ export function TestCaseCard({
           </div>
 
           <aside className="space-y-3 xl:sticky xl:top-4 xl:self-start" aria-label="What students see">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">What students see</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">What students see</p>
             <ReadableTestPreview
               name={test.name}
               description={test.description}
@@ -189,9 +189,9 @@ export function TestCaseCard({
               </p>
             ) : null}
             {allProblems.length > 0 ? (
-              <div className="rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30" role="alert">
-                <p className="font-semibold">Fix before saving:</p>
-                <ul className="mt-1 list-disc space-y-0.5 pl-4">
+              <div className="rounded-md bg-rose-50 p-3 text-xs text-rose-800 border border-rose-200 shadow-xs" role="alert">
+                <p className="font-semibold text-rose-900">Fix before saving:</p>
+                <ul className="mt-1 list-disc space-y-0.5 pl-4 text-rose-700">
                   {allProblems.map((p, i) => (
                     <li key={i}>{p}</li>
                   ))}

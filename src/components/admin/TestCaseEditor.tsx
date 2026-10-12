@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { Button, ConfirmDialog, EmptyState } from '@/components/ui';
 import { SPEC_LIMITS } from '@shared/test-spec';
 import { Notice } from './questions/bits';
@@ -9,7 +9,8 @@ import { duplicateTest, newTest, suiteProblems, testProblems, testServerErrors }
 import { formatMarks, marksWord, equalShare, parseMarks, splitSummary } from './questions/marks';
 import { TemplatePicker } from './questions/TemplatePicker';
 import { TestCaseCard } from './questions/TestCaseCard';
-import type { DraftTest } from './questions/types';
+import { JsonTestImporterModal } from './questions/JsonTestImporterModal';
+import type { DraftTest, QuestionDraft } from './questions/types';
 
 /**
  * Step 4 of the question editor: the question's test cases.
@@ -25,6 +26,7 @@ export function TestCaseEditor({
   marks,
   readOnly,
   serverErrors = {},
+  questionDraft,
 }: {
   tests: DraftTest[];
   onChange: (next: DraftTest[]) => void;
@@ -33,11 +35,13 @@ export function TestCaseEditor({
   readOnly?: boolean;
   /** ApiError.details from the last save ("tests", "tests.2.name", ...). */
   serverErrors?: Record<string, string>;
+  questionDraft?: Partial<QuestionDraft>;
 }) {
   const [open, setOpen] = React.useState<Set<string>>(
     () => new Set(tests.length === 1 ? [tests[0]!._key] : []),
   );
   const [picking, setPicking] = React.useState(false);
+  const [jsonModalOpen, setJsonModalOpen] = React.useState(false);
   const [pendingDelete, setPendingDelete] = React.useState<DraftTest | null>(null);
 
   const enabledCount = tests.filter((t) => t.enabled).length;
@@ -82,8 +86,8 @@ export function TestCaseEditor({
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-sm font-medium text-slate-100">{splitSummary(marks, enabledCount)}</p>
-          <p className="text-xs text-slate-400">
+          <p className="text-sm font-semibold text-slate-900">{splitSummary(marks, enabledCount)}</p>
+          <p className="text-xs text-slate-500">
             {tests.length} test case{tests.length === 1 ? '' : 's'}
             {tests.length !== enabledCount
               ? ` · ${tests.length - enabledCount} disabled (not run or counted)`
@@ -91,10 +95,21 @@ export function TestCaseEditor({
             {' · '}every enabled test case is shown to students. Marks are split automatically.
           </p>
         </div>
-        <Button size="sm" onClick={() => setPicking(true)} disabled={readOnly || atLimit}>
-          <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-          Add test case
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setJsonModalOpen(true)}
+            disabled={readOnly || atLimit}
+          >
+            <Sparkles className="h-3.5 w-3.5 mr-1 text-blue-600" aria-hidden="true" />
+            AI Prompt / JSON
+          </Button>
+          <Button size="sm" onClick={() => setPicking(true)} disabled={readOnly || atLimit}>
+            <Plus className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+            Add test case
+          </Button>
+        </div>
       </div>
 
       {tests.length > 0 && enabledCount === 0 ? (
@@ -133,10 +148,21 @@ export function TestCaseEditor({
           title="No test cases yet"
           description="Test cases check what the student's page does: elements, styles, clicks, typing and JavaScript. The question cannot be validated or published without at least one enabled test case."
           action={
-            <Button size="sm" onClick={() => setPicking(true)} disabled={readOnly}>
-              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
-              Add the first test case
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button size="sm" onClick={() => setPicking(true)} disabled={readOnly}>
+                <Plus className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
+                Add the first test case
+              </Button>
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => setJsonModalOpen(true)}
+                disabled={readOnly}
+              >
+                <Sparkles className="h-3.5 w-3.5 mr-1 text-blue-600" aria-hidden="true" />
+                Import via JSON / AI Prompt
+              </Button>
+            </div>
           }
         />
       ) : (
@@ -167,15 +193,32 @@ export function TestCaseEditor({
       <TemplatePicker
         open={picking}
         onClose={() => setPicking(false)}
+        onOpenJsonModal={() => setJsonModalOpen(true)}
         onPick={(template) => {
           setPicking(false);
           add(newTest(template, names));
         }}
       />
 
+      <JsonTestImporterModal
+        open={jsonModalOpen}
+        onClose={() => setJsonModalOpen(false)}
+        existingNames={names}
+        questionDraft={questionDraft}
+        onImport={(imported) => {
+          const next = [...tests, ...imported];
+          onChange(next);
+          setOpen((prev) => {
+            const s = new Set(prev);
+            imported.forEach((t) => s.add(t._key));
+            return s;
+          });
+        }}
+      />
+
       <ConfirmDialog
         open={pendingDelete !== null}
-        theme="dark"
+        theme="light"
         danger
         title="Delete test case?"
         message={`"${pendingDelete?.name.trim() || 'Untitled test case'}" will be removed when you save. This cannot be undone after saving.`}

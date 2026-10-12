@@ -51,9 +51,9 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Settings</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Read-only. These come from environment variables — change them in <code>.env</code> and restart.
+        <h1 className="text-xl font-semibold text-slate-900">Settings</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Read-only. These come from environment variables — change them in <code className="bg-slate-100 px-1 py-0.5 rounded text-slate-800">.env</code> and restart.
         </p>
       </div>
 
@@ -61,7 +61,7 @@ export default async function SettingsPage() {
         <Badge tone={dbOk ? 'ok' : 'bad'}>Database {dbOk ? 'connected' : 'unreachable'}</Badge>
         <Badge tone={runner.ok ? 'ok' : 'bad'}>Runner {runner.ok ? 'online' : 'offline'}</Badge>
       </div>
-      {runner.detail ? <p className="text-xs text-slate-400">Runner: {runner.detail}</p> : null}
+      {runner.detail ? <p className="text-xs text-slate-500">Runner: {runner.detail}</p> : null}
 
       <Card>
         <CardHeader title="Configuration" />
@@ -77,8 +77,8 @@ export default async function SettingsPage() {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.label}>
-                  <Td className="text-slate-300">{r.label}</Td>
-                  <Td className="font-mono text-xs text-slate-200">{r.value}</Td>
+                  <Td className="text-slate-800 font-medium">{r.label}</Td>
+                  <Td className="font-mono text-xs text-slate-700">{r.value}</Td>
                   <Td className="text-xs text-slate-500">{r.note ?? ''}</Td>
                 </tr>
               ))}
@@ -102,12 +102,12 @@ export default async function SettingsPage() {
             <tbody>
               {audits.map((a) => (
                 <tr key={a.id}>
-                  <Td className="text-slate-300">{a.action}</Td>
+                  <Td className="text-slate-800 font-medium">{a.action}</Td>
                   <Td className="text-xs text-slate-500">
                     {a.entity}
                     {a.entityId ? ` · ${a.entityId.slice(0, 8)}` : ''}
                   </Td>
-                  <Td className="text-xs text-slate-400">{a.user?.email ?? 'system'}</Td>
+                  <Td className="text-xs text-slate-600">{a.user?.email ?? 'system'}</Td>
                   <Td className="text-xs text-slate-500">{formatDateTime(a.createdAt)}</Td>
                 </tr>
               ))}

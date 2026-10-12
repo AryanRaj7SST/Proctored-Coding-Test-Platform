@@ -70,11 +70,11 @@ export default async function StudentsPage({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Students</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">Students</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Everyone who has signed in with Google. New accounts are students; only an administrator can change
           a role or deactivate an account. To give someone a batch before they sign in, add them to the{' '}
-          <Link href="/admin/allowed-emails" className="text-brand-300 hover:underline">
+          <Link href="/admin/allowed-emails" className="font-medium text-blue-600 hover:underline">
             student roster
           </Link>
           .
@@ -106,7 +106,7 @@ export default async function StudentsPage({
                 Search
               </Button>
               {q ? (
-                <Link href="/admin/students" className="text-xs text-slate-400 hover:text-slate-200">
+                <Link href="/admin/students" className="text-xs font-medium text-slate-500 hover:text-slate-800">
                   Clear
                 </Link>
               ) : null}
@@ -149,18 +149,18 @@ export default async function StudentsPage({
                   const max = marksToNumber(score?._sum.maxScore ?? 0);
                   const v = violations.find((x) => x.userId === u.id)?._count._all ?? 0;
                   return (
-                    <tr key={u.id}>
+                    <tr key={u.id} className="hover:bg-slate-50 transition">
                       <Td>
-                        <p className="font-medium text-slate-100">{u.name ?? u.email}</p>
+                        <p className="font-semibold text-slate-900">{u.name ?? u.email}</p>
                         <p className="text-xs text-slate-500">{u.email}</p>
                       </Td>
                       <Td>
                         <Badge tone={u.role === 'ADMIN' ? 'info' : 'neutral'}>{u.role.toLowerCase()}</Badge>
                       </Td>
-                      <Td className="text-slate-400">{u.batch ?? '—'}</Td>
-                      <Td className="text-slate-400">{u._count.assignments}</Td>
-                      <Td className="text-slate-400">{u._count.attempts}</Td>
-                      <Td className="text-slate-300">
+                      <Td className="text-slate-600">{u.batch ?? '—'}</Td>
+                      <Td className="text-slate-600">{u._count.assignments}</Td>
+                      <Td className="text-slate-600">{u._count.attempts}</Td>
+                      <Td className="font-medium text-slate-700">
                         {max > 0 ? `${sum}/${max} (${percentage(sum, max)}%)` : '—'}
                       </Td>
                       <Td>
@@ -180,7 +180,7 @@ export default async function StudentsPage({
                         {u._count.attempts > 0 ? (
                           <Link
                             href={`/admin/attempts?userId=${u.id}`}
-                            className="text-xs text-brand-300 hover:underline"
+                            className="text-xs text-blue-600 hover:underline font-medium"
                           >
                             Review ({u._count.attempts})
                           </Link>

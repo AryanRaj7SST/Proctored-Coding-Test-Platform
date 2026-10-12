@@ -81,7 +81,7 @@ function WindowInput({
           </span>
         ) : null}
         {edited !== null ? (
-          <button type="button" className="text-brand-300 hover:underline" onClick={() => onEdit(null)}>
+          <button type="button" className="text-blue-600 hover:underline font-medium" onClick={() => onEdit(null)}>
             Revert to saved
           </button>
         ) : null}
@@ -200,9 +200,9 @@ export function ScheduleStep({
         </CardBody>
       </Card>
 
-      <div className="rounded-lg bg-ink-900 px-4 py-3 ring-1 ring-ink-700">
-        <p className="text-xs uppercase tracking-wide text-slate-500">Students will see</p>
-        <p className="mt-1 text-sm text-slate-100">
+      <div className="rounded-lg bg-white px-4 py-3 border border-slate-200 shadow-xs">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Students will see</p>
+        <p className="mt-1 text-sm font-medium text-slate-800">
           {scheduleSummary({
             startIso: start,
             endIso: end,

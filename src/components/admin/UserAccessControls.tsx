@@ -110,7 +110,7 @@ export function UserAccessControls({
         type="button"
         onClick={askActive}
         className={
-          user.active ? 'text-xs text-rose-400 hover:underline' : 'text-xs text-brand-300 hover:underline'
+          user.active ? 'text-xs text-rose-600 hover:underline font-medium' : 'text-xs text-blue-600 hover:underline font-medium'
         }
       >
         {user.active ? 'Deactivate' : 'Reactivate'}

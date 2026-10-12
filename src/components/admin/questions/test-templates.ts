@@ -164,4 +164,4 @@ export const TEST_TEMPLATES: TestTemplate[] = [
   },
 ];
 
-export const BLANK_BODY: TestCaseBody = { assertions: [{ type: 'exists', selector: '' }] };
+export const BLANK_BODY: TestCaseBody = { assertions: [{ type: 'exists', selector: 'body' }] };

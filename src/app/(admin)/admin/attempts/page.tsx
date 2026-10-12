@@ -80,8 +80,8 @@ export default async function AttemptsPage({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Submissions & Code Review</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-xl font-semibold text-slate-900">Submissions & Code Review</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Inspect student submitted code, compare with starter code, review test run timelines, and manually
           adjust scores or give feedback.
         </p>
@@ -90,7 +90,7 @@ export default async function AttemptsPage({
       {pendingCount > 0 ? (
         <div
           role="status"
-          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
         >
           <span>
             {pendingCount} submitted attempt(s) are awaiting grading because the test runner was unavailable.

@@ -55,19 +55,19 @@ export default async function AuditLogsPage({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Audit logs</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">Audit logs</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Every administrative change and grading event, newest first. Code and secrets are never recorded.
         </p>
       </div>
 
       <form method="get" className="flex flex-wrap items-end gap-2" aria-label="Filter audit logs">
-        <label className="text-xs text-slate-400">
+        <label className="text-xs font-medium text-slate-600">
           Action
           <select
             name="action"
             defaultValue={filter.action ?? ''}
-            className="mt-1 block rounded-md bg-ink-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-inset ring-ink-700"
+            className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
           >
             {ACTION_FILTERS.map((a) => (
               <option key={a.value} value={a.value}>
@@ -76,23 +76,23 @@ export default async function AuditLogsPage({
             ))}
           </select>
         </label>
-        <label className="text-xs text-slate-400">
+        <label className="text-xs font-medium text-slate-600">
           Actor (name or email)
           <input
             name="q"
             defaultValue={filter.q ?? ''}
-            className="mt-1 block rounded-md bg-ink-900 px-3 py-2 text-sm text-slate-100 ring-1 ring-inset ring-ink-700"
+            className="mt-1 block rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-xs focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600"
           />
         </label>
         {filter.entityId ? <input type="hidden" name="entityId" value={filter.entityId} /> : null}
         <button
           type="submit"
-          className="rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-500"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-blue-700 transition"
         >
           Filter
         </button>
         {filter.action || filter.q || filter.entityId ? (
-          <Link href="/admin/audit-logs" className="px-2 py-2 text-sm text-slate-400 hover:text-white">
+          <Link href="/admin/audit-logs" className="px-3 py-2 text-sm font-medium text-slate-500 hover:text-slate-800 transition">
             Clear
           </Link>
         ) : null}
@@ -119,14 +119,14 @@ export default async function AuditLogsPage({
                 {items.map((row) => {
                   const link = row.entityId && ENTITY_LINK[row.entity]?.(row.entityId);
                   return (
-                    <tr key={row.id}>
-                      <Td className="whitespace-nowrap text-xs text-slate-400">
+                    <tr key={row.id} className="hover:bg-slate-50 transition">
+                      <Td className="whitespace-nowrap text-xs text-slate-500">
                         {formatDateTime(row.createdAt)}
                       </Td>
                       <Td>
                         {row.actor ? (
                           <>
-                            <p className="text-sm text-slate-100">{row.actor.name ?? row.actor.email}</p>
+                            <p className="text-sm font-semibold text-slate-900">{row.actor.name ?? row.actor.email}</p>
                             <p className="text-xs text-slate-500">{row.actor.role.toLowerCase()}</p>
                           </>
                         ) : (
@@ -136,9 +136,9 @@ export default async function AuditLogsPage({
                       <Td>
                         <Badge tone={toneFor(row.action)}>{row.action}</Badge>
                       </Td>
-                      <Td className="text-xs text-slate-400">
+                      <Td className="text-xs text-slate-600">
                         {link ? (
-                          <Link href={link} className="text-brand-300 hover:underline">
+                          <Link href={link} className="font-medium text-blue-600 hover:underline">
                             {row.entity}
                           </Link>
                         ) : (

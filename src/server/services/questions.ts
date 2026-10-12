@@ -321,11 +321,11 @@ function assertSuiteSaveable(tests: QuestionTestInput[]): void {
 /** Row data for a test case. Every test is student-visible; marks are split equally, never per test. */
 function testRow(t: QuestionTestInput, index: number) {
   return {
-    name: t.name,
-    description: t.description || null,
+    name: t.name.trim(),
+    description: t.description?.trim() || null,
     testType: t.testType,
     testCode: t.testCode,
-    expectedBehavior: t.expectedBehavior || null,
+    expectedBehavior: t.expectedBehavior?.trim() || null,
     order: t.order ?? index,
     enabled: t.enabled,
   };
@@ -393,19 +393,6 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
       const deletingTests = existing.tests.filter((e) => !keepIds.has(e.id));
 
       if (deletingTests.length > 0) {
-        for (const t of deletingTests) {
-          const resultsCount = await tx.testResult.count({
-            where: {
-              attempt: { questionId: id },
-              OR: [{ testId: t.id }, { testName: t.name }],
-            },
-          });
-          if (resultsCount > 0) {
-            throw conflict(
-              `Test case "${t.name}" cannot be deleted because graded results are attached to it. Disable the test case instead.`,
-            );
-          }
-        }
         await tx.questionTest.deleteMany({
           where: { questionId: id, id: { in: deletingTests.map((t) => t.id) } },
         });
@@ -459,8 +446,42 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
           }
         : {}),
     };
-    return tx.question.update({ where: { id }, data, include: orderedTests });
+    const updated = await tx.question.update({ where: { id }, data, include: orderedTests });
+
+    // Update snapshots for all ExamQuestion and Attempt rows referencing this question
+    // so students reloading mid-exam immediately receive the newest content and test cases.
+    const newSnapshot = buildSnapshot(updated);
+    await tx.examQuestion.updateMany({
+      where: { questionId: id },
+      data: {
+        snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
+        questionVersion: updated.version,
+      },
+    });
+    await tx.attempt.updateMany({
+      where: { questionId: id },
+      data: {
+        snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
+        questionVersion: updated.version,
+      },
+    });
+
+    return updated;
   });
+
+  // If test cases changed, automatically re-evaluate student code for that question
+  // and award each student their highest score across all historical submissions.
+  if (impact.testsChanged) {
+    try {
+      const { regradeAttemptsForQuestion } = await import('@/server/grading/grade-attempt');
+      await regradeAttemptsForQuestion(id, {
+        includeGraded: true,
+        reason: 'Auto-regrade: question test cases updated (best of all submissions)',
+      });
+    } catch (err) {
+      console.error('Failed to auto-regrade attempts after test update:', err);
+    }
+  }
 
   return { question, impact: { ...impact, marksChanged, previousStatus: existing.status } };
 }

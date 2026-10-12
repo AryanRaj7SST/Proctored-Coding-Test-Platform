@@ -25,24 +25,24 @@ export function SittingSummary({ result }: { result: SittingResult }) {
     <Card>
       <div className="grid gap-5 p-5 lg:grid-cols-[1fr_auto] lg:items-center">
         <div className="min-w-0">
-          <p className="text-xs uppercase tracking-wide text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
             Attempt #{result.attemptNumber} result
           </p>
           {graded ? (
             <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
               <span
-                className="text-3xl font-semibold tabular-nums text-slate-50"
+                className="text-3xl font-bold tabular-nums text-slate-900"
                 title={`${result.score} / ${result.maxScore}`}
               >
                 {formatScore(result.score, result.maxScore)}
               </span>
-              <span aria-hidden="true" className="text-2xl text-slate-600">
+              <span aria-hidden="true" className="text-2xl text-slate-300">
                 ·
               </span>
-              <span className="text-3xl font-semibold tabular-nums text-slate-50">
+              <span className="text-3xl font-bold tabular-nums text-slate-900">
                 {formatPercent(result.percentage)}
               </span>
-              <span aria-hidden="true" className="text-2xl text-slate-600">
+              <span aria-hidden="true" className="text-2xl text-slate-300">
                 ·
               </span>
               <Badge tone={state.tone} className="px-2.5 py-1 text-sm font-semibold uppercase tracking-wide">
@@ -52,23 +52,23 @@ export function SittingSummary({ result }: { result: SittingResult }) {
           ) : (
             <div className="mt-1">
               <p className="flex flex-wrap items-center gap-3">
-                <span className="text-3xl font-semibold tabular-nums text-slate-500">
+                <span className="text-3xl font-bold tabular-nums text-slate-400">
                   {formatScore(null, result.maxScore)}
                 </span>
                 <Badge tone={state.tone} className="px-2.5 py-1 text-sm font-semibold">
                   {state.label}
                 </Badge>
               </p>
-              <p className="mt-2 max-w-xl text-xs text-slate-400">
+              <p className="mt-2 max-w-xl text-xs text-slate-500">
                 {result.state === 'GRADING_PENDING'
                   ? 'At least one answer could not be graded (runner unavailable). No total or pass/fail is recorded until every answer is graded; regrade the pending answers below.'
                   : 'The student is still taking this test. Totals appear once the sitting is submitted and graded.'}
               </p>
             </div>
           )}
-          <p className="mt-3 text-xs text-slate-400">
+          <p className="mt-3 text-xs text-slate-500">
             Pass mark{' '}
-            <span className="font-medium text-slate-200">{formatPercent(result.passingPercentage)}</span>
+            <span className="font-semibold text-slate-800">{formatPercent(result.passingPercentage)}</span>
             {' · '}
             {tally}
           </p>
@@ -84,7 +84,7 @@ export function SittingSummary({ result }: { result: SittingResult }) {
           <Meta
             label="Violations"
             value={String(result.violationCount)}
-            valueClassName={result.violationCount > 0 ? 'text-bad' : undefined}
+            valueClassName={result.violationCount > 0 ? 'text-rose-600 font-semibold' : undefined}
           />
           <p className="col-span-full text-[11px] text-slate-500">Times in {zone}</p>
         </dl>
@@ -97,7 +97,7 @@ function Meta({ label, value, valueClassName }: { label: string; value: string; 
   return (
     <div>
       <dt className="text-slate-500">{label}</dt>
-      <dd className={cn('mt-0.5 whitespace-nowrap text-slate-200', valueClassName)}>{value}</dd>
+      <dd className={cn('mt-0.5 whitespace-nowrap font-medium text-slate-800', valueClassName)}>{value}</dd>
     </div>
   );
 }
@@ -137,14 +137,14 @@ export function SittingSwitcher({ result }: { result: SittingResult }) {
             href={`/admin/results/${s.sessionId}`}
             aria-current={isCurrent ? 'page' : undefined}
             className={cn(
-              'inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs ring-1 ring-inset transition',
+              'inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-xs border transition shadow-xs',
               isCurrent
-                ? 'bg-brand-500/15 text-white ring-brand-500/40'
-                : 'text-slate-300 ring-ink-700 hover:bg-ink-800 hover:text-white',
+                ? 'bg-blue-50 text-blue-700 font-semibold border-blue-500'
+                : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-50 hover:text-slate-900',
             )}
           >
             <span className="font-medium">#{s.attemptNumber}</span>
-            <span className="font-mono text-slate-400">{formatPercent(s.percentage)}</span>
+            <span className="font-mono text-slate-500">{formatPercent(s.percentage)}</span>
             <Badge tone={st.tone}>{st.label}</Badge>
           </Link>
         );

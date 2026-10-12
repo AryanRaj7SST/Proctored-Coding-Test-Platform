@@ -95,6 +95,27 @@ export async function ensureAttempts(session: {
     attempts = await prisma.attempt.findMany({ where: { sessionId: session.id } });
   }
   const byQuestion = new Map(attempts.map((a) => [a.questionId, a]));
+
+  // If questions were edited while exam was in progress, sync attempts on reload
+  for (const eq of examQuestions) {
+    const attempt = byQuestion.get(eq.questionId);
+    if (attempt && eq.snapshot) {
+      const snap = eq.snapshot as Record<string, unknown>;
+      const version = typeof snap.version === 'number' ? snap.version : (eq.questionVersion ?? 1);
+      if (attempt.questionVersion !== version) {
+        await prisma.attempt.update({
+          where: { id: attempt.id },
+          data: {
+            snapshot: eq.snapshot as Prisma.InputJsonValue,
+            questionVersion: version,
+          },
+        });
+        attempt.snapshot = eq.snapshot;
+        attempt.questionVersion = version;
+      }
+    }
+  }
+
   return examQuestions.flatMap((eq) => {
     const attempt = byQuestion.get(eq.questionId);
     return attempt ? [{ order: eq.order, attempt }] : [];

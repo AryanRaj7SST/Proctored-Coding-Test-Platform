@@ -15,11 +15,11 @@ export function PhaseBadge({ phase }: { phase: TestPhase }) {
 }
 
 const NOTICE_TONE: Record<Tone, string> = {
-  neutral: 'bg-ink-900 text-slate-300 ring-ink-700',
-  info: 'bg-brand-500/10 text-brand-100 ring-brand-500/30',
-  ok: 'bg-ok/10 text-emerald-100 ring-ok/30',
-  warn: 'bg-warn/10 text-amber-200 ring-warn/30',
-  bad: 'bg-bad/10 text-rose-200 ring-bad/30',
+  neutral: 'bg-slate-50 text-slate-700 ring-slate-200',
+  info: 'bg-blue-50 text-blue-800 ring-blue-200',
+  ok: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
+  warn: 'bg-amber-50 text-amber-800 ring-amber-200',
+  bad: 'bg-rose-50 text-rose-800 ring-rose-200',
 };
 
 /** An inline callout for explanations and warnings. */
@@ -89,7 +89,7 @@ export function SummaryRow({ label, children }: { label: string; children: React
   return (
     <div className="flex items-baseline justify-between gap-3 py-1.5 text-xs">
       <dt className="shrink-0 text-slate-500">{label}</dt>
-      <dd className="min-w-0 text-right text-slate-200">{children}</dd>
+      <dd className="min-w-0 text-right font-medium text-slate-800">{children}</dd>
     </div>
   );
 }
@@ -141,8 +141,8 @@ export function ChoiceCard({
     <label
       htmlFor={id}
       className={cn(
-        'flex cursor-pointer gap-3 rounded-md p-3 ring-1 ring-inset transition',
-        checked ? 'bg-brand-500/10 ring-brand-500/50' : 'bg-ink-900 ring-ink-700 hover:bg-ink-800',
+        'flex cursor-pointer gap-3 rounded-lg p-3 border transition shadow-xs',
+        checked ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:bg-slate-50',
         disabled && 'cursor-not-allowed opacity-60',
       )}
     >
@@ -154,11 +154,11 @@ export function ChoiceCard({
         checked={checked}
         disabled={disabled}
         onChange={() => onChange(value)}
-        className="mt-0.5 h-4 w-4 shrink-0 accent-brand-500"
+        className="mt-0.5 h-4 w-4 shrink-0 accent-blue-600"
       />
       <span>
-        <span className="block text-sm font-medium text-slate-100">{title}</span>
-        <span className="mt-0.5 block text-xs text-slate-400">{description}</span>
+        <span className="block text-sm font-semibold text-slate-900">{title}</span>
+        <span className="mt-0.5 block text-xs text-slate-500">{description}</span>
       </span>
     </label>
   );

@@ -20,73 +20,73 @@ export function RegradeDiffModal({
       open={open}
       title="Republish & Regrade Results"
       onClose={onClose}
-      theme="dark"
+      theme="light"
       footer={
         <Button variant="primary" size="sm" onClick={onClose}>
           Close
         </Button>
       }
     >
-      <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1 text-slate-200">
+      <div className="max-h-[70vh] space-y-4 overflow-y-auto pr-1 text-slate-800">
         <div className="grid grid-cols-4 gap-2 text-center text-xs">
-          <div className="rounded bg-ink-900 p-2 ring-1 ring-ink-700">
-            <div className="text-slate-400">Total</div>
-            <div className="text-lg font-bold text-slate-100">{summary.totalAttempts}</div>
+          <div className="rounded bg-slate-50 p-2.5 border border-slate-200 shadow-xs">
+            <div className="text-slate-500 font-semibold uppercase text-[10px]">Total</div>
+            <div className="text-lg font-bold text-slate-900">{summary.totalAttempts}</div>
           </div>
-          <div className="rounded bg-ink-900 p-2 ring-1 ring-ink-700">
-            <div className="text-slate-400">Changed</div>
-            <div className="text-lg font-bold text-emerald-400">{summary.changedCount}</div>
+          <div className="rounded bg-emerald-50 p-2.5 border border-emerald-200 shadow-xs">
+            <div className="text-emerald-700 font-semibold uppercase text-[10px]">Changed</div>
+            <div className="text-lg font-bold text-emerald-800">{summary.changedCount}</div>
           </div>
-          <div className="rounded bg-ink-900 p-2 ring-1 ring-ink-700">
-            <div className="text-slate-400">Unchanged</div>
-            <div className="text-lg font-bold text-slate-300">{summary.unchangedCount}</div>
+          <div className="rounded bg-slate-50 p-2.5 border border-slate-200 shadow-xs">
+            <div className="text-slate-500 font-semibold uppercase text-[10px]">Unchanged</div>
+            <div className="text-lg font-bold text-slate-700">{summary.unchangedCount}</div>
           </div>
-          <div className="rounded bg-ink-900 p-2 ring-1 ring-ink-700">
-            <div className="text-slate-400">Failed</div>
-            <div className="text-lg font-bold text-rose-400">{summary.failedCount}</div>
+          <div className="rounded bg-rose-50 p-2.5 border border-rose-200 shadow-xs">
+            <div className="text-rose-700 font-semibold uppercase text-[10px]">Failed</div>
+            <div className="text-lg font-bold text-rose-800">{summary.failedCount}</div>
           </div>
         </div>
 
         {summary.changes.length === 0 ? (
-          <p className="text-sm italic text-slate-400">No existing attempts were found for this question.</p>
+          <p className="text-sm italic text-slate-500">No existing attempts were found for this question.</p>
         ) : (
           <div className="space-y-2">
-            <h4 className="text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-600">
               Per-Attempt Score Changes
             </h4>
-            <div className="overflow-x-auto rounded border border-ink-700">
+            <div className="overflow-x-auto rounded border border-slate-200">
               <table className="w-full text-left text-xs">
-                <thead className="border-b border-ink-700 bg-ink-900 text-slate-400">
+                <thead className="border-b border-slate-200 bg-slate-50 text-slate-600 font-semibold">
                   <tr>
-                    <th className="p-2">Student</th>
-                    <th className="p-2">Before</th>
-                    <th className="p-2">After</th>
-                    <th className="p-2">Diff</th>
-                    <th className="p-2">Status</th>
+                    <th className="p-2.5">Student</th>
+                    <th className="p-2.5">Before</th>
+                    <th className="p-2.5">After</th>
+                    <th className="p-2.5">Diff</th>
+                    <th className="p-2.5">Status</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-ink-800">
+                <tbody className="divide-y divide-slate-100">
                   {summary.changes.map((c) => (
-                    <tr key={c.attemptId} className={c.changed ? 'bg-emerald-950/20' : ''}>
-                      <td className="p-2">
-                        <div className="font-medium text-slate-100">{c.userName || 'Student'}</div>
-                        <div className="text-[11px] text-slate-400">{c.userEmail}</div>
+                    <tr key={c.attemptId} className={c.changed ? 'bg-emerald-50/50' : 'bg-white'}>
+                      <td className="p-2.5">
+                        <div className="font-semibold text-slate-900">{c.userName || 'Student'}</div>
+                        <div className="text-[11px] text-slate-500">{c.userEmail}</div>
                       </td>
-                      <td className="p-2 font-mono">{c.oldScore}</td>
-                      <td className="p-2 font-mono font-bold text-slate-100">{c.newScore}</td>
-                      <td className="p-2 font-mono">
+                      <td className="p-2.5 font-mono text-slate-600">{c.oldScore}</td>
+                      <td className="p-2.5 font-mono font-bold text-slate-900">{c.newScore}</td>
+                      <td className="p-2.5 font-mono">
                         {c.scoreDelta > 0 ? (
-                          <span className="font-semibold text-emerald-400">+{c.scoreDelta}</span>
+                          <span className="font-semibold text-emerald-700">+{c.scoreDelta}</span>
                         ) : c.scoreDelta < 0 ? (
-                          <span className="font-semibold text-rose-400">{c.scoreDelta}</span>
+                          <span className="font-semibold text-rose-700">{c.scoreDelta}</span>
                         ) : (
-                          <span className="text-slate-500">0</span>
+                          <span className="text-slate-400">0</span>
                         )}
                       </td>
-                      <td className="p-2">
+                      <td className="p-2.5">
                         {c.oldStatus !== c.newStatus ? (
                           <div className="flex items-center gap-1 text-[11px]">
-                            <span className="text-slate-400">{c.oldStatus}</span>
+                            <span className="text-slate-500">{c.oldStatus}</span>
                             <span>→</span>
                             <Badge
                               tone={

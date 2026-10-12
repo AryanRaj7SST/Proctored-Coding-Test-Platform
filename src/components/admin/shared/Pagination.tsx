@@ -26,10 +26,10 @@ export function Pagination({
     return `${basePath}?${query.toString()}`;
   };
   const linkClass =
-    'rounded-md px-3 py-1.5 text-sm ring-1 ring-inset ring-ink-700 text-slate-300 hover:bg-ink-800 hover:text-white';
+    'rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition';
   return (
-    <nav aria-label="Pagination" className="flex items-center justify-between gap-3 text-sm text-slate-400">
-      <span>
+    <nav aria-label="Pagination" className="flex items-center justify-between gap-3 text-xs text-slate-500">
+      <span className="font-medium text-slate-600">
         Page {page} of {pages} · {total} total
       </span>
       <div className="flex gap-2">

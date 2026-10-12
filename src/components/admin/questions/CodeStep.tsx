@@ -57,16 +57,16 @@ function CodeSet({
     <section
       aria-labelledby={`${id}-title`}
       className={cn(
-        'space-y-3 rounded-lg p-4 ring-1',
-        tone === 'secret' ? 'bg-warn/5 ring-warn/30' : 'bg-ink-900 ring-ink-700',
+        'space-y-3 rounded-lg p-4 border transition-all',
+        tone === 'secret' ? 'bg-amber-50/40 border-amber-200' : 'bg-white border-slate-200 shadow-xs',
       )}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 id={`${id}-title`} className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+          <h3 id={`${id}-title`} className="flex items-center gap-2 text-sm font-semibold text-slate-900">
             {title}
           </h3>
-          <p className="mt-0.5 text-xs text-slate-400">{description}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{description}</p>
         </div>
         {action}
       </div>
@@ -83,7 +83,7 @@ function CodeSet({
           if (next === 'rendered') setRefreshKey((k) => k + 1);
         }}
       />
-      <div className="h-[340px] overflow-hidden rounded-md ring-1 ring-ink-700">
+      <div className="h-[340px] overflow-hidden rounded-md border border-slate-200 shadow-xs">
         {part === 'rendered' ? (
           <PreviewFrame html={values.html} css={values.css} js={values.js} refreshKey={refreshKey} />
         ) : (
@@ -97,7 +97,7 @@ function CodeSet({
         )}
       </div>
       {partErrors.length ? (
-        <p className="text-xs text-bad" role="alert">
+        <p className="text-xs font-medium text-rose-600" role="alert">
           {partErrors.join(' ')}
         </p>
       ) : null}

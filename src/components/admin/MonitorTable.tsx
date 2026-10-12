@@ -90,16 +90,16 @@ export function MonitorTable({
             </thead>
             <tbody>
               {rows.map((r) => (
-                <tr key={r.sessionId} className={r.violationCount > 0 ? 'bg-bad/5' : undefined}>
+                <tr key={r.sessionId} className={r.violationCount > 0 ? 'bg-rose-50/60' : undefined}>
                   <Td>
-                    <p className="font-medium text-slate-100">{r.studentName}</p>
+                    <p className="font-semibold text-slate-900">{r.studentName}</p>
                     <p className="text-xs text-slate-500">{r.studentEmail}</p>
                   </Td>
-                  <Td className="text-slate-400">{r.examTitle}</Td>
+                  <Td className="text-slate-600">{r.examTitle}</Td>
                   <Td>
                     <Badge tone={statusTone(r.status)}>{r.status.toLowerCase()}</Badge>
                   </Td>
-                  <Td className="font-mono text-xs tabular-nums text-slate-300">
+                  <Td className="font-mono text-xs tabular-nums text-slate-700">
                     {r.msRemaining === null ? (
                       <span className="font-sans text-slate-500" title={formatDateTime(r.endedAt)}>
                         Ended {formatDateTime(r.endedAt)}
@@ -108,7 +108,7 @@ export function MonitorTable({
                       formatClock(r.msRemaining)
                     )}
                   </Td>
-                  <Td className="text-slate-400">
+                  <Td className="text-slate-600">
                     {r.submittedCount}/{r.questionCount}
                   </Td>
                   <Td>
@@ -120,7 +120,7 @@ export function MonitorTable({
                         {r.camera === 'ON' ? 'on' : 'off'}
                       </Badge>
                     ) : (
-                      <span className="text-xs text-slate-600">—</span>
+                      <span className="text-xs text-slate-400">—</span>
                     )}
                   </Td>
                   <Td className="text-xs text-slate-500">
@@ -133,9 +133,9 @@ export function MonitorTable({
           </Table>
         )}
       </CardBody>
-      <div className="border-t border-ink-700 px-4 py-2 text-xs text-slate-500">
+      <div className="border-t border-slate-100 px-5 py-3 text-xs text-slate-500">
         Snapshot at {formatDateTime(snapshot.at)} ·{' '}
-        <Link href="/admin/attempts" className="text-brand-300 hover:underline">
+        <Link href="/admin/attempts" className="text-blue-600 hover:text-blue-700 hover:underline font-medium">
           review individual attempts
         </Link>
       </div>

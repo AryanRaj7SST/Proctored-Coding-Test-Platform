@@ -91,7 +91,7 @@ export function RevokeAccessPanel({
         onConfirm={() => void revoke()}
       >
         <p>
-          <strong className="text-slate-100">{normalized}</strong> will no longer see or be able to open this
+          <strong className="text-slate-900 font-semibold">{normalized}</strong> will no longer see or be able to open this
           test. A sitting in progress is submitted and graded now. You can restore access from the table
           below.
         </p>

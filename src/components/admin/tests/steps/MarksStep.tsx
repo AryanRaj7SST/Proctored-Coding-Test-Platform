@@ -45,7 +45,7 @@ export function MarksStep({
           action={
             <div className="text-right">
               <p className="text-xs uppercase tracking-wide text-slate-500">Total</p>
-              <p className="text-lg font-semibold tabular-nums text-slate-50" aria-live="polite">
+              <p className="text-lg font-semibold tabular-nums text-slate-900" aria-live="polite">
                 {formatMarks(total)} marks
               </p>
             </div>
@@ -79,16 +79,16 @@ export function MarksStep({
                       <tr key={q.questionId}>
                         <Td className="text-xs tabular-nums text-slate-500">{i + 1}</Td>
                         <Td>
-                          <label htmlFor={inputId} className="block text-sm text-slate-100">
+                          <label htmlFor={inputId} className="block text-sm font-medium text-slate-900">
                             {q.title}
                           </label>
                           <Badge tone={DIFFICULTY_TONE[q.difficulty]} className="mt-1">
                             {q.difficulty.toLowerCase()}
                           </Badge>
                         </Td>
-                        <Td className="text-slate-400">
+                        <Td className="text-slate-700">
                           {q.enabledTests === 0 ? (
-                            <span className="text-amber-300">0 — cannot award marks</span>
+                            <span className="text-amber-700 font-medium">0 — cannot award marks</span>
                           ) : (
                             q.enabledTests
                           )}
@@ -116,13 +116,13 @@ export function MarksStep({
                             </p>
                           )}
                         </Td>
-                        <Td className="text-xs text-slate-400">{splitHint(q.marks, q.enabledTests)}</Td>
+                        <Td className="text-xs text-slate-600">{splitHint(q.marks, q.enabledTests)}</Td>
                         <Td>
                           {isDefault ? null : (
                             <button
                               type="button"
                               onClick={() => setMarks(q.questionId, String(q.defaultMarks))}
-                              className="text-xs text-brand-300 hover:underline disabled:opacity-40"
+                              className="text-xs text-blue-600 hover:underline disabled:opacity-40"
                             >
                               Use default
                             </button>
@@ -153,8 +153,8 @@ export function MarksStep({
                 onChange={(e) => update('passingPercentage', e.target.value)}
               />
             </Field>
-            <div className="rounded-md bg-ink-900 px-3 py-2.5 ring-1 ring-ink-700 sm:mt-6">
-              <p className="text-sm font-medium text-slate-100" aria-live="polite">
+            <div className="rounded-md bg-slate-50 px-3 py-2.5 border border-slate-200 shadow-xs sm:mt-6">
+              <p className="text-sm font-semibold text-slate-900" aria-live="polite">
                 {passMarkText(total, form.passingPercentage)}
               </p>
               <p className="mt-1 text-xs text-slate-500">

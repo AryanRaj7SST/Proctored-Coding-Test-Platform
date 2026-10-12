@@ -40,19 +40,19 @@ export default async function LoginPage({
   }
 
   return (
-    <main id="main" className="flex min-h-screen items-center justify-center bg-ink-950 px-4">
-      <div className="w-full max-w-sm rounded-xl bg-ink-850 p-8 ring-1 ring-ink-700">
+    <main id="main" className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-brand-600 text-lg font-bold text-white">
+          <div className="mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-lg font-bold text-white shadow-xs">
             &lt;/&gt;
           </div>
-          <h1 className="text-lg font-semibold text-slate-50">Coding Assessment Platform</h1>
-          <p className="mt-1 text-xs text-slate-400">Sign in with your Google account to continue.</p>
+          <h1 className="text-lg font-semibold text-slate-900">Coding Assessment Platform</h1>
+          <p className="mt-1 text-xs text-slate-600">Sign in with your Google account to continue.</p>
         </div>
 
         {message ? (
           <div
-            className="mb-4 rounded-md bg-bad/10 p-3 text-xs text-rose-200 ring-1 ring-bad/30"
+            className="mb-4 rounded-md border border-rose-200 bg-rose-50 p-3 text-xs text-rose-700"
             role="alert"
           >
             {message}

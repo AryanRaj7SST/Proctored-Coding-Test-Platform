@@ -83,7 +83,7 @@ export function Sidebar() {
         {NAV.map((group, g) => (
           <li key={group.label ?? g} className="shrink-0">
             {group.label ? (
-              <p className="hidden px-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-slate-500 lg:block">
+              <p className="hidden px-3 pb-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 lg:block">
                 {group.label}
               </p>
             ) : null}
@@ -98,8 +98,8 @@ export function Sidebar() {
                       className={cn(
                         'block whitespace-nowrap rounded-md px-3 py-1.5 text-sm transition',
                         active
-                          ? 'bg-ink-800 font-medium text-white'
-                          : 'text-slate-400 hover:bg-ink-850 hover:text-slate-200',
+                          ? 'bg-blue-50 font-semibold text-blue-700 shadow-xs border-l-2 border-blue-600 pl-2.5'
+                          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900 font-medium',
                       )}
                     >
                       {link.label}

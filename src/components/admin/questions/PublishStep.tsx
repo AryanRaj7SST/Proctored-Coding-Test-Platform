@@ -86,7 +86,7 @@ export function PublishStep({
 
   return (
     <div className="space-y-5">
-      <div className="space-y-3 rounded-lg bg-ink-900 p-4 ring-1 ring-ink-700">
+      <div className="space-y-3 rounded-lg bg-white p-4 border border-slate-200 shadow-xs">
         <div className="flex flex-wrap items-center gap-2">
           <StatusBadge status={status} />
           <Badge
@@ -99,29 +99,29 @@ export function PublishStep({
             {question.updatedAt ? ` · updated ${formatDateTime(question.updatedAt)}` : ''}
           </span>
         </div>
-        <p className="text-sm text-slate-300">{STATUS_MEANING[status]}</p>
+        <p className="text-sm text-slate-600">{STATUS_MEANING[status]}</p>
         <ol aria-label="Question lifecycle" className="flex flex-wrap items-center gap-1.5 text-xs">
           {LIFECYCLE.map((s, i) => (
             <li key={s} className="flex items-center gap-1.5">
               <span
                 aria-current={s === status ? 'step' : undefined}
                 className={cn(
-                  'rounded px-2 py-0.5',
-                  s === status ? 'bg-brand-600 font-medium text-white' : 'bg-ink-800 text-slate-400',
+                  'rounded-md px-2.5 py-0.5 text-xs transition',
+                  s === status ? 'bg-blue-600 font-semibold text-white shadow-xs' : 'bg-slate-100 font-medium text-slate-600',
                 )}
               >
                 {s.toLowerCase()}
               </span>
-              {i < LIFECYCLE.length - 1 ? <span className="text-slate-600">→</span> : null}
+              {i < LIFECYCLE.length - 1 ? <span className="text-slate-400">→</span> : null}
             </li>
           ))}
           <li className="ml-2 flex items-center gap-1.5">
-            <span className="text-slate-600">·</span>
+            <span className="text-slate-400">·</span>
             <span
               aria-current={status === 'ARCHIVED' ? 'step' : undefined}
               className={cn(
-                'rounded px-2 py-0.5',
-                status === 'ARCHIVED' ? 'bg-brand-600 font-medium text-white' : 'bg-ink-800 text-slate-400',
+                'rounded-md px-2.5 py-0.5 text-xs transition',
+                status === 'ARCHIVED' ? 'bg-blue-600 font-semibold text-white shadow-xs' : 'bg-slate-100 font-medium text-slate-600',
               )}
             >
               archived
@@ -173,7 +173,7 @@ export function PublishStep({
         {onRepublishAndRegrade && status !== 'ARCHIVED' ? (
           <Button
             variant="secondary"
-            className="hover:bg-brand-950/40 hover:text-brand-200 border-brand-500/50 text-brand-300"
+            className="hover:bg-blue-50 hover:text-blue-700 border-blue-300 text-blue-600 bg-white shadow-xs font-medium"
             onClick={onRepublishAndRegrade}
             loading={regrading}
             disabled={busy !== null || regrading}

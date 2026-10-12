@@ -22,7 +22,7 @@ export function Stepper({
 }) {
   return (
     <nav aria-label="Test builder steps" className="overflow-x-auto">
-      <ol className="flex min-w-max items-center gap-1 rounded-lg bg-ink-850 p-1.5 ring-1 ring-ink-700">
+      <ol className="flex min-w-max items-center gap-1 rounded-lg bg-white p-1.5 border border-slate-200 shadow-xs">
         {STEPS.map((step, i) => {
           const active = step.id === current;
           const reachable = enabled || i === 0;
@@ -37,8 +37,8 @@ export function Stepper({
                 title={reachable ? undefined : 'Create the draft first'}
                 className={cn(
                   'flex items-center gap-2 rounded-md px-2.5 py-1.5 text-xs font-medium transition',
-                  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500',
-                  active ? 'bg-ink-700 text-white' : 'text-slate-400 hover:bg-ink-800 hover:text-slate-200',
+                  'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-600',
+                  active ? 'bg-blue-50 text-blue-700 font-semibold shadow-xs' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900',
                   !reachable && 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-slate-400',
                 )}
               >
@@ -47,12 +47,12 @@ export function Stepper({
                   className={cn(
                     'flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-semibold ring-1 ring-inset',
                     mark === 'error'
-                      ? 'bg-bad/20 text-bad ring-bad/40'
+                      ? 'bg-rose-100 text-rose-700 ring-rose-300'
                       : mark === 'done'
-                        ? 'bg-ok/15 text-ok ring-ok/30'
+                        ? 'bg-emerald-100 text-emerald-700 ring-emerald-300'
                         : active
-                          ? 'bg-brand-600 text-white ring-brand-500'
-                          : 'bg-ink-900 text-slate-400 ring-ink-600',
+                          ? 'bg-blue-600 text-white ring-blue-600'
+                          : 'bg-slate-100 text-slate-500 ring-slate-200',
                   )}
                 >
                   {mark === 'error' ? '!' : mark === 'done' ? '✓' : i + 1}

@@ -258,21 +258,14 @@ export function QuestionWizard({
         step: stepOfErrorKey(firstKey) ?? 'basic',
       };
     // The server checks the suite only when it receives it (always on create).
-    const sendsTests = tests.length > 0 && (!question || testsDiffer(tests, savedTests));
-    if (sendsTests && invalidCount > 0) {
+    const sendsTests = !question || testsDiffer(tests, savedTests);
+    if (sendsTests && tests.length > 0 && invalidCount > 0) {
       return {
         message: `${invalidCount} test case${invalidCount === 1 ? ' has' : 's have'} problems. Fix them before saving.`,
         step: 'tests',
       };
     }
-    if (sendsTests && suite[0]) return { message: suite[0], step: 'tests' };
-    if (question && question.tests.length > 0 && tests.length === 0) {
-      return {
-        message:
-          'A saved question must keep at least one test case. Add one before saving, or archive the question.',
-        step: 'tests',
-      };
-    }
+    if (sendsTests && tests.length > 0 && suite[0]) return { message: suite[0], step: 'tests' };
     return null;
   };
 
@@ -317,10 +310,8 @@ export function QuestionWizard({
         router.replace(`/admin/questions/${fresh.id}/edit?step=${thenStep ?? step}`);
         return fresh;
       }
-      // Send the test cases only when they changed: the server then leaves them
-      // untouched (ids, version and validation stay as they are). It also
-      // rejects an empty list, so an untested question saves without one.
-      const sendTests = tests.length > 0 && testsDiffer(tests, savedTests);
+      // Send the test cases whenever they changed: the server then updates them.
+      const sendTests = testsDiffer(tests, savedTests);
       fresh = normalizeQuestion(
         await apiPatch<object>(
           `/api/questions/${question.id}`,
@@ -524,18 +515,21 @@ export function QuestionWizard({
           <button
             type="button"
             onClick={() => (dirty ? setConfirmLeave(true) : router.push('/admin/questions'))}
-            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200"
+            className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Questions
           </button>
-          <h1 className="truncate text-xl font-semibold text-slate-50">
+          <h1 className="truncate text-xl font-semibold text-slate-900">
             {isNew ? 'New question' : draft.title.trim() || question?.title || 'Untitled question'}
           </h1>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-600">
             {question ? (
               <>
                 <StatusBadge status={question.status} />
+                <Badge tone="neutral" className="font-mono text-[11px] bg-slate-100 text-slate-700 border border-slate-200">
+                  ID: {question.id} (Immutable)
+                </Badge>
                 <Badge
                   tone={
                     question.validation === 'PASSED'
@@ -554,8 +548,8 @@ export function QuestionWizard({
               <Badge tone="neutral">not saved yet</Badge>
             )}
             {dirty ? (
-              <span className="inline-flex items-center gap-1.5 text-warn" role="status">
-                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-warn" />
+              <span className="inline-flex items-center gap-1.5 text-amber-600 font-medium" role="status">
+                <span aria-hidden="true" className="h-1.5 w-1.5 rounded-full bg-amber-500" />
                 Unsaved changes
               </span>
             ) : null}
@@ -565,7 +559,7 @@ export function QuestionWizard({
           {question ? (
             <Link
               href={`/admin/questions/${question.id}/preview`}
-              className="inline-flex h-9 items-center gap-1.5 rounded-md px-3 text-sm text-slate-300 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
+              className="inline-flex h-9 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-700 shadow-xs hover:bg-slate-50 hover:text-slate-900"
             >
               <Eye className="h-4 w-4" aria-hidden="true" />
               Preview
@@ -647,6 +641,7 @@ export function QuestionWizard({
               marks={draft.marks}
               readOnly={readOnly}
               serverErrors={serverErrors}
+              questionDraft={draft}
             />
           ) : null}
           {step === 'validate' && question ? (

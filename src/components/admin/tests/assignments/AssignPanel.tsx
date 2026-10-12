@@ -93,7 +93,7 @@ export function AssignPanel({
               ]}
               active={mode}
               onChange={(id) => setMode(id as Mode)}
-              className="border-b border-ink-700"
+              className="border-b border-slate-200"
             />
 
             {mode === 'students' ? (

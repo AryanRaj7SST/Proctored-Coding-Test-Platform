@@ -76,14 +76,14 @@ export default async function TestsPage({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold text-slate-50">Tests</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">Tests</h1>
+          <p className="mt-1 text-sm text-slate-500">
             Build tests from published questions, schedule them, choose who can take them, then publish.
           </p>
         </div>
         <Link
           href="/admin/exams/new"
-          className="rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white hover:bg-brand-700"
+          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-xs hover:bg-blue-700 transition"
         >
           Create test
         </Link>
@@ -92,9 +92,9 @@ export default async function TestsPage({
       <TestListToolbar phase={phase} q={q} />
 
       <Card>
-        <div className="flex items-center justify-between border-b border-ink-700 px-4 py-3">
-          <h2 className="text-sm font-semibold text-slate-100">{tabLabel} tests</h2>
-          <p className="text-xs text-slate-400">
+        <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+          <h2 className="text-sm font-semibold text-slate-900">{tabLabel} tests</h2>
+          <p className="text-xs text-slate-500">
             {data.total === 0 ? 'None' : `${from}–${to} of ${data.total}`}
           </p>
         </div>
@@ -106,7 +106,7 @@ export default async function TestsPage({
                 description={empty.description}
                 action={
                   !q && (phase === '' || phase === 'DRAFT') ? (
-                    <Link href="/admin/exams/new" className="text-xs text-brand-300 hover:underline">
+                    <Link href="/admin/exams/new" className="text-xs font-medium text-blue-600 hover:underline">
                       Create a test
                     </Link>
                   ) : undefined
@@ -134,11 +134,11 @@ export default async function TestsPage({
                 {data.items.map((t) => {
                   const zoneAt = new Date(t.startTime ?? t.endTime ?? t.publishedAt ?? Date.now()).getTime();
                   return (
-                    <tr key={t.id} className="hover:bg-ink-900/60">
+                    <tr key={t.id} className="hover:bg-slate-50 transition">
                       <Td className="max-w-[16rem]">
                         <Link
                           href={`/admin/exams/${t.id}`}
-                          className="font-medium text-slate-100 hover:underline"
+                          className="font-semibold text-slate-900 hover:text-blue-600 hover:underline"
                         >
                           {t.title}
                         </Link>
@@ -150,7 +150,7 @@ export default async function TestsPage({
                         <PhaseBadge phase={t.phase} />
                       </Td>
                       <Td className="whitespace-nowrap text-xs">
-                        <span className="block text-slate-300">
+                        <span className="block font-medium text-slate-700">
                           {t.startTime || t.endTime
                             ? scheduleRange(t.startTime, t.endTime, t.timezone)
                             : 'Not scheduled'}
@@ -159,16 +159,16 @@ export default async function TestsPage({
                           {t.timezone} ({utcOffsetLabel(t.timezone, zoneAt)})
                         </span>
                       </Td>
-                      <Td className="whitespace-nowrap text-slate-400">{formatMinutes(t.durationMinutes)}</Td>
-                      <Td className="text-slate-400">{t.questionCount}</Td>
-                      <Td className="text-slate-400">{formatMarks(t.totalMarks)}</Td>
-                      <Td className="text-xs text-slate-400">
+                      <Td className="whitespace-nowrap text-slate-600">{formatMinutes(t.durationMinutes)}</Td>
+                      <Td className="text-slate-600">{t.questionCount}</Td>
+                      <Td className="text-slate-600">{formatMarks(t.totalMarks)}</Td>
+                      <Td className="text-xs text-slate-600">
                         {ACCESS_LABEL[t.accessMode]}
                         {t.maxAttempts > 1 ? (
                           <span className="block text-slate-500">{plural(t.maxAttempts, 'attempt')}</span>
                         ) : null}
                       </Td>
-                      <Td className="whitespace-nowrap text-slate-400">
+                      <Td className="whitespace-nowrap text-slate-600">
                         {t.accessMode === 'ANY_AUTHENTICATED_USER' && t.assignedCount === 0
                           ? '—'
                           : t.assignedCount}
@@ -176,7 +176,7 @@ export default async function TestsPage({
                         {t.sittingCount > 0 ? (
                           <Link
                             href={`/admin/attempts?examId=${t.id}`}
-                            className="text-brand-300 hover:underline"
+                            className="font-medium text-blue-600 hover:underline"
                             title="View attempts for this test"
                           >
                             {t.sittingCount}
@@ -187,12 +187,12 @@ export default async function TestsPage({
                       </Td>
                       <Td className="whitespace-nowrap text-xs">
                         <div className="flex gap-3">
-                          <Link href={`/admin/exams/${t.id}`} className="text-brand-300 hover:underline">
+                          <Link href={`/admin/exams/${t.id}`} className="font-medium text-blue-600 hover:underline">
                             Edit
                           </Link>
                           <Link
                             href={`/admin/exams/${t.id}/assignments`}
-                            className="text-brand-300 hover:underline"
+                            className="font-medium text-blue-600 hover:underline"
                           >
                             Assign
                           </Link>
@@ -208,7 +208,7 @@ export default async function TestsPage({
       </Card>
 
       {pages > 1 ? (
-        <nav aria-label="Pagination" className="flex items-center justify-between text-xs text-slate-400">
+        <nav aria-label="Pagination" className="flex items-center justify-between text-xs text-slate-500">
           <span>
             Page {data.page} of {pages}
           </span>
@@ -216,7 +216,7 @@ export default async function TestsPage({
             {data.page > 1 ? (
               <Link
                 href={testsHref({ phase, q, page: data.page - 1 })}
-                className="rounded-md px-3 py-1.5 text-slate-300 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
+                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
               >
                 ← Previous
               </Link>
@@ -224,7 +224,7 @@ export default async function TestsPage({
             {data.page < pages ? (
               <Link
                 href={testsHref({ phase, q, page: data.page + 1 })}
-                className="rounded-md px-3 py-1.5 text-slate-300 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
+                className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
               >
                 Next →
               </Link>

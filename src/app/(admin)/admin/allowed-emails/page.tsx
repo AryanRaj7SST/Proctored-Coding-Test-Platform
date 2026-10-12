@@ -19,12 +19,12 @@ export default async function AllowedEmailsPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Student roster</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-xl font-semibold text-slate-900">Student roster</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Anyone with a Google account can sign in and becomes a student. The roster is optional: it
           pre-registers students with a batch so tests can be assigned to them before their first sign-in.
           Roles and account access are managed on the{' '}
-          <Link href="/admin/students" className="text-brand-300 hover:underline">
+          <Link href="/admin/students" className="text-blue-600 hover:underline">
             Students
           </Link>{' '}
           page.

@@ -52,8 +52,8 @@ export default async function TestLogsPage({
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-xl font-semibold text-slate-50">Test logs</h1>
-        <p className="mt-1 text-sm text-slate-400">
+        <h1 className="text-xl font-bold tracking-tight text-slate-900">Test logs</h1>
+        <p className="mt-1 text-sm text-slate-500">
           Sandbox console output and errors from the last {runs.length} runs. After {env.testLogRetentionDays}{' '}
           days the daily maintenance job clears console output and removes practice runs; graded submissions
           keep their results and code.
@@ -71,7 +71,7 @@ export default async function TestLogsPage({
           <a
             key={f.href}
             href={f.href}
-            className="rounded-md px-3 py-1.5 text-slate-300 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
+            className="rounded-lg border border-slate-300 bg-white px-3 py-1.5 font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
           >
             {f.label}
           </a>
@@ -88,11 +88,11 @@ export default async function TestLogsPage({
             />
           ) : (
             runs.map((r) => (
-              <details key={r.id} className="rounded-md bg-ink-900 p-3 ring-1 ring-ink-700">
+              <details key={r.id} className="rounded-lg bg-white p-3 border border-slate-200 shadow-xs">
                 <summary className="flex cursor-pointer flex-wrap items-center gap-2 text-sm">
                   <Badge tone={statusTone(r.status)}>{r.status.toLowerCase()}</Badge>
                   <Badge tone="neutral">{r.kind.toLowerCase()}</Badge>
-                  <span className="text-slate-200">
+                  <span className="font-semibold text-slate-900">
                     {r.attempt?.question.title ??
                       questions.find((q) => q.id === r.questionId)?.title ??
                       'Unknown question'}
@@ -102,18 +102,18 @@ export default async function TestLogsPage({
                       ? `${r.attempt.user.name ?? r.attempt.user.email} · ${r.attempt.exam.title}`
                       : 'admin validation'}
                   </span>
-                  <span className="ml-auto text-xs text-slate-500">
+                  <span className="ml-auto text-xs font-mono text-slate-500">
                     {r.passedCount}/{r.totalCount} · {formatDuration(r.durationMs)} ·{' '}
                     {formatDateTime(r.startedAt)}
                   </span>
                 </summary>
 
                 {r.error ? (
-                  <p className="mt-2 rounded bg-bad/10 p-2 text-xs text-rose-200 ring-1 ring-bad/30">
+                  <p className="mt-2 rounded-lg bg-rose-50 border border-rose-200 p-2 text-xs text-rose-800">
                     {r.error}
                   </p>
                 ) : null}
-                <pre className="mt-2 max-h-64 overflow-auto font-mono text-[11px] leading-5 text-slate-400">
+                <pre className="mt-2 max-h-64 overflow-auto rounded bg-slate-50 border border-slate-200 p-2 font-mono text-[11px] leading-5 text-slate-700">
                   {r.logs || '(no console output captured)'}
                 </pre>
               </details>

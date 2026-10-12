@@ -169,7 +169,7 @@ export function QuestionPicker({
           }
           action={
             filtered ? undefined : (
-              <Link href="/admin/questions" className="text-xs text-brand-300 hover:underline">
+              <Link href="/admin/questions" className="text-xs font-medium text-blue-600 hover:underline">
                 Open the question bank
               </Link>
             )
@@ -177,23 +177,23 @@ export function QuestionPicker({
         />
       ) : (
         <ul
-          className={`divide-y divide-ink-800 rounded-md ring-1 ring-ink-700 ${loading ? 'opacity-60' : ''}`}
+          className={`divide-y divide-slate-100 rounded-lg border border-slate-200 bg-white shadow-xs ${loading ? 'opacity-60' : ''}`}
           aria-busy={loading || undefined}
         >
           {data?.items.map((item) => {
             const added = selectedIds.has(item.id);
             return (
-              <li key={item.id} className="flex items-center gap-3 px-3 py-2">
+              <li key={item.id} className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 transition">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm text-slate-100">{item.title}</p>
+                  <p className="truncate text-sm font-semibold text-slate-900">{item.title}</p>
                   <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-500">
                     <Badge tone={DIFFICULTY_TONE[item.difficulty]}>{item.difficulty.toLowerCase()}</Badge>
-                    <span>{formatMarks(item.marks)} marks</span>
+                    <span className="font-medium text-slate-700">{formatMarks(item.marks)} marks</span>
                     <span>· {plural(item.enabledTests, 'test')}</span>
                     <span>· v{item.version}</span>
                     {item.category ? <span>· {item.category}</span> : null}
                     {item.tags.slice(0, 3).map((t) => (
-                      <span key={t} className="text-slate-400">
+                      <span key={t} className="text-slate-500">
                         #{t}
                       </span>
                     ))}

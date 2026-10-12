@@ -36,10 +36,10 @@ function ClipboardToggle({
         setBusy(false);
       }}
       className={cn(
-        'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full ring-1 ring-inset transition',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500',
+        'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition shadow-xs',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600',
         'disabled:cursor-not-allowed disabled:opacity-50',
-        on ? 'bg-warn/70 ring-warn' : 'bg-ink-700 ring-ink-600',
+        on ? 'bg-amber-500' : 'bg-slate-200',
       )}
     >
       <span
@@ -213,12 +213,12 @@ export function AssignmentsTable({
                 const attempt = ATTEMPT_STATE_LABEL[r.attemptState];
                 const hasStarted = r.attemptsUsed > 0 || r.attemptState !== 'NOT_STARTED';
                 return (
-                  <tr key={r.id}>
+                  <tr key={r.id} className="hover:bg-slate-50 transition">
                     <Td>
-                      <span className="block text-slate-100">{r.name ?? '—'}</span>
+                      <span className="block font-semibold text-slate-900">{r.name ?? '—'}</span>
                       {r.batch ? <span className="block text-xs text-slate-500">{r.batch}</span> : null}
                     </Td>
-                    <Td className="text-xs text-slate-300">{r.email}</Td>
+                    <Td className="text-xs text-slate-600">{r.email}</Td>
                     <Td>
                       {r.signedIn ? (
                         <Badge tone="neutral">{r.assignmentStatus.replace(/_/g, ' ').toLowerCase()}</Badge>
@@ -229,10 +229,10 @@ export function AssignmentsTable({
                     <Td>
                       <Badge tone={attempt.tone}>{attempt.label}</Badge>
                     </Td>
-                    <Td className="tabular-nums text-slate-400">
+                    <Td className="tabular-nums text-slate-600">
                       {r.attemptsUsed} / {test.maxAttempts}
                     </Td>
-                    <Td className="whitespace-nowrap text-xs text-slate-400">
+                    <Td className="whitespace-nowrap text-xs text-slate-500">
                       {r.submittedAt ? formatInZone(r.submittedAt, test.timezone) : '—'}
                     </Td>
                     <Td className="whitespace-nowrap">
@@ -240,7 +240,7 @@ export function AssignmentsTable({
                         <div className="flex items-center gap-2">
                           <Link
                             href={`/admin/attempts?examId=${test.id}${r.userId ? `&userId=${r.userId}` : ''}`}
-                            className="tabular-nums text-slate-100 hover:underline"
+                            className="tabular-nums font-semibold text-blue-600 hover:underline"
                             title="View this student's attempts"
                           >
                             {formatMarks(r.score)}/{formatMarks(r.maxScore)}
@@ -273,8 +273,8 @@ export function AssignmentsTable({
                           onClick={() => setAccessChange(r)}
                           disabled={readOnly}
                           className={cn(
-                            'text-xs hover:underline disabled:cursor-not-allowed disabled:text-slate-600 disabled:no-underline',
-                            r.revoked ? 'text-brand-300' : 'text-rose-400',
+                            'text-xs hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline font-medium',
+                            r.revoked ? 'text-blue-600' : 'text-rose-600',
                           )}
                         >
                           {r.revoked ? 'Restore access' : 'Revoke access'}
@@ -316,7 +316,7 @@ export function AssignmentsTable({
         onConfirm={() => void changeAccess()}
       >
         <p>
-          <strong className="text-slate-100">{accessChange?.email}</strong>{' '}
+          <strong className="text-slate-900 font-semibold">{accessChange?.email}</strong>{' '}
           {accessChange?.revoked
             ? 'will be able to open and start this test again (attempt limits still apply).'
             : 'will no longer see or be able to open this test. Their account is not affected: they can still sign in and take other tests. A sitting in progress is submitted and graded now.'}
@@ -333,7 +333,7 @@ export function AssignmentsTable({
         onConfirm={() => void remove()}
       >
         <p>
-          <strong className="text-slate-100">{removing?.email}</strong>{' '}
+          <strong className="text-slate-900 font-semibold">{removing?.email}</strong>{' '}
           {test.accessMode === 'ASSIGNED_USERS_ONLY'
             ? 'will no longer see or be able to start this test.'
             : 'loses any accommodation on this test (they can still take it, since any signed-in student can).'}

@@ -11,10 +11,10 @@ import { cn } from '@/lib/utils';
 type NoticeTone = 'info' | 'ok' | 'warn' | 'bad';
 
 const NOTICE_TONES: Record<NoticeTone, string> = {
-  info: 'bg-brand-500/10 text-brand-100 ring-brand-500/30',
-  ok: 'bg-ok/10 text-emerald-200 ring-ok/30',
-  warn: 'bg-warn/10 text-amber-200 ring-warn/30',
-  bad: 'bg-bad/10 text-rose-200 ring-bad/30',
+  info: 'bg-blue-50 text-blue-800 ring-1 ring-blue-200',
+  ok: 'bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200',
+  warn: 'bg-amber-50 text-amber-800 ring-1 ring-amber-200',
+  bad: 'bg-rose-50 text-rose-800 ring-1 ring-rose-200',
 };
 
 export function Notice({
@@ -36,7 +36,7 @@ export function Notice({
     <div
       role={role}
       className={cn(
-        'flex flex-wrap items-start justify-between gap-3 rounded-md p-3 text-xs ring-1',
+        'flex flex-wrap items-start justify-between gap-3 rounded-md p-3 text-xs ring-1 shadow-xs',
         NOTICE_TONES[tone],
         className,
       )}
@@ -72,18 +72,18 @@ export function Switch({
       aria-label={showLabel ? undefined : label}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className="inline-flex items-center gap-2 rounded-md text-xs text-slate-300 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-500 disabled:cursor-not-allowed disabled:opacity-50"
+      className="inline-flex items-center gap-2 rounded-md text-xs text-slate-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
     >
       <span
         aria-hidden="true"
         className={cn(
-          'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition',
-          checked ? 'bg-ok' : 'bg-ink-600',
+          'relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition shadow-xs',
+          checked ? 'bg-blue-600' : 'bg-slate-300',
         )}
       >
         <span
           className={cn(
-            'inline-block h-4 w-4 rounded-full bg-white shadow transition',
+            'inline-block h-4 w-4 rounded-full bg-white shadow-xs transition',
             checked ? 'translate-x-[18px]' : 'translate-x-0.5',
           )}
         />
@@ -108,7 +108,7 @@ export function MiniField({
   const id = React.useId();
   return (
     <div className={cn('min-w-0 space-y-1', className)}>
-      <label htmlFor={id} className="block text-[11px] font-medium text-slate-400">
+      <label htmlFor={id} className="block text-[11px] font-semibold uppercase tracking-wider text-slate-600">
         {label}
       </label>
       {children(id)}
@@ -139,9 +139,9 @@ export function IconButton({
       aria-label={label}
       title={label}
       className={cn(
-        'inline-flex h-7 w-7 items-center justify-center rounded text-xs transition hover:bg-ink-700 disabled:cursor-not-allowed disabled:opacity-30',
-        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500',
-        tone === 'bad' ? 'text-rose-400 hover:text-rose-300' : 'text-slate-400 hover:text-white',
+        'inline-flex h-7 w-7 items-center justify-center rounded text-xs transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-30',
+        'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500',
+        tone === 'bad' ? 'text-rose-600 hover:text-rose-700' : 'text-slate-500 hover:text-slate-900',
       )}
     >
       {children}
@@ -162,8 +162,8 @@ export function SectionTitle({
   return (
     <div className="flex flex-wrap items-end justify-between gap-2">
       <div>
-        <h3 className="text-sm font-semibold text-slate-100">{title}</h3>
-        {hint ? <p className="mt-0.5 text-xs text-slate-400">{hint}</p> : null}
+        <h3 className="text-sm font-semibold text-slate-900">{title}</h3>
+        {hint ? <p className="mt-0.5 text-xs text-slate-500">{hint}</p> : null}
       </div>
       {action}
     </div>

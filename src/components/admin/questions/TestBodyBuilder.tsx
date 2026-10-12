@@ -88,7 +88,7 @@ export function TestBodyBuilder({
       </div>
 
       {mode === 'json' ? (
-        <div className="overflow-hidden rounded-md ring-1 ring-ink-700">
+        <div className="overflow-hidden rounded-md border border-slate-200 shadow-xs">
           <CodeEditor
             value={testCode}
             language="javascript"
@@ -131,7 +131,7 @@ function BuilderForm({ model, update }: { model: BodyModel; update: (patch: Part
   return (
     <div className="space-y-4">
       <fieldset className="space-y-2">
-        <legend className="text-xs font-semibold uppercase tracking-wide text-slate-400">Page setup</legend>
+        <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">Page setup</legend>
         <div className="flex flex-wrap items-end gap-2">
           <MiniField label="Screen size" className="w-52">
             {(id) => (
@@ -225,7 +225,7 @@ function BuilderForm({ model, update }: { model: BodyModel; update: (patch: Part
       </fieldset>
 
       <fieldset className="space-y-2">
-        <legend className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Interactions{' '}
           <span className="font-normal normal-case text-slate-500">· run in order, before the checks</span>
         </legend>
@@ -261,11 +261,11 @@ function BuilderForm({ model, update }: { model: BodyModel; update: (patch: Part
       </fieldset>
 
       <fieldset className="space-y-2">
-        <legend className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+        <legend className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           Checks <span className="font-normal normal-case text-slate-500">· all must pass</span>
         </legend>
         {model.assertions.length === 0 ? (
-          <p className="text-xs text-bad">A test case needs at least one check.</p>
+          <p className="text-xs font-medium text-rose-600">A test case needs at least one check.</p>
         ) : (
           <div className="space-y-2">
             {model.assertions.map((assertion, i) => (

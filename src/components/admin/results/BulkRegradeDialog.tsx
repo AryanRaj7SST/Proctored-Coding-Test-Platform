@@ -120,8 +120,8 @@ export function BulkRegradeDialog({ examId, examTitle }: { examId: string; examT
               <label
                 key={m.value}
                 className={cn(
-                  'flex cursor-pointer items-start gap-3 rounded-md px-3 py-2 ring-1 ring-inset transition',
-                  mode === m.value ? 'bg-brand-500/10 ring-brand-500/40' : 'ring-ink-700 hover:bg-ink-800',
+                  'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition shadow-xs',
+                  mode === m.value ? 'bg-blue-50 border-blue-500 ring-1 ring-blue-500' : 'bg-white border-slate-200 hover:bg-slate-50',
                 )}
               >
                 <input
@@ -130,11 +130,11 @@ export function BulkRegradeDialog({ examId, examTitle }: { examId: string; examT
                   value={m.value}
                   checked={mode === m.value}
                   onChange={() => setMode(m.value)}
-                  className="mt-0.5 accent-brand-500"
+                  className="mt-0.5 accent-blue-600"
                 />
                 <span>
-                  <span className="block text-sm text-slate-100">{m.label}</span>
-                  <span className="block text-xs text-slate-400">{m.hint}</span>
+                  <span className="block text-sm font-semibold text-slate-900">{m.label}</span>
+                  <span className="block text-xs text-slate-500">{m.hint}</span>
                 </span>
               </label>
             ))}
@@ -160,16 +160,16 @@ export function BulkRegradeDialog({ examId, examTitle }: { examId: string; examT
             />
           </Field>
 
-          <label className="flex items-start gap-2 text-sm text-slate-200">
+          <label className="flex items-start gap-2 text-sm text-slate-800 font-medium">
             <input
               type="checkbox"
               checked={force}
               onChange={(e) => setForce(e.target.checked)}
-              className="mt-0.5 accent-brand-500"
+              className="mt-0.5 accent-blue-600"
             />
             <span>
               Force
-              <span className="block text-xs text-slate-400">
+              <span className="block text-xs font-normal text-slate-500">
                 Also re-run answers that already have full marks.
               </span>
             </span>
@@ -241,14 +241,14 @@ function RegradeSummary({ summary }: { summary: ExamRegradeResponse }) {
   ];
   return (
     <div className="space-y-3" role="status">
-      <p className="text-sm text-slate-300">
+      <p className="text-sm font-medium text-slate-700">
         Processed {summary.attempted} answer{summary.attempted === 1 ? '' : 's'}.
       </p>
       <dl className="grid grid-cols-2 gap-2">
         {items.map((i) => (
-          <div key={i.label} className="rounded-md bg-ink-900 px-3 py-2 ring-1 ring-ink-700">
-            <dt className="text-xs text-slate-400">{i.label}</dt>
-            <dd className={cn('mt-0.5 text-lg font-semibold', i.tone)}>{i.value}</dd>
+          <div key={i.label} className="rounded-lg bg-slate-50 px-3.5 py-2.5 border border-slate-200 shadow-xs">
+            <dt className="text-xs text-slate-500">{i.label}</dt>
+            <dd className={cn('mt-0.5 text-lg font-bold', i.tone)}>{i.value}</dd>
           </div>
         ))}
       </dl>

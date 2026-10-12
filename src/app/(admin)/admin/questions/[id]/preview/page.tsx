@@ -43,13 +43,13 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
         <div className="min-w-0 space-y-1.5">
           <Link
             href="/admin/questions"
-            className="inline-flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200"
+            className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800"
           >
             <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
             Questions
           </Link>
-          <h1 className="truncate text-xl font-semibold text-slate-50">Preview: {question.title}</h1>
-          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
+          <h1 className="truncate text-xl font-bold tracking-tight text-slate-900">Preview: {question.title}</h1>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
             <StatusBadge status={question.status} />
             <Badge
               tone={
@@ -64,7 +64,7 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
         </div>
         <Link
           href={`/admin/questions/${question.id}/edit`}
-          className="inline-flex h-9 items-center rounded-md px-4 text-sm text-slate-200 ring-1 ring-inset ring-ink-600 hover:bg-ink-800"
+          className="inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 shadow-xs hover:bg-slate-50 transition"
         >
           Edit
         </Link>
@@ -115,12 +115,12 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
             {question.tests.map((t, i) => {
               const readable = readableTest(t.testCode);
               return (
-                <details key={t.id} className="rounded-md bg-ink-900 ring-1 ring-ink-700">
-                  <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-sm text-slate-200">
+                <details key={t.id} className="rounded-md bg-white border border-slate-200 shadow-xs">
+                  <summary className="flex cursor-pointer flex-wrap items-center gap-2 px-3 py-2 text-sm font-medium text-slate-800">
                     <span className="text-xs text-slate-500">#{i + 1}</span>
                     {t.name}
                     {t.enabled ? (
-                      <span className="ml-auto font-mono text-xs text-slate-400">
+                      <span className="ml-auto font-mono text-xs text-slate-500">
                         {formatMarks(share)} {marksWord(share)}
                       </span>
                     ) : (
@@ -129,29 +129,29 @@ export default async function QuestionPreviewPage({ params }: { params: Promise<
                       </Badge>
                     )}
                   </summary>
-                  <div className="space-y-2 border-t border-ink-700 px-3 py-2 text-xs">
+                  <div className="space-y-2 border-t border-slate-200 px-3 py-2 text-xs">
                     {t.expectedBehavior || t.description ? (
-                      <p className="text-slate-300">{t.expectedBehavior || t.description}</p>
+                      <p className="text-slate-600">{t.expectedBehavior || t.description}</p>
                     ) : null}
                     {readable ? (
                       <>
                         {readable.steps.length ? (
-                          <ol className="list-decimal space-y-0.5 pl-4 text-slate-300">
+                          <ol className="list-decimal space-y-0.5 pl-4 text-slate-600">
                             {readable.steps.map((s, si) => (
                               <li key={si}>{s}</li>
                             ))}
                           </ol>
                         ) : null}
-                        <ul className="list-disc space-y-0.5 pl-4 text-slate-300">
+                        <ul className="list-disc space-y-0.5 pl-4 text-slate-600">
                           {readable.checks.map((c, ci) => (
                             <li key={ci}>{c}</li>
                           ))}
                         </ul>
                       </>
                     ) : (
-                      <p className="text-bad">This test body is not a valid specification.</p>
+                      <p className="text-rose-600 font-medium">This test body is not a valid specification.</p>
                     )}
-                    <pre className="max-h-64 overflow-auto rounded bg-ink-950 p-2 font-mono text-[11px] text-slate-400">
+                    <pre className="max-h-64 overflow-auto rounded bg-slate-50 border border-slate-200 p-2 font-mono text-[11px] text-slate-700">
                       {t.testCode}
                     </pre>
                   </div>

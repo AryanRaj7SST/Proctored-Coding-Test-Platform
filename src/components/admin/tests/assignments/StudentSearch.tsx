@@ -74,7 +74,7 @@ export function StudentSearch({
       </div>
 
       {error ? (
-        <p className="text-xs text-bad" role="alert">
+        <p className="text-xs font-medium text-rose-600" role="alert">
           {error}
         </p>
       ) : users === null ? (
@@ -85,22 +85,22 @@ export function StudentSearch({
       ) : users.length === 0 ? (
         <p className="text-xs text-slate-500">No students match.</p>
       ) : (
-        <ul className="max-h-72 divide-y divide-ink-800 overflow-auto rounded-md ring-1 ring-ink-700">
+        <ul className="max-h-72 divide-y divide-slate-100 overflow-auto rounded-lg border border-slate-200 bg-white shadow-xs">
           {users.map((u) => {
             const assigned = assignedEmails.has(u.email);
             const id = `as-user-${u.id}`;
             return (
-              <li key={u.id} className="flex items-center gap-3 px-3 py-2">
+              <li key={u.id} className="flex items-center gap-3 px-3.5 py-2.5 hover:bg-slate-50 transition">
                 <input
                   id={id}
                   type="checkbox"
                   checked={assigned || selected.has(u.id)}
                   disabled={assigned || !u.active}
                   onChange={(e) => toggle(u, e.target.checked)}
-                  className="h-4 w-4 accent-brand-500"
+                  className="h-4 w-4 rounded accent-blue-600"
                 />
                 <label htmlFor={id} className="min-w-0 flex-1 cursor-pointer">
-                  <span className="block truncate text-sm text-slate-100">{u.name ?? u.email}</span>
+                  <span className="block truncate text-sm font-semibold text-slate-900">{u.name ?? u.email}</span>
                   {u.name ? <span className="block truncate text-xs text-slate-500">{u.email}</span> : null}
                 </label>
                 {u.batch ? <Badge>{u.batch}</Badge> : null}

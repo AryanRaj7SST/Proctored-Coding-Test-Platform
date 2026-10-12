@@ -46,21 +46,21 @@ export function TagInput({
   return (
     <div
       className={cn(
-        'flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-md bg-ink-900 px-2 py-1.5 ring-1 ring-inset focus-within:ring-2 focus-within:ring-brand-500',
-        invalid ? 'ring-bad' : 'ring-ink-600',
+        'flex min-h-9 w-full flex-wrap items-center gap-1.5 rounded-lg bg-white px-2 py-1.5 border shadow-xs transition-colors focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-600',
+        invalid ? 'border-rose-500' : 'border-slate-300',
       )}
     >
       {value.map((tag) => (
         <span
           key={tag}
-          className="inline-flex items-center gap-1 rounded bg-ink-700 py-0.5 pl-2 pr-1 text-xs text-slate-200"
+          className="inline-flex items-center gap-1 rounded-md bg-blue-50 border border-blue-200 py-0.5 pl-2 pr-1 text-xs font-medium text-blue-700"
         >
           {tag}
           <button
             type="button"
             onClick={() => onChange(value.filter((t) => t !== tag))}
             aria-label={`Remove tag ${tag}`}
-            className="rounded p-0.5 text-slate-400 hover:bg-ink-600 hover:text-white"
+            className="rounded p-0.5 text-blue-500 hover:bg-blue-100 hover:text-blue-800 transition"
           >
             <X className="h-3 w-3" aria-hidden="true" />
           </button>
@@ -87,7 +87,7 @@ export function TagInput({
           }
         }}
         onBlur={() => add(text)}
-        className="h-6 min-w-[8rem] flex-1 bg-transparent text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none disabled:opacity-60"
+        className="h-6 min-w-[8rem] flex-1 bg-transparent text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none disabled:opacity-60"
       />
       {suggestions.length ? (
         <datalist id={listId}>

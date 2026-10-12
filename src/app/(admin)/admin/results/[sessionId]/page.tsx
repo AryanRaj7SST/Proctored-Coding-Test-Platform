@@ -43,28 +43,28 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ s
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-400">
-        <Link href="/admin/results" className="transition hover:text-white">
+      <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+        <Link href="/admin/results" className="transition hover:text-slate-900">
           &larr; Results
         </Link>
         <span aria-hidden="true">&middot;</span>
-        <Link href={`/admin/results?examId=${result.examId}`} className="transition hover:text-white">
+        <Link href={`/admin/results?examId=${result.examId}`} className="transition hover:text-slate-900">
           {result.examTitle} results
         </Link>
       </div>
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl font-semibold text-slate-50">{studentName}</h1>
-          <p className="mt-1 text-sm text-slate-400">
+          <h1 className="text-xl font-bold tracking-tight text-slate-900">{studentName}</h1>
+          <p className="mt-1 text-sm text-slate-500">
             {result.student.email}
             {result.student.batch ? ` · batch ${result.student.batch}` : ''}
             {' · '}
-            <Link href={`/admin/exams/${result.examId}`} className="text-brand-300 hover:underline">
+            <Link href={`/admin/exams/${result.examId}`} className="font-medium text-blue-600 hover:underline">
               {result.examTitle}
             </Link>
             {' · '}
-            <span className="text-slate-300">Attempt #{result.attemptNumber}</span>
+            <span className="font-semibold text-slate-800">Attempt #{result.attemptNumber}</span>
           </p>
         </div>
         <SittingSwitcher result={result} />
@@ -102,13 +102,13 @@ export default async function ResultDetailPage({ params }: { params: Promise<{ s
           {events.length === 0 ? (
             <p className="px-4 py-3 text-xs text-slate-500">No proctoring events were recorded.</p>
           ) : (
-            <ol className="divide-y divide-ink-800">
+            <ol className="divide-y divide-slate-100">
               {events.map((e) => (
-                <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs">
-                  <time className="w-16 shrink-0 font-mono tabular-nums text-slate-400">
+                <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-slate-50 transition">
+                  <time className="w-16 shrink-0 font-mono tabular-nums text-slate-500">
                     {clock.format(e.occurredAt)}
                   </time>
-                  <span className={e.violation ? 'text-rose-300' : 'text-slate-200'}>
+                  <span className={e.violation ? 'text-rose-600 font-medium' : 'text-slate-800'}>
                     {eventLabel(e.type)}
                   </span>
                   {e.violation ? <Badge tone="bad">violation</Badge> : null}

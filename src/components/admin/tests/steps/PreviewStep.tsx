@@ -64,43 +64,43 @@ export function PreviewStep({
         <Card className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h2 className="text-sm font-semibold text-slate-100">{form.title.trim() || 'Untitled test'}</h2>
+              <h2 className="text-sm font-semibold text-slate-900">{form.title.trim() || 'Untitled test'}</h2>
               {view ? <Badge tone={view.tone}>{view.label}</Badge> : null}
             </div>
             {form.description.trim() ? (
-              <p className="mt-1 line-clamp-2 text-xs text-slate-400">{form.description}</p>
+              <p className="mt-1 line-clamp-2 text-xs text-slate-600">{form.description}</p>
             ) : null}
             <dl className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-500">
               <div>
                 <dt className="inline">Duration: </dt>
-                <dd className="inline text-slate-300">
+                <dd className="inline text-slate-700 font-medium">
                   {Number.isFinite(duration) ? `${duration} min` : '--'}
                 </dd>
               </div>
               <div>
                 <dt className="inline">Questions: </dt>
-                <dd className="inline text-slate-300">{form.questions.length}</dd>
+                <dd className="inline text-slate-700 font-medium">{form.questions.length}</dd>
               </div>
               <div>
                 <dt className="inline">Total marks: </dt>
-                <dd className="inline text-slate-300">{formatMarks(total)}</dd>
+                <dd className="inline text-slate-700 font-medium">{formatMarks(total)}</dd>
               </div>
               {start ? (
                 <div>
                   <dt className="inline">Opens: </dt>
-                  <dd className="inline text-slate-300">{formatInZone(start, tz)}</dd>
+                  <dd className="inline text-slate-700 font-medium">{formatInZone(start, tz)}</dd>
                 </div>
               ) : null}
               {end ? (
                 <div>
                   <dt className="inline">Closes: </dt>
-                  <dd className="inline text-slate-300">{formatInZone(end, tz)}</dd>
+                  <dd className="inline text-slate-700 font-medium">{formatInZone(end, tz)}</dd>
                 </div>
               ) : null}
               {start || end ? (
                 <div>
                   <dt className="sr-only">Time zone: </dt>
-                  <dd className="inline text-slate-400">
+                  <dd className="inline text-slate-500">
                     {tz} ({utcOffsetLabel(tz, zoneAt)})
                   </dd>
                 </div>
@@ -109,7 +109,7 @@ export function PreviewStep({
           </div>
           <span
             aria-hidden="true"
-            className="shrink-0 rounded-md bg-brand-600 px-4 py-2 text-center text-sm font-medium text-white opacity-80"
+            className="shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-center text-sm font-medium text-white shadow-xs"
           >
             Start test
           </span>
@@ -120,7 +120,7 @@ export function PreviewStep({
         <Card>
           <CardHeader title="Rules at a glance" />
           <CardBody>
-            <dl className="divide-y divide-ink-800">
+            <dl className="divide-y divide-slate-100">
               <SummaryRow label="When">
                 {scheduleSummary({ startIso: start, endIso: end, timeZone: tz, durationMinutes: duration })}
               </SummaryRow>
@@ -146,7 +146,7 @@ export function PreviewStep({
           <CardHeader title="Instructions" subtitle="Shown before the student starts." />
           <CardBody>
             {form.instructions.trim() ? (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-300">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-slate-700">
                 {form.instructions}
               </p>
             ) : (
@@ -167,13 +167,13 @@ export function PreviewStep({
           {form.questions.length === 0 ? (
             <p className="p-4 text-xs text-slate-500">No questions yet.</p>
           ) : (
-            <ol className="divide-y divide-ink-800">
+            <ol className="divide-y divide-slate-100">
               {form.questions.map((q, i) => (
-                <li key={q.questionId} className="flex items-center gap-3 px-4 py-2.5">
-                  <span className="w-5 text-right text-xs tabular-nums text-slate-500">{i + 1}</span>
-                  <span className="min-w-0 flex-1 truncate text-sm text-slate-100">{q.title}</span>
+                <li key={q.questionId} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 transition">
+                  <span className="w-5 text-right text-xs tabular-nums text-slate-400">{i + 1}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium text-slate-900">{q.title}</span>
                   <Badge tone={DIFFICULTY_TONE[q.difficulty]}>{q.difficulty.toLowerCase()}</Badge>
-                  <span className="w-20 text-right text-xs tabular-nums text-slate-300">
+                  <span className="w-20 text-right text-xs tabular-nums font-medium text-slate-600">
                     {formatMarks(Number(q.marks) || 0)} marks
                   </span>
                 </li>

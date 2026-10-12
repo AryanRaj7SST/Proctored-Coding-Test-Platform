@@ -131,14 +131,14 @@ export function AttemptsTable({
             initialUserId || initialExamId ? (
               <Link
                 href="/admin/attempts"
-                className="hover:text-brand-200 text-xs text-brand-300 hover:underline"
+                className="text-xs text-blue-600 hover:text-blue-700 hover:underline font-medium"
               >
                 Clear URL filters
               </Link>
             ) : undefined
           }
         />
-        <CardBody className="space-y-3">
+        <CardBody className="space-y-4">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-6">
             <div className="lg:col-span-2">
               <Input
@@ -188,14 +188,14 @@ export function AttemptsTable({
 
           {batches.length > 0 ? (
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <span className="text-xs text-slate-400">Batch:</span>
+              <span className="text-xs font-semibold text-slate-500">Batch:</span>
               <button
                 type="button"
                 onClick={() => setBatch('')}
-                className={`rounded px-2 py-0.5 text-xs transition ${
+                className={`rounded px-2.5 py-1 text-xs transition ${
                   batch === ''
-                    ? 'bg-brand-600 font-medium text-white'
-                    : 'bg-ink-800 text-slate-400 hover:text-white'
+                    ? 'bg-blue-600 font-semibold text-white shadow-xs'
+                    : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                 }`}
               >
                 All
@@ -205,10 +205,10 @@ export function AttemptsTable({
                   key={b}
                   type="button"
                   onClick={() => setBatch(b)}
-                  className={`rounded px-2 py-0.5 text-xs transition ${
+                  className={`rounded px-2.5 py-1 text-xs transition ${
                     batch === b
-                      ? 'bg-brand-600 font-medium text-white'
-                      : 'bg-ink-800 text-slate-400 hover:text-white'
+                      ? 'bg-blue-600 font-semibold text-white shadow-xs'
+                      : 'border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900'
                   }`}
                 >
                   {b}
@@ -239,16 +239,16 @@ export function AttemptsTable({
                 {filtered.map((a) => {
                   const pct = a.maxScore > 0 ? percentage(a.score, a.maxScore) : 0;
                   return (
-                    <tr key={a.id} className="transition-colors hover:bg-ink-850/50">
+                    <tr key={a.id} className="transition-colors hover:bg-slate-50/80">
                       <Td>
-                        <p className="font-medium text-slate-100">{a.userName ?? a.userEmail}</p>
+                        <p className="font-semibold text-slate-900">{a.userName ?? a.userEmail}</p>
                         <p className="text-xs text-slate-500">
                           {a.userEmail}
                           {a.userBatch ? ` · ${a.userBatch}` : ''}
                         </p>
                       </Td>
-                      <Td className="font-medium text-slate-300">{a.questionTitle}</Td>
-                      <Td className="text-slate-400">{a.examTitle}</Td>
+                      <Td className="font-medium text-slate-800">{a.questionTitle}</Td>
+                      <Td className="text-slate-600">{a.examTitle}</Td>
                       <Td>
                         <div className="flex flex-col items-start gap-1">
                           <Badge tone={statusTone(a.status)}>
@@ -263,25 +263,25 @@ export function AttemptsTable({
                       </Td>
                       <Td>
                         {a.status === 'IN_PROGRESS' ? (
-                          <span className="text-slate-500">—</span>
+                          <span className="text-slate-400">—</span>
                         ) : a.gradingPending ? (
                           <Badge tone="warn">grading pending</Badge>
                         ) : (
                           <div>
-                            <span className="font-semibold text-slate-100">
+                            <span className="font-bold text-slate-900">
                               {a.score}/{a.maxScore}
                             </span>
-                            <span className="ml-1 text-xs text-slate-400">({pct}%)</span>
+                            <span className="ml-1 text-xs text-slate-500">({pct}%)</span>
                           </div>
                         )}
                       </Td>
-                      <Td className="text-xs text-slate-400">
+                      <Td className="text-xs text-slate-500">
                         {a.submittedAt ? formatDateTime(a.submittedAt) : formatDateTime(a.updatedAt)}
                       </Td>
                       <Td className="text-right">
                         <Link
                           href={`/admin/attempts/${a.id}`}
-                          className="inline-flex items-center gap-1 rounded-md bg-ink-800 px-2.5 py-1.5 text-xs font-medium text-brand-300 ring-1 ring-inset ring-ink-600 transition hover:bg-brand-600 hover:text-white"
+                          className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-blue-600 shadow-xs transition hover:bg-blue-50 hover:border-blue-300"
                         >
                           Review Code &rarr;
                         </Link>

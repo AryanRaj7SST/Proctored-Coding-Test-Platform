@@ -10,12 +10,12 @@ type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'success';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANTS: Record<ButtonVariant, string> = {
-  primary: 'bg-brand-600 text-white hover:bg-brand-700 focus-visible:outline-brand-500',
+  primary: 'bg-blue-600 text-white hover:bg-blue-700 shadow-xs focus-visible:outline-blue-500',
   secondary:
-    'bg-ink-800 text-slate-100 ring-1 ring-inset ring-ink-600 hover:bg-ink-700 focus-visible:outline-brand-500',
-  ghost: 'bg-transparent text-slate-300 hover:bg-ink-800 hover:text-white focus-visible:outline-brand-500',
-  danger: 'bg-bad text-white hover:brightness-110 focus-visible:outline-bad',
-  success: 'bg-ok text-white hover:brightness-110 focus-visible:outline-ok',
+    'bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 hover:text-slate-900 shadow-xs focus-visible:outline-blue-500',
+  ghost: 'bg-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-blue-500',
+  danger: 'bg-rose-600 text-white hover:bg-rose-700 shadow-xs focus-visible:outline-rose-500',
+  success: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-xs focus-visible:outline-emerald-500',
 };
 
 const SIZES: Record<ButtonSize, string> = {
@@ -93,9 +93,9 @@ export const Input = React.forwardRef<HTMLInputElement, React.InputHTMLAttribute
         ref={ref}
         {...rest}
         className={cn(
-          'h-9 w-full rounded-md bg-ink-900 px-3 text-sm text-slate-100 placeholder:text-slate-500',
-          'ring-1 ring-inset ring-ink-600 focus:outline-none focus:ring-2 focus:ring-brand-500',
-          'disabled:opacity-60',
+          'h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400',
+          'shadow-xs focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600',
+          'disabled:bg-slate-50 disabled:text-slate-400 disabled:opacity-60',
           className,
         )}
       />
@@ -112,8 +112,9 @@ export const Textarea = React.forwardRef<
       ref={ref}
       {...rest}
       className={cn(
-        'w-full rounded-md bg-ink-900 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500',
-        'ring-1 ring-inset ring-ink-600 focus:outline-none focus:ring-2 focus:ring-brand-500',
+        'w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400',
+        'shadow-xs focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600',
+        'disabled:bg-slate-50 disabled:text-slate-400',
         className,
       )}
     />
@@ -127,8 +128,9 @@ export const Select = React.forwardRef<HTMLSelectElement, React.SelectHTMLAttrib
         ref={ref}
         {...rest}
         className={cn(
-          'h-9 w-full rounded-md bg-ink-900 px-2 text-sm text-slate-100',
-          'ring-1 ring-inset ring-ink-600 focus:outline-none focus:ring-2 focus:ring-brand-500',
+          'h-9 w-full rounded-md border border-slate-300 bg-white px-2.5 text-sm text-slate-900',
+          'shadow-xs focus:border-blue-600 focus:outline-none focus:ring-1 focus:ring-blue-600',
+          'disabled:bg-slate-50 disabled:text-slate-400',
           className,
         )}
       >
@@ -155,13 +157,13 @@ export function Field({
 }) {
   return (
     <div className="space-y-1.5">
-      <label htmlFor={htmlFor} className="block text-xs font-medium uppercase tracking-wide text-slate-400">
+      <label htmlFor={htmlFor} className="block text-xs font-semibold uppercase tracking-wider text-slate-600">
         {label}
         {required ? <span className="ml-1 text-bad">*</span> : null}
       </label>
       {children}
       {error ? (
-        <p className="text-xs text-bad" role="alert">
+        <p className="text-xs font-medium text-rose-600" role="alert">
           {error}
         </p>
       ) : hint ? (
@@ -174,7 +176,7 @@ export function Field({
 /* -------------------------------------------------------------------- Card */
 
 export function Card({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn('rounded-lg bg-ink-850 ring-1 ring-ink-700', className)}>{children}</div>;
+  return <div className={cn('rounded-lg border border-slate-200 bg-white shadow-xs', className)}>{children}</div>;
 }
 
 export function CardHeader({
@@ -187,10 +189,10 @@ export function CardHeader({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-start justify-between gap-4 border-b border-ink-700 px-4 py-3">
+    <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-3.5">
       <div>
-        <h2 className="text-sm font-semibold text-slate-100">{title}</h2>
-        {subtitle ? <p className="mt-0.5 text-xs text-slate-400">{subtitle}</p> : null}
+        <h2 className="text-sm font-semibold text-slate-900">{title}</h2>
+        {subtitle ? <p className="mt-0.5 text-xs text-slate-500">{subtitle}</p> : null}
       </div>
       {action}
     </div>
@@ -198,14 +200,14 @@ export function CardHeader({
 }
 
 export function CardBody({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn('p-4', className)}>{children}</div>;
+  return <div className={cn('p-5', className)}>{children}</div>;
 }
 
 export function StatCard({ label, value, hint }: { label: string; value: string | number; hint?: string }) {
   return (
-    <Card className="p-4">
-      <p className="text-xs uppercase tracking-wide text-slate-400">{label}</p>
-      <p className="mt-1 text-2xl font-semibold text-slate-50">{value}</p>
+    <Card className="p-5">
+      <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
       {hint ? <p className="mt-1 text-xs text-slate-500">{hint}</p> : null}
     </Card>
   );
@@ -214,11 +216,11 @@ export function StatCard({ label, value, hint }: { label: string; value: string 
 /* ------------------------------------------------------------------- Badge */
 
 const TONES: Record<Tone, string> = {
-  neutral: 'bg-ink-700 text-slate-300',
-  ok: 'bg-ok/15 text-ok ring-1 ring-inset ring-ok/30',
-  warn: 'bg-warn/15 text-warn ring-1 ring-inset ring-warn/30',
-  bad: 'bg-bad/15 text-bad ring-1 ring-inset ring-bad/30',
-  info: 'bg-brand-500/15 text-brand-300 ring-1 ring-inset ring-brand-500/30',
+  neutral: 'bg-slate-100 text-slate-700 border border-slate-200',
+  ok: 'bg-emerald-50 text-emerald-700 border border-emerald-200/80',
+  warn: 'bg-amber-50 text-amber-800 border border-amber-200/80',
+  bad: 'bg-rose-50 text-rose-700 border border-rose-200/80',
+  info: 'bg-blue-50 text-blue-700 border border-blue-200/80',
 };
 
 export function Badge({
@@ -259,9 +261,9 @@ export function EmptyState({
   action?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-ink-600 px-6 py-12 text-center">
-      <p className="text-sm font-medium text-slate-200">{title}</p>
-      {description ? <p className="mt-1 max-w-md text-xs text-slate-400">{description}</p> : null}
+    <div className="flex flex-col items-center justify-center rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center shadow-xs">
+      <p className="text-sm font-semibold text-slate-900">{title}</p>
+      {description ? <p className="mt-1 max-w-md text-xs text-slate-500">{description}</p> : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>
   );
@@ -269,8 +271,8 @@ export function EmptyState({
 
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div className={cn('relative overflow-hidden rounded bg-ink-800', className ?? 'h-4 w-full')}>
-      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+    <div className={cn('relative overflow-hidden rounded bg-slate-100', className ?? 'h-4 w-full')}>
+      <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-slate-200/50 to-transparent" />
     </div>
   );
 }
@@ -290,7 +292,7 @@ export function Th({ children, className }: { children?: React.ReactNode; classN
     <th
       scope="col"
       className={cn(
-        'border-b border-ink-700 px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-400',
+        'border-b border-slate-200 bg-slate-50/80 px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-600',
         className,
       )}
     >
@@ -301,7 +303,7 @@ export function Th({ children, className }: { children?: React.ReactNode; classN
 
 export function Td({ children, className }: { children?: React.ReactNode; className?: string }) {
   return (
-    <td className={cn('border-b border-ink-800 px-3 py-2 align-middle text-slate-200', className)}>
+    <td className={cn('border-b border-slate-100 px-4 py-3 align-middle text-slate-800', className)}>
       {children}
     </td>
   );
@@ -316,7 +318,8 @@ export function Modal({
   children,
   footer,
   dismissible = true,
-  theme = 'dark',
+  theme = 'light',
+  className,
 }: {
   open: boolean;
   title: string;
@@ -325,6 +328,7 @@ export function Modal({
   footer?: React.ReactNode;
   dismissible?: boolean;
   theme?: 'dark' | 'light';
+  className?: string;
 }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const isLight = theme === 'light';
@@ -377,7 +381,7 @@ export function Modal({
       <div
         className={cn(
           'absolute inset-0 transition-opacity',
-          isLight ? 'backdrop-blur-xs bg-slate-900/60' : 'bg-black/70',
+          isLight ? 'backdrop-blur-xs bg-slate-900/40' : 'bg-black/70',
         )}
         onClick={dismissible ? onClose : undefined}
         aria-hidden="true"
@@ -388,10 +392,11 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'relative z-10 w-full max-w-lg animate-fade-in rounded-lg shadow-2xl transition-all',
+          'relative z-10 w-full max-w-lg animate-fade-in rounded-xl shadow-2xl transition-all',
           isLight
-            ? 'border border-slate-200 bg-white ring-1 ring-slate-200/80'
+            ? 'border border-slate-200 bg-white shadow-xl ring-0'
             : 'bg-ink-850 ring-1 ring-ink-600',
+          className,
         )}
       >
         <div
@@ -433,7 +438,7 @@ export function Modal({
           <div
             className={cn(
               'flex justify-end gap-2.5 border-t px-5 py-3.5',
-              isLight ? 'rounded-b-lg border-slate-100 bg-slate-50/70' : 'border-ink-700',
+              isLight ? 'rounded-b-xl border-slate-100 bg-slate-50/70' : 'border-ink-700',
             )}
           >
             {footer}
@@ -480,9 +485,9 @@ export function ConfirmDialog({
             onClick={onCancel}
             disabled={busy}
             className={cn(
-              'rounded-[4px] px-4 py-2 text-xs font-semibold transition',
+              'rounded-md px-3.5 py-2 text-xs font-semibold transition',
               isLight
-                ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50'
+                ? 'border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-50 shadow-xs'
                 : 'border border-ink-600 bg-ink-800 text-slate-200 hover:bg-ink-700 disabled:opacity-50',
             )}
           >
@@ -493,8 +498,8 @@ export function ConfirmDialog({
             onClick={onConfirm}
             disabled={busy}
             className={cn(
-              'shadow-xs rounded-[4px] px-4 py-2 text-xs font-semibold text-white transition disabled:opacity-50',
-              danger ? 'bg-[#e11d48] hover:bg-[#be123c]' : 'bg-[#0066d6] hover:bg-[#0052b3]',
+              'shadow-xs rounded-md px-3.5 py-2 text-xs font-semibold text-white transition disabled:opacity-50',
+              danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-blue-600 hover:bg-blue-700',
             )}
           >
             {busy ? 'Processing…' : confirmLabel}
@@ -521,7 +526,7 @@ export function Tabs({
   className?: string;
 }) {
   return (
-    <div role="tablist" className={cn('flex items-center gap-1', className)}>
+    <div role="tablist" className={cn('flex items-center gap-1 border-b border-slate-200 bg-white px-1', className)}>
       {tabs.map((t) => (
         <button
           key={t.id}
@@ -530,11 +535,11 @@ export function Tabs({
           aria-selected={active === t.id}
           onClick={() => onChange(t.id)}
           className={cn(
-            'inline-flex items-center gap-2 rounded-t px-3 py-1.5 text-xs font-medium transition',
-            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-brand-500',
+            'inline-flex items-center gap-2 px-3 py-2 text-xs font-medium transition',
+            'focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-500',
             active === t.id
-              ? 'bg-ink-850 text-white ring-1 ring-inset ring-ink-600'
-              : 'text-slate-400 hover:bg-ink-800 hover:text-slate-200',
+              ? 'border-b-2 border-blue-600 font-semibold text-blue-600 bg-white'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50',
           )}
         >
           {t.label}

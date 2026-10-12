@@ -137,7 +137,7 @@ export function RegradeAttemptDialog({
                   checked={force}
                   disabled={busy}
                   onChange={(e) => setForce(e.target.checked)}
-                  className="mt-0.5 accent-brand-500"
+                  className="mt-0.5 accent-blue-600"
                 />
                 <span>
                   Force regrade
@@ -162,28 +162,28 @@ function RegradeOutcome({ outcome, maxScore }: { outcome: AttemptRegradeResponse
       : `${formatScore(s.score, maxScore)} · ${resultStatusLabel(s.status)}`;
 
   const headline = outcome.graded
-    ? { text: 'Regraded.', tone: 'text-ok' }
+    ? { text: 'Regraded.', tone: 'text-emerald-600 font-semibold' }
     : outcome.skipped
-      ? { text: 'Skipped: this answer already has full marks.', tone: 'text-slate-200' }
+      ? { text: 'Skipped: this answer already has full marks.', tone: 'text-slate-700' }
       : outcome.busy
-        ? { text: 'This answer is already being graded. Try again in a moment.', tone: 'text-warn' }
-        : { text: 'Grading could not finish. The previous grade was kept.', tone: 'text-bad' };
+        ? { text: 'This answer is already being graded. Try again in a moment.', tone: 'text-amber-600 font-semibold' }
+        : { text: 'Grading could not finish. The previous grade was kept.', tone: 'text-rose-600 font-semibold' };
 
   return (
     <div className="space-y-3" role="status">
-      <p className={cn('text-sm font-medium', headline.tone)}>{headline.text}</p>
+      <p className={cn('text-sm', headline.tone)}>{headline.text}</p>
       <dl className="grid gap-2 sm:grid-cols-2">
-        <div className="rounded-md bg-ink-900 px-3 py-2 ring-1 ring-ink-700">
-          <dt className="text-xs text-slate-400">Before</dt>
-          <dd className="mt-0.5 font-mono text-sm text-slate-200">{describe(outcome.before)}</dd>
+        <div className="rounded-lg bg-slate-50 px-3.5 py-2.5 border border-slate-200 shadow-xs">
+          <dt className="text-xs text-slate-500">Before</dt>
+          <dd className="mt-0.5 font-mono text-sm text-slate-700">{describe(outcome.before)}</dd>
         </div>
-        <div className="rounded-md bg-ink-900 px-3 py-2 ring-1 ring-ink-700">
-          <dt className="text-xs text-slate-400">After</dt>
-          <dd className="mt-0.5 font-mono text-sm text-slate-100">{describe(outcome.after)}</dd>
+        <div className="rounded-lg bg-slate-50 px-3.5 py-2.5 border border-slate-200 shadow-xs">
+          <dt className="text-xs text-slate-500">After</dt>
+          <dd className="mt-0.5 font-mono text-sm font-semibold text-slate-900">{describe(outcome.after)}</dd>
         </div>
       </dl>
       {outcome.error ? (
-        <p className="rounded bg-bad/10 px-3 py-2 font-mono text-xs text-rose-200 ring-1 ring-bad/30">
+        <p className="rounded-lg bg-rose-50 border border-rose-200 px-3 py-2 font-mono text-xs text-rose-800">
           {outcome.error}
         </p>
       ) : null}

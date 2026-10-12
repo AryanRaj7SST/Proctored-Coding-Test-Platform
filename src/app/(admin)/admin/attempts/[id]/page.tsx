@@ -69,15 +69,15 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-semibold text-slate-50">{attempt.question.title}</h1>
+            <h1 className="text-xl font-semibold text-slate-900">{attempt.question.title}</h1>
           </div>
-          <p className="mt-1 text-sm text-slate-400">
-            <strong className="text-slate-200">{attempt.user.name ?? attempt.user.email}</strong>
+          <p className="mt-1 text-sm text-slate-500">
+            <strong className="text-slate-800">{attempt.user.name ?? attempt.user.email}</strong>
             {' · '}
-            <span className="text-slate-400">{attempt.user.email}</span>
+            <span className="text-slate-500">{attempt.user.email}</span>
             {attempt.user.batch ? ` · batch ${attempt.user.batch}` : ''}
             {' · '}
-            <Link href={`/admin/exams/${attempt.exam.id}`} className="text-brand-300 hover:underline">
+            <Link href={`/admin/exams/${attempt.exam.id}`} className="text-blue-600 hover:underline">
               {attempt.exam.title}
             </Link>
           </p>
@@ -87,10 +87,10 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
 
       <div className="grid gap-3 sm:grid-cols-4">
         {attempt.status !== 'IN_PROGRESS' && !attempt.gradedAt ? (
-          <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
-            <p className="text-xs uppercase tracking-wide text-amber-200">Score</p>
-            <p className="mt-1 text-sm font-semibold text-amber-100">Grading pending</p>
-            <p className="mt-1 text-xs text-amber-200/80">The runner failed; code is saved.</p>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+            <p className="text-xs uppercase tracking-wide text-amber-700 font-semibold">Score</p>
+            <p className="mt-1 text-sm font-semibold text-amber-900">Grading pending</p>
+            <p className="mt-1 text-xs text-amber-700">The runner failed; code is saved.</p>
             <div className="mt-2">
               <RegradeButton attemptId={attempt.id} />
             </div>
@@ -143,13 +143,13 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
                   {attempt.testResults.map((r) => (
                     <tr key={r.id}>
                       <Td>
-                        <p className="font-medium text-slate-200">{r.testName}</p>
-                        {r.message ? <p className="mt-0.5 text-xs text-slate-400">{r.message}</p> : null}
+                        <p className="font-medium text-slate-800">{r.testName}</p>
+                        {r.message ? <p className="mt-0.5 text-xs text-slate-500">{r.message}</p> : null}
                       </Td>
                       <Td>
                         <Badge tone={r.passed ? 'ok' : 'bad'}>{r.passed ? 'passed' : 'failed'}</Badge>
                       </Td>
-                      <Td className="font-mono text-xs text-slate-300">
+                      <Td className="font-mono text-xs text-slate-700">
                         {marksToNumber(r.pointsAwarded)}/{marksToNumber(r.points)}
                       </Td>
                     </tr>
@@ -182,14 +182,14 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
                 <tbody>
                   {attempt.testRuns.map((r) => (
                     <tr key={r.id}>
-                      <Td className="text-xs text-slate-400">{r.kind.toLowerCase()}</Td>
+                      <Td className="text-xs text-slate-600">{r.kind.toLowerCase()}</Td>
                       <Td>
                         <Badge tone={statusTone(r.status)}>{r.status.toLowerCase()}</Badge>
                       </Td>
-                      <Td className="text-slate-400">
+                      <Td className="text-slate-700 font-mono text-xs">
                         {r.passedCount}/{r.totalCount}
                       </Td>
-                      <Td className="text-slate-500">{formatDuration(r.durationMs)}</Td>
+                      <Td className="text-slate-500 text-xs">{formatDuration(r.durationMs)}</Td>
                       <Td className="text-xs text-slate-500">{formatDateTime(r.startedAt)}</Td>
                     </tr>
                   ))}
@@ -201,9 +201,9 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
           <Card>
             <CardHeader title="Proctoring timeline" subtitle={`${timeline.length} events for this sitting`} />
             <CardBody className="max-h-80 overflow-auto p-0">
-              <ul className="divide-y divide-ink-800">
+              <ul className="divide-y divide-slate-100">
                 {timeline.map((e) => (
-                  <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs">
+                  <li key={e.id} className="flex items-center gap-3 px-4 py-2 text-xs hover:bg-slate-50 transition">
                     <Badge tone={e.violation ? 'bad' : 'neutral'}>{eventLabel(e.type)}</Badge>
                     {e.durationMs ? (
                       <span className="text-slate-500">away {formatDuration(e.durationMs)}</span>
