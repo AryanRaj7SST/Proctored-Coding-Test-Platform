@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Copy, Check, Sparkles, Code2, AlertCircle, CheckCircle2, RotateCcw } from 'lucide-react';
 import { Button, Modal, Badge } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
-import { validateTestCaseBody, type TestCaseBody } from '@shared/test-spec';
+import { validateTestCaseBody } from '@shared/test-spec';
 import { newKey } from './draft';
 import type { DraftTest, QuestionDraft } from './types';
 
