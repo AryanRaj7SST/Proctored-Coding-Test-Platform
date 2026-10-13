@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
  * Liveness + dependency probe. Deliberately returns no version, hostname or
  * configuration detail -- it is reachable without authentication.
  */
-export async function GET() {
+async function performHealthChecks() {
   const checks: Record<string, 'ok' | 'down'> = {};
 
   try {
@@ -26,5 +26,33 @@ export async function GET() {
   }
 
   const healthy = Object.values(checks).every((v) => v === 'ok');
-  return NextResponse.json({ status: healthy ? 'ok' : 'degraded', checks }, { status: healthy ? 200 : 503 });
+  return { healthy, checks };
+}
+
+/**
+ * Liveness + dependency probe. Deliberately returns no version, hostname or
+ * configuration detail -- it is reachable without authentication.
+ * Supports both GET and HEAD for monitoring tools like UptimeRobot.
+ */
+export async function GET() {
+  const { healthy, checks } = await performHealthChecks();
+  return NextResponse.json(
+    { status: healthy ? 'ok' : 'degraded', checks },
+    {
+      status: healthy ? 200 : 503,
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+      },
+    },
+  );
+}
+
+export async function HEAD() {
+  const { healthy } = await performHealthChecks();
+  return new NextResponse(null, {
+    status: healthy ? 200 : 503,
+    headers: {
+      'Cache-Control': 'no-store, no-cache, must-revalidate',
+    },
+  });
 }
