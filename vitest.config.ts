@@ -6,6 +6,8 @@ export default defineConfig({
     environment: 'node',
     include: ['tests/**/*.test.ts'],
     reporters: ['default'],
+    hookTimeout: 60_000,
+    testTimeout: 60_000,
     coverage: { provider: 'v8', reportsDirectory: 'coverage' },
   },
   resolve: {

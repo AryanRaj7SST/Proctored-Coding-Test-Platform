@@ -394,6 +394,19 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
         const deletingTests = existing.tests.filter((e) => !keepIds.has(e.id));
 
         if (deletingTests.length > 0) {
+          for (const t of deletingTests) {
+            const resultsCount = await tx.testResult.count({
+              where: {
+                attempt: { questionId: id },
+                OR: [{ testId: t.id }, { testName: t.name }],
+              },
+            });
+            if (resultsCount > 0) {
+              throw conflict(
+                `Test case "${t.name}" cannot be deleted because graded results are attached to it. Disable the test case instead.`,
+              );
+            }
+          }
           await tx.questionTest.deleteMany({
             where: { questionId: id, id: { in: deletingTests.map((t) => t.id) } },
           });
@@ -459,17 +472,10 @@ export async function updateQuestion(id: string, input: Partial<QuestionCreateIn
       };
       const updated = await tx.question.update({ where: { id }, data, include: orderedTests });
 
-      // Update snapshots for all ExamQuestion and Attempt rows referencing this question
-      // so students reloading mid-exam immediately receive the newest content and test cases.
+      // Update snapshots for all ExamQuestion rows referencing this question
+      // so when students reload mid-exam, ensureAttempts immediately receives and applies the newest content and test cases.
       const newSnapshot = buildSnapshot(updated);
       await tx.examQuestion.updateMany({
-        where: { questionId: id },
-        data: {
-          snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
-          questionVersion: updated.version,
-        },
-      });
-      await tx.attempt.updateMany({
         where: { questionId: id },
         data: {
           snapshot: newSnapshot as unknown as Prisma.InputJsonValue,
