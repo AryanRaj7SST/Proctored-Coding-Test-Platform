@@ -31,13 +31,13 @@ describe('load test production safety & safeguards', () => {
   });
 
   describe('2. Exam title prefix validation (non-LOADTEST refusal)', () => {
-    it('refuses when exam does not exist in database', () => {
-      const result = validateExamForLoadtest(null);
+    it('refuses when exam does not exist in database', async () => {
+      const result = await validateExamForLoadtest(null);
       expect(result.ok).toBe(false);
       expect(result.reason).toMatch(/Exam not found in database/i);
     });
 
-    it('refuses when exam title does not start with "LOADTEST "', () => {
+    it('refuses when exam title does not start with "LOADTEST "', async () => {
       const liveExams = [
         { id: 'exam-1', title: 'Midterm Examination 2026' },
         { id: 'exam-2', title: 'Weekly Contest #12' },
@@ -46,13 +46,13 @@ describe('load test production safety & safeguards', () => {
       ];
 
       for (const exam of liveExams) {
-        const result = validateExamForLoadtest(exam);
+        const result = await validateExamForLoadtest(exam);
         expect(result.ok).toBe(false);
         expect(result.reason).toContain('does not start with "LOADTEST "');
       }
     });
 
-    it('accepts exams with title starting with "LOADTEST "', () => {
+    it('accepts exams with title starting with "LOADTEST "', async () => {
       const validExams = [
         { id: 'exam-1', title: 'LOADTEST 250 Concurrent Students' },
         { id: 'exam-2', title: 'LOADTEST - Baseline Runner Performance' },
@@ -60,10 +60,98 @@ describe('load test production safety & safeguards', () => {
       ];
 
       for (const exam of validExams) {
-        const result = validateExamForLoadtest(exam);
+        const result = await validateExamForLoadtest(exam);
         expect(result.ok).toBe(true);
         expect(result.reason).toBeUndefined();
       }
+    });
+
+    it('refuses when a real student session is present (reports counts only, never emails)', async () => {
+      const mockClient = {
+        examSession: {
+          count: vi.fn().mockImplementation((args: any) => {
+            expect(args.where.user.role).toBe('STUDENT');
+            expect(args.where.user.NOT.email.startsWith).toBe('loadtest-');
+            return Promise.resolve(3);
+          }),
+        },
+        attempt: { count: vi.fn().mockResolvedValue(5) },
+        examAssignment: { count: vi.fn().mockResolvedValue(1) },
+      };
+
+      const result = await validateExamForLoadtest(
+        { id: 'exam-real', title: 'LOADTEST Real Exam With Students' },
+        mockClient,
+      );
+
+      expect(result.ok).toBe(false);
+      expect(result.reason).toContain('sessions: 3');
+      expect(result.reason).toContain('attempts: 5');
+      expect(result.reason).toContain('assignments: 1');
+      // Never report student email addresses in refusal message
+      expect(result.reason).not.toMatch(/@/);
+      expect(result.counts).toEqual({ sessions: 3, attempts: 5, assignments: 1 });
+    });
+
+    it('accepts when only admin sitting exists', async () => {
+      const mockClient = {
+        examSession: {
+          count: vi.fn().mockImplementation((args: any) => {
+            // Admin sittings are not matched by role: 'STUDENT'
+            return Promise.resolve(0);
+          }),
+        },
+        attempt: { count: vi.fn().mockResolvedValue(0) },
+        examAssignment: { count: vi.fn().mockResolvedValue(0) },
+      };
+
+      const result = await validateExamForLoadtest(
+        { id: 'exam-admin', title: 'LOADTEST Admin Validation Sitting' },
+        mockClient,
+      );
+
+      expect(result.ok).toBe(true);
+      expect(result.reason).toBeUndefined();
+      expect(result.counts).toEqual({ sessions: 0, attempts: 0, assignments: 0 });
+    });
+
+    it('accepts when only loadtest users exist', async () => {
+      const mockClient = {
+        examSession: {
+          count: vi.fn().mockImplementation((args: any) => {
+            // Users starting with loadtest- are excluded by NOT: { email: { startsWith: 'loadtest-' } }
+            return Promise.resolve(0);
+          }),
+        },
+        attempt: { count: vi.fn().mockResolvedValue(0) },
+        examAssignment: { count: vi.fn().mockResolvedValue(0) },
+      };
+
+      const result = await validateExamForLoadtest(
+        { id: 'exam-loadtest', title: 'LOADTEST 250 Synthetic Students' },
+        mockClient,
+      );
+
+      expect(result.ok).toBe(true);
+      expect(result.reason).toBeUndefined();
+      expect(result.counts).toEqual({ sessions: 0, attempts: 0, assignments: 0 });
+    });
+
+    it('accepts when no sessions, attempts, or assignments exist', async () => {
+      const mockClient = {
+        examSession: { count: vi.fn().mockResolvedValue(0) },
+        attempt: { count: vi.fn().mockResolvedValue(0) },
+        examAssignment: { count: vi.fn().mockResolvedValue(0) },
+      };
+
+      const result = await validateExamForLoadtest(
+        { id: 'exam-clean', title: 'LOADTEST Brand New Assessment' },
+        mockClient,
+      );
+
+      expect(result.ok).toBe(true);
+      expect(result.reason).toBeUndefined();
+      expect(result.counts).toEqual({ sessions: 0, attempts: 0, assignments: 0 });
     });
   });
 

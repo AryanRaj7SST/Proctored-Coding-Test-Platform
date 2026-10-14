@@ -42,10 +42,20 @@ export function isProductionHost(urlStr: string): boolean {
   return false;
 }
 
-export function validateExamForLoadtest(exam: { id: string; title: string } | null): {
+export interface ExamValidationClient {
+  examSession: { count: (args: any) => Promise<number> };
+  attempt: { count: (args: any) => Promise<number> };
+  examAssignment: { count: (args: any) => Promise<number> };
+}
+
+export async function validateExamForLoadtest(
+  exam: { id: string; title: string } | null,
+  client?: ExamValidationClient,
+): Promise<{
   ok: boolean;
   reason?: string;
-} {
+  counts?: { sessions: number; attempts: number; assignments: number };
+}> {
   if (!exam) {
     return { ok: false, reason: 'Exam not found in database' };
   }
@@ -55,6 +65,45 @@ export function validateExamForLoadtest(exam: { id: string; title: string } | nu
       reason: `Exam title "${exam.title}" does not start with "LOADTEST ". The target exam title MUST start with "LOADTEST " to prevent accidentally targeting real/live exams.`,
     };
   }
+
+  if (client) {
+    const studentUserFilter = {
+      role: 'STUDENT' as const,
+      NOT: { email: { startsWith: 'loadtest-' } },
+    };
+
+    const [sessions, attempts, assignments] = await Promise.all([
+      client.examSession.count({
+        where: {
+          examId: exam.id,
+          user: studentUserFilter,
+        },
+      }),
+      client.attempt.count({
+        where: {
+          examId: exam.id,
+          user: studentUserFilter,
+        },
+      }),
+      client.examAssignment.count({
+        where: {
+          examId: exam.id,
+          user: studentUserFilter,
+        },
+      }),
+    ]);
+
+    if (sessions > 0 || attempts > 0 || assignments > 0) {
+      return {
+        ok: false,
+        reason: `Exam "${exam.title}" (${exam.id}) contains records belonging to real student users (sessions: ${sessions}, attempts: ${attempts}, assignments: ${assignments}). Load tests may only run against exams with zero real student records.`,
+        counts: { sessions, attempts, assignments },
+      };
+    }
+
+    return { ok: true, counts: { sessions: 0, attempts: 0, assignments: 0 } };
+  }
+
   return { ok: true };
 }
 
@@ -218,12 +267,12 @@ async function main() {
     process.exit(1);
   }
 
-  // Safety guard: Validate that target exam title starts with "LOADTEST "
+  // Safety guard: Validate that target exam title starts with "LOADTEST " and has no real student data
   const exam = await prisma.exam.findUnique({
     where: { id: args.examId },
     select: { id: true, title: true },
   });
-  const examCheck = validateExamForLoadtest(exam);
+  const examCheck = await validateExamForLoadtest(exam, prisma);
   if (!examCheck.ok) {
     console.error(`\x1b[31m[REFUSAL] ${examCheck.reason}\x1b[0m`);
     process.exit(1);
