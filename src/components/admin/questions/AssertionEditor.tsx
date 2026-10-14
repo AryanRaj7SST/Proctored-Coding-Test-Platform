@@ -60,7 +60,7 @@ export function AssertionEditor({
   const type = readString(value, 'type');
   const known = (ASSERTION_TYPES as readonly string[]).includes(type);
   const set = (key: string, v: unknown) => onChange(withKey(value, key, v));
-  const needsSelector = known && type !== 'js' && type !== 'noConsoleErrors';
+  const needsSelector = known && type !== 'js' && type !== 'fn' && type !== 'noConsoleErrors';
 
   return (
     <div className="shadow-xs space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3">
@@ -337,6 +337,8 @@ function TypeFields({
       );
     case 'js':
       return <JsFields value={value} set={set} onChange={onChange} />;
+    case 'fn':
+      return <FnFields value={value} set={set} />;
     case 'noConsoleErrors':
       return <p className="text-xs text-slate-400">Passes when the page logs no errors to the console.</p>;
     case 'exists':
@@ -628,6 +630,110 @@ function JsFields({
             )}
           </MiniField>
         ) : null}
+      </div>
+    </div>
+  );
+}
+
+function FnFields({
+  value,
+  set,
+}: {
+  value: RawObject;
+  set: (key: string, v: unknown) => void;
+}) {
+  const fn = readString(value, 'fn') || 'solve';
+  const argsStr = JSON.stringify(Array.isArray(value.args) ? value.args : []);
+  const expectedStr = JSON.stringify(value.expected !== undefined ? value.expected : '');
+  const compare = readString(value, 'compare') || 'deepEqual';
+
+  return (
+    <div className="space-y-2">
+      <div className="flex flex-wrap items-end gap-2">
+        <MiniField label="Function name" className="w-48">
+          {(id) => (
+            <Input
+              id={id}
+              className={mono}
+              value={fn}
+              placeholder="solve"
+              onChange={(e) => set('fn', e.target.value)}
+            />
+          )}
+        </MiniField>
+        <MiniField label="Compare mode" className="w-44">
+          {(id) => (
+            <Select
+              id={id}
+              className={compact}
+              value={compare}
+              onChange={(e) => set('compare', e.target.value)}
+            >
+              <option value="deepEqual">deepEqual</option>
+              <option value="unorderedArray">unorderedArray</option>
+              <option value="float">float (tolerance)</option>
+              <option value="trim">trim (string)</option>
+            </Select>
+          )}
+        </MiniField>
+        {compare === 'float' ? (
+          <MiniField label="Tolerance" className="w-32">
+            {(id) => (
+              <Input
+                id={id}
+                type="number"
+                step="any"
+                className={compact}
+                value={readNumber(value, 'tolerance') ?? 0.000001}
+                onChange={(e) => set('tolerance', parseNumberInput(e.target.value))}
+              />
+            )}
+          </MiniField>
+        ) : null}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+        <MiniField label="Arguments (JSON array)" hint="e.g. [2, 3] or [[1, 2], 'target']">
+          {(id) => (
+            <Textarea
+              id={id}
+              rows={2}
+              className="font-mono text-xs"
+              value={typeof value.rawArgs === 'string' ? value.rawArgs : argsStr}
+              onChange={(e) => {
+                const text = e.target.value;
+                try {
+                  const parsed = JSON.parse(text);
+                  if (Array.isArray(parsed)) {
+                    set('args', parsed);
+                    set('rawArgs', undefined);
+                    return;
+                  }
+                } catch {}
+                set('rawArgs', text);
+              }}
+            />
+          )}
+        </MiniField>
+        <MiniField label="Expected return value (JSON)" hint="e.g. 5, [1, 2], or { ok: true }">
+          {(id) => (
+            <Textarea
+              id={id}
+              rows={2}
+              className="font-mono text-xs"
+              value={typeof value.rawExpected === 'string' ? value.rawExpected : expectedStr}
+              onChange={(e) => {
+                const text = e.target.value;
+                try {
+                  const parsed = JSON.parse(text);
+                  set('expected', parsed);
+                  set('rawExpected', undefined);
+                  return;
+                } catch {}
+                set('rawExpected', text);
+              }}
+            />
+          )}
+        </MiniField>
       </div>
     </div>
   );

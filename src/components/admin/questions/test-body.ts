@@ -158,7 +158,7 @@ export const ASSERTION_GROUPS: { label: string; types: AssertionType[] }[] = [
   { label: 'Content & state', types: ['text', 'value', 'attribute', 'hasClass', 'notHasClass', 'checked'] },
   { label: 'Forms', types: ['validity'] },
   { label: 'Styles & layout', types: ['css', 'cssNumber', 'size', 'gridColumns', 'gap', 'boxesPerRow'] },
-  { label: 'JavaScript', types: ['js', 'noConsoleErrors'] },
+  { label: 'JavaScript', types: ['fn', 'js', 'noConsoleErrors'] },
 ];
 
 export const ASSERTION_LABELS: Record<AssertionType, string> = {
@@ -180,6 +180,7 @@ export const ASSERTION_LABELS: Record<AssertionType, string> = {
   gridColumns: 'Grid column count',
   gap: 'Gap between items',
   boxesPerRow: 'Items per row',
+  fn: 'Function call (isolated V8)',
   js: 'JavaScript expression',
   noConsoleErrors: 'No console errors',
 };
@@ -190,6 +191,8 @@ export function defaultAssertion(type: AssertionType, previous?: RawObject): Raw
   const message =
     typeof previous?.message === 'string' && previous.message ? { message: previous.message } : {};
   switch (type) {
+    case 'fn':
+      return { type, fn: 'solve', args: [], expected: 0, compare: 'deepEqual', ...message };
     case 'noConsoleErrors':
       return { type, ...message };
     case 'js':

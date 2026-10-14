@@ -1,16 +1,95 @@
 'use client';
 
 import * as React from 'react';
-import { Plus, Sparkles } from 'lucide-react';
-import { Button, ConfirmDialog, EmptyState } from '@/components/ui';
-import { SPEC_LIMITS } from '@shared/test-spec';
+import { Plus, Sparkles, Trash2 } from 'lucide-react';
+import { Button, ConfirmDialog, EmptyState, Input, Select, Tabs } from '@/components/ui';
+import { SPEC_LIMITS, type FnCompareMode } from '@shared/test-spec';
 import { Notice } from './questions/bits';
-import { duplicateTest, newTest, suiteProblems, testProblems, testServerErrors } from './questions/draft';
+import { duplicateTest, newKey, newTest, suiteProblems, testProblems, testServerErrors } from './questions/draft';
 import { formatMarks, marksWord, equalShare, parseMarks, splitSummary } from './questions/marks';
 import { TemplatePicker } from './questions/TemplatePicker';
 import { TestCaseCard } from './questions/TestCaseCard';
 import { JsonTestImporterModal } from './questions/JsonTestImporterModal';
 import type { DraftTest, QuestionDraft } from './questions/types';
+
+interface FnTableRow {
+  _key: string;
+  name: string;
+  fn: string;
+  argsText: string;
+  expectedText: string;
+  compare: FnCompareMode;
+  hidden: boolean;
+  enabled: boolean;
+}
+
+function testToFnRow(test: DraftTest, defaultFn: string = 'solve'): FnTableRow {
+  let fn = defaultFn;
+  let argsText = '[]';
+  let expectedText = '""';
+  let compare: FnCompareMode = 'deepEqual';
+
+  try {
+    const parsed = JSON.parse(test.testCode);
+    const fnAssertion = (parsed.assertions as Array<Record<string, unknown>>)?.find((a) => a.type === 'fn');
+    if (fnAssertion) {
+      if (typeof fnAssertion.fn === 'string') fn = fnAssertion.fn;
+      if (fnAssertion.args !== undefined) argsText = JSON.stringify(fnAssertion.args);
+      if (fnAssertion.expected !== undefined) expectedText = JSON.stringify(fnAssertion.expected);
+      if (typeof fnAssertion.compare === 'string') compare = fnAssertion.compare as FnCompareMode;
+    }
+  } catch {}
+
+  return {
+    _key: test._key,
+    name: test.name,
+    fn,
+    argsText,
+    expectedText,
+    compare,
+    hidden: Boolean(test.hidden),
+    enabled: test.enabled !== false,
+  };
+}
+
+function fnRowToTest(row: FnTableRow): DraftTest {
+  let args: unknown = [];
+  try {
+    args = JSON.parse(row.argsText);
+  } catch {
+    args = [row.argsText];
+  }
+  if (!Array.isArray(args)) args = [args];
+
+  let expected: unknown = null;
+  try {
+    expected = JSON.parse(row.expectedText);
+  } catch {
+    expected = row.expectedText;
+  }
+
+  const body = {
+    assertions: [
+      {
+        type: 'fn',
+        fn: row.fn || 'solve',
+        args,
+        expected,
+        compare: row.compare || 'deepEqual',
+      },
+    ],
+  };
+
+  return {
+    _key: row._key,
+    name: row.name || `${row.fn}(${row.argsText.slice(0, 20)})`,
+    description: '',
+    expectedBehavior: '',
+    enabled: row.enabled,
+    hidden: row.hidden,
+    testCode: JSON.stringify(body, null, 2),
+  };
+}
 
 /**
  * Step 4 of the question editor: the question's test cases.
@@ -43,6 +122,7 @@ export function TestCaseEditor({
   const [picking, setPicking] = React.useState(false);
   const [jsonModalOpen, setJsonModalOpen] = React.useState(false);
   const [pendingDelete, setPendingDelete] = React.useState<DraftTest | null>(null);
+  const [viewMode, setViewMode] = React.useState<'cards' | 'table'>('cards');
 
   const enabledCount = tests.filter((t) => t.enabled).length;
   const parsedMarks = parseMarks(marks);
@@ -143,6 +223,19 @@ export function TestCaseEditor({
         </Notice>
       ) : null}
 
+      {tests.length > 0 ? (
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <Tabs
+            tabs={[
+              { id: 'cards', label: 'Cards View' },
+              { id: 'table', label: 'Function Table Editor' },
+            ]}
+            active={viewMode}
+            onChange={(id) => setViewMode(id as 'cards' | 'table')}
+          />
+        </div>
+      ) : null}
+
       {tests.length === 0 ? (
         <EmptyState
           title="No test cases yet"
@@ -165,6 +258,130 @@ export function TestCaseEditor({
             </div>
           }
         />
+      ) : viewMode === 'table' ? (
+        <div className="space-y-3">
+          <div className="overflow-x-auto rounded-md border border-slate-200 bg-white">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+                <tr>
+                  <th className="py-2 px-3 w-10">#</th>
+                  <th className="py-2 px-3 w-32">Function</th>
+                  <th className="py-2 px-3">Arguments (JSON array)</th>
+                  <th className="py-2 px-3">Expected (JSON)</th>
+                  <th className="py-2 px-3 w-36">Compare</th>
+                  <th className="py-2 px-3 w-20 text-center">Hidden?</th>
+                  <th className="py-2 px-3 w-16 text-center">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 font-mono">
+                {tests.map((test, idx) => {
+                  const row = testToFnRow(test);
+                  return (
+                    <tr key={test._key} className="hover:bg-slate-50/50">
+                      <td className="py-2 px-3 text-slate-400 font-sans">{idx + 1}</td>
+                      <td className="py-2 px-3">
+                        <Input
+                          className="h-7 text-xs font-mono"
+                          value={row.fn}
+                          placeholder="solve"
+                          readOnly={readOnly}
+                          onChange={(e) => {
+                            const updated = { ...row, fn: e.target.value };
+                            onChange(tests.map((t) => (t._key === test._key ? fnRowToTest(updated) : t)));
+                          }}
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          className="h-7 text-xs font-mono"
+                          value={row.argsText}
+                          placeholder="[1, 2]"
+                          readOnly={readOnly}
+                          onChange={(e) => {
+                            const updated = { ...row, argsText: e.target.value };
+                            onChange(tests.map((t) => (t._key === test._key ? fnRowToTest(updated) : t)));
+                          }}
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Input
+                          className="h-7 text-xs font-mono"
+                          value={row.expectedText}
+                          placeholder="3"
+                          readOnly={readOnly}
+                          onChange={(e) => {
+                            const updated = { ...row, expectedText: e.target.value };
+                            onChange(tests.map((t) => (t._key === test._key ? fnRowToTest(updated) : t)));
+                          }}
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <Select
+                          className="h-7 text-xs font-sans"
+                          value={row.compare}
+                          disabled={readOnly}
+                          onChange={(e) => {
+                            const updated = { ...row, compare: e.target.value as FnCompareMode };
+                            onChange(tests.map((t) => (t._key === test._key ? fnRowToTest(updated) : t)));
+                          }}
+                        >
+                          <option value="deepEqual">deepEqual</option>
+                          <option value="unorderedArray">unorderedArray</option>
+                          <option value="float">float</option>
+                          <option value="trim">trim</option>
+                        </Select>
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <input
+                          type="checkbox"
+                          checked={row.hidden}
+                          disabled={readOnly}
+                          onChange={(e) => {
+                            const updated = { ...row, hidden: e.target.checked };
+                            onChange(tests.map((t) => (t._key === test._key ? fnRowToTest(updated) : t)));
+                          }}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={readOnly}
+                          className="h-7 w-7 p-0 text-slate-400 hover:text-red-600"
+                          onClick={() => setPendingDelete(test)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        </Button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <Button
+            size="sm"
+            variant="secondary"
+            disabled={readOnly || atLimit}
+            onClick={() => {
+              const newRow: FnTableRow = {
+                _key: newKey(),
+                name: `Test case ${tests.length + 1}`,
+                fn: 'solve',
+                argsText: '[]',
+                expectedText: '0',
+                compare: 'deepEqual',
+                hidden: false,
+                enabled: true,
+              };
+              onChange([...tests, fnRowToTest(newRow)]);
+            }}
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" aria-hidden="true" />
+            Add Row
+          </Button>
+        </div>
       ) : (
         <ol className="space-y-2">
           {tests.map((test, index) => (

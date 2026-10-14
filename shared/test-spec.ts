@@ -32,6 +32,25 @@ export type Step =
 
 export type NumericOp = 'eq' | 'lt' | 'lte' | 'gt' | 'gte';
 
+export type FnCompareMode = 'deepEqual' | 'unorderedArray' | 'float' | 'trim';
+export const FN_COMPARE_MODES: readonly FnCompareMode[] = [
+  'deepEqual',
+  'unorderedArray',
+  'float',
+  'trim',
+] as const;
+
+export interface FnAssertion {
+  type: 'fn';
+  fn: string;
+  args: unknown[];
+  expected: unknown;
+  compare?: FnCompareMode;
+  tolerance?: number;
+  timeoutMs?: number;
+  message?: string;
+}
+
 export type Assertion =
   | { type: 'exists'; selector: string; message?: string }
   | { type: 'notExists'; selector: string; message?: string }
@@ -98,7 +117,9 @@ export type Assertion =
   | { type: 'checked'; selector: string; equals: boolean; message?: string }
   | { type: 'validity'; selector: string; valid: boolean; message?: string }
   /** An admin-written JavaScript expression evaluated in the student's page (e.g. calling their function). */
-  | { type: 'js'; expression: string; equals?: string | number | boolean; message?: string };
+  | { type: 'js'; expression: string; equals?: string | number | boolean; message?: string }
+  /** An isolated pure-JavaScript function test. */
+  | FnAssertion;
 
 /** What an admin authors for a single test case (stored in QuestionTest.testCode). */
 export interface TestCaseBody {
@@ -117,9 +138,12 @@ export interface RunnerTest extends TestCaseBody {
   hidden: boolean;
 }
 
+export type RunnerSpecKind = 'dom' | 'js-fn';
+
 /** Full payload the server compiles and hands to the runner. */
 export interface RunnerSpec {
   version: 1;
+  kind?: RunnerSpecKind;
   viewport: Viewport;
   setup?: Step[];
   tests: RunnerTest[];
@@ -176,6 +200,7 @@ export const ASSERTION_TYPES = [
   'checked',
   'validity',
   'js',
+  'fn',
 ] as const;
 
 export const STEP_ACTIONS = [
@@ -203,6 +228,14 @@ export const SPEC_LIMITS = {
   maxViewport: 2560,
   maxTextLength: 500,
   maxExpressionLength: 500,
+  maxFnNameLength: 100,
+  maxFnArgsBytes: 64 * 1024,
+  maxFnExpectedBytes: 64 * 1024,
+  maxFnOutputBytes: 64 * 1024,
+  minFnTimeoutMs: 100,
+  maxFnTimeoutMs: 20000,
+  defaultFnTimeoutMs: 2000,
+  defaultFnMemoryLimitMb: 64,
 } as const;
 
 /* ------------------------------------------------------------------ */
@@ -537,6 +570,16 @@ function validateStep(raw: unknown, errors: string[], path: string): Step | null
   }
 }
 
+function byteLengthUtf8(str: string): number {
+  if (typeof TextEncoder !== 'undefined') {
+    return new TextEncoder().encode(str).length;
+  }
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.byteLength(str, 'utf8');
+  }
+  return str.length;
+}
+
 function validateAssertion(raw: unknown, errors: string[], path: string): Assertion | null {
   if (typeof raw !== 'object' || raw === null) {
     errors.push(`${path}: assertion must be an object`);
@@ -551,6 +594,83 @@ function validateAssertion(raw: unknown, errors: string[], path: string): Assert
   const message =
     typeof a.message === 'string' && a.message.length <= SPEC_LIMITS.maxTextLength ? a.message : undefined;
   const withMsg = <T extends object>(o: T): T => (message ? { ...o, message } : o);
+
+  if (type === 'fn') {
+    const fn = typeof a.fn === 'string' ? a.fn.trim() : '';
+    if (!fn || fn.length > SPEC_LIMITS.maxFnNameLength || !/^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(fn)) {
+      errors.push(`${path}: fn assertion requires a valid function identifier`);
+      return null;
+    }
+    if (!Array.isArray(a.args)) {
+      errors.push(`${path}: fn assertion args must be an array`);
+      return null;
+    }
+    let argsBytes = 0;
+    try {
+      argsBytes = byteLengthUtf8(JSON.stringify(a.args));
+    } catch {
+      errors.push(`${path}: fn assertion args must be JSON-serializable`);
+      return null;
+    }
+    if (argsBytes > SPEC_LIMITS.maxFnArgsBytes) {
+      errors.push(`${path}: fn assertion args exceed maximum size of ${SPEC_LIMITS.maxFnArgsBytes} bytes`);
+      return null;
+    }
+
+    if (a.expected === undefined) {
+      errors.push(`${path}: fn assertion requires an expected value`);
+      return null;
+    }
+    let expectedBytes = 0;
+    try {
+      expectedBytes = byteLengthUtf8(JSON.stringify(a.expected));
+    } catch {
+      errors.push(`${path}: fn assertion expected must be JSON-serializable`);
+      return null;
+    }
+    if (expectedBytes > SPEC_LIMITS.maxFnExpectedBytes) {
+      errors.push(`${path}: fn assertion expected exceeds maximum size of ${SPEC_LIMITS.maxFnExpectedBytes} bytes`);
+      return null;
+    }
+
+    let compare: FnCompareMode = 'deepEqual';
+    if (a.compare !== undefined) {
+      if (typeof a.compare !== 'string' || !(FN_COMPARE_MODES as readonly string[]).includes(a.compare as FnCompareMode)) {
+        errors.push(`${path}: fn assertion compare must be one of ${FN_COMPARE_MODES.join(', ')}`);
+        return null;
+      }
+      compare = a.compare as FnCompareMode;
+    }
+
+    const tolerance = a.tolerance !== undefined ? Number(a.tolerance) : undefined;
+    if (tolerance !== undefined && (!Number.isFinite(tolerance) || tolerance < 0)) {
+      errors.push(`${path}: fn assertion tolerance must be a non-negative number`);
+      return null;
+    }
+
+    const timeoutMs = a.timeoutMs !== undefined ? Number(a.timeoutMs) : undefined;
+    if (
+      timeoutMs !== undefined &&
+      (!Number.isFinite(timeoutMs) ||
+        timeoutMs < SPEC_LIMITS.minFnTimeoutMs ||
+        timeoutMs > SPEC_LIMITS.maxFnTimeoutMs)
+    ) {
+      errors.push(
+        `${path}: fn assertion timeoutMs must be between ${SPEC_LIMITS.minFnTimeoutMs} and ${SPEC_LIMITS.maxFnTimeoutMs}`,
+      );
+      return null;
+    }
+
+    return withMsg({
+      type: 'fn' as const,
+      fn,
+      args: a.args,
+      expected: a.expected,
+      compare,
+      ...(tolerance !== undefined ? { tolerance } : {}),
+      ...(timeoutMs !== undefined ? { timeoutMs } : {}),
+    });
+  }
 
   if (type === 'js') {
     const expression = typeof a.expression === 'string' ? a.expression.trim() : '';
@@ -804,8 +924,11 @@ export function validateTestCaseBody(raw: unknown): ValidationResult<TestCaseBod
   }
 
   const timeoutMs = body.timeoutMs === undefined ? undefined : Number(body.timeoutMs);
-  if (timeoutMs !== undefined && (!Number.isFinite(timeoutMs) || timeoutMs < 500 || timeoutMs > 20000)) {
-    errors.push('test.timeoutMs must be between 500 and 20000');
+  if (
+    timeoutMs !== undefined &&
+    (!Number.isFinite(timeoutMs) || timeoutMs < SPEC_LIMITS.minFnTimeoutMs || timeoutMs > 20000)
+  ) {
+    errors.push(`test.timeoutMs must be between ${SPEC_LIMITS.minFnTimeoutMs} and 20000`);
   }
 
   const failureMessage =
@@ -834,6 +957,15 @@ export function validateRunnerSpec(raw: unknown): ValidationResult<RunnerSpec> {
   if (typeof raw !== 'object' || raw === null) return { ok: false, errors: ['spec must be an object'] };
   const spec = raw as Record<string, unknown>;
   if (Number(spec.version) !== 1) errors.push('spec.version must be 1');
+
+  let kind: RunnerSpecKind = 'dom';
+  if (spec.kind !== undefined) {
+    if (spec.kind !== 'dom' && spec.kind !== 'js-fn') {
+      errors.push('spec.kind must be "dom" or "js-fn"');
+    } else {
+      kind = spec.kind;
+    }
+  }
 
   const viewport = validViewport(spec.viewport, errors, 'spec') ?? DEFAULT_VIEWPORT;
   const testsRaw = spec.tests;
@@ -877,7 +1009,17 @@ export function validateRunnerSpec(raw: unknown): ValidationResult<RunnerSpec> {
   });
 
   if (errors.length > 0) return { ok: false, errors };
-  return { ok: true, errors: [], value: { version: 1, viewport, ...(setup.length ? { setup } : {}), tests } };
+  return {
+    ok: true,
+    errors: [],
+    value: {
+      version: 1,
+      ...(kind ? { kind } : {}),
+      viewport,
+      ...(setup.length ? { setup } : {}),
+      tests,
+    },
+  };
 }
 
 /** The value a check expects, in words ("visible", "3", "rgb(255, 0, 0)", ">= 200px"). */
@@ -919,6 +1061,8 @@ export function expectedValue(a: Assertion): string {
       return a.valid ? 'valid' : 'invalid';
     case 'js':
       return a.equals !== undefined ? JSON.stringify(a.equals) : 'true';
+    case 'fn':
+      return typeof a.expected === 'string' ? a.expected : JSON.stringify(a.expected);
     default:
       return '';
   }
@@ -1024,6 +1168,11 @@ export function describeAssertion(a: Assertion): string {
       return a.equals !== undefined
         ? `Expected \`${a.expression}\` to equal ${JSON.stringify(a.equals)}.`
         : `Expected \`${a.expression}\` to be true.`;
+    case 'fn': {
+      const argsStr = Array.isArray(a.args) ? a.args.map((arg) => JSON.stringify(arg)).join(', ') : '';
+      const expStr = typeof a.expected === 'string' ? `"${a.expected}"` : JSON.stringify(a.expected);
+      return `Expected ${a.fn}(${argsStr}) to return ${expStr}.`;
+    }
     default:
       return 'Assertion failed.';
   }

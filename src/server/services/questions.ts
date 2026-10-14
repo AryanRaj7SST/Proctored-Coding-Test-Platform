@@ -54,6 +54,7 @@ export function compileRunnerSpec(
 ): RunnerSpec {
   const ordered = tests.filter(isEnabled).sort((a, b) => a.order - b.order);
   const runnerTests: RunnerTest[] = [];
+  let hasFnAssertion = false;
   for (const t of ordered) {
     // Never skip a test silently: it would still count towards the maximum.
     if (t.testType !== 'DECLARATIVE') throw badRequest(`Test "${t.name}" uses an unsupported test type.`);
@@ -61,11 +62,19 @@ export function compileRunnerSpec(
     if (!body.ok || !body.value) {
       throw badRequest(`Test "${t.name}" has an invalid specification: ${body.errors.join('; ')}`);
     }
+    if (body.value.assertions.some((a) => a.type === 'fn')) {
+      hasFnAssertion = true;
+    }
     // Marks are applied by the grading engine, not the runner; hidden flag passed through.
     runnerTests.push({ id: t.id, name: t.name, points: 0, hidden: Boolean(t.hidden), ...body.value });
   }
   if (runnerTests.length === 0) throw badRequest('This question has no enabled test cases.');
-  return { version: 1, viewport: DEFAULT_VIEWPORT, tests: runnerTests };
+  return {
+    version: 1,
+    ...(hasFnAssertion ? { kind: 'js-fn' as const } : {}),
+    viewport: DEFAULT_VIEWPORT,
+    tests: runnerTests,
+  };
 }
 
 /** Disabled test cases are neither run, counted nor shown. Absent flag = enabled (older snapshots). */

@@ -30,6 +30,7 @@ import { authenticate } from './auth';
 import { queue } from './queue';
 import { executeRun, getBrowser, closeBrowser, type RunInput } from './executor';
 import { executeInDocker } from './docker-runner';
+import { executeJsRun } from './js-engine';
 import { validateRunnerSpec } from '../../shared/test-spec';
 
 assertConfig();
@@ -104,9 +105,12 @@ app.post('/run', async (req: Request, res: Response) => {
     // Each test has its own timeout, so a run's budget grows with its size: a
     // slow or broken student page fails its tests instead of timing the run out.
     const runBudgetMs = config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs;
-    const result = await queue.run(async () =>
-      config.isolation === 'docker' ? executeInDocker(input, runBudgetMs) : executeRun(input, runBudgetMs),
-    );
+    const result = await queue.run(async () => {
+      if (input.spec.kind === 'js-fn') {
+        return executeJsRun(input, runBudgetMs);
+      }
+      return config.isolation === 'docker' ? executeInDocker(input, runBudgetMs) : executeRun(input, runBudgetMs);
+    });
     log.info('run.completed', {
       runId,
       status: result.status,

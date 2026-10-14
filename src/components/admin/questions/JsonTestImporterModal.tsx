@@ -164,6 +164,8 @@ TEST SYSTEM SPECIFICATION & RULES
    - Checked state: { "type": "checked", "selector": "input#agree", "equals": true }
    - Form validity: { "type": "validity", "selector": "input#email", "valid": true }
    - JS Evaluation: { "type": "js", "expression": "typeof calculateTotal === 'function' && calculateTotal(10, 5)", "equals": 15 }
+   - Pure JS Function (isolated V8): { "type": "fn", "fn": "solve", "args": [1, 2], "expected": 3, "compare": "deepEqual" }
+     (or simplified format: { "name": "Test 1", "fn": "solve", "args": [1, 2], "expected": 3, "compare": "deepEqual", "hidden": false })
 
 5. TASK:
    Generate a complete, high-quality test suite (4 to 8 test cases) covering:
@@ -182,6 +184,7 @@ interface ParsedCandidate {
   description: string;
   expectedBehavior: string;
   enabled: boolean;
+  hidden: boolean;
   testCodeString: string;
 }
 
@@ -284,6 +287,7 @@ export function JsonTestImporterModal({
       const description = typeof rec.description === 'string' ? rec.description : '';
       const expectedBehavior = typeof rec.expectedBehavior === 'string' ? rec.expectedBehavior : '';
       const enabled = rec.enabled !== false;
+      const hidden = Boolean(rec.hidden);
 
       // Extract testCode
       let bodyToValidate: unknown;
@@ -297,6 +301,26 @@ export function JsonTestImporterModal({
           testCodeString = JSON.stringify(rec.testCode, null, 2);
           bodyToValidate = rec.testCode;
         }
+      } else if (typeof rec.fn === 'string' || (rec.type === 'fn' && typeof rec.fn === 'string')) {
+        const fn = String(rec.fn).trim();
+        const args = Array.isArray(rec.args) ? rec.args : [];
+        const expected = rec.expected;
+        const compare = typeof rec.compare === 'string' ? rec.compare : 'deepEqual';
+        const fnAssertion: Record<string, unknown> = {
+          type: 'fn',
+          fn,
+          args,
+          expected,
+          compare,
+          ...(typeof rec.tolerance === 'number' ? { tolerance: rec.tolerance } : {}),
+          ...(typeof rec.timeoutMs === 'number' ? { timeoutMs: rec.timeoutMs } : {}),
+        };
+        const bodyObj: Record<string, unknown> = {
+          assertions: [fnAssertion],
+          ...(typeof rec.timeoutMs === 'number' ? { timeoutMs: rec.timeoutMs } : {}),
+        };
+        testCodeString = JSON.stringify(bodyObj, null, 2);
+        bodyToValidate = bodyObj;
       } else if (Array.isArray(rec.assertions)) {
         // Direct test body format where steps and assertions are top-level
         const bodyObj: Record<string, unknown> = {
@@ -307,7 +331,9 @@ export function JsonTestImporterModal({
         testCodeString = JSON.stringify(bodyObj, null, 2);
         bodyToValidate = bodyObj;
       } else {
-        validationErrors.push(`Test #${idx + 1} ("${name}"): Missing "testCode" or "assertions".`);
+        validationErrors.push(
+          `Test #${idx + 1} ("${name}"): Missing "fn", "testCode" or "assertions".`,
+        );
         return;
       }
 
@@ -322,6 +348,7 @@ export function JsonTestImporterModal({
         description,
         expectedBehavior,
         enabled,
+        hidden,
         testCodeString,
       });
     });
@@ -350,6 +377,7 @@ export function JsonTestImporterModal({
       expectedBehavior: cand.expectedBehavior,
       testCode: cand.testCodeString,
       enabled: cand.enabled,
+      hidden: cand.hidden,
     }));
 
     onImport(newDraftTests);

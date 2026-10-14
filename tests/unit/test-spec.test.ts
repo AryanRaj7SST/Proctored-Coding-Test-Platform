@@ -307,6 +307,7 @@ describe('every assertion type survives validation (app and runner agree)', () =
     checked: { selector: '#a', equals: true },
     validity: { selector: '#a', valid: true },
     js: { expression: '1 + 1', equals: 2 },
+    fn: { fn: 'solve', args: [1, 2], expected: 3, compare: 'deepEqual' },
   };
 
   it.each(ASSERTION_TYPES.map((type) => [type]))('%s is kept and the runner accepts it', (type) => {

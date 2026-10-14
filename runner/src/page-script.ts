@@ -303,6 +303,11 @@ export const EVALUATOR_SOURCE = String.raw`
         result.passed = perRow2 === a.equals;
         break;
       }
+      case 'fn': {
+        result.passed = false;
+        result.actual = 'pure JavaScript functions are graded in the isolated runner';
+        break;
+      }
       default:
         result.actual = 'unsupported assertion';
     }

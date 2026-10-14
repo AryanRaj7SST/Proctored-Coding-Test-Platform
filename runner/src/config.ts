@@ -50,6 +50,13 @@ export const config = {
   signatureWindowMs: int('SIGNATURE_WINDOW_MS', 120_000),
   chromiumNoSandbox: bool('RUNNER_CHROMIUM_NO_SANDBOX', false),
   chromiumMaxOldSpaceSizeMb: int('RUNNER_CHROMIUM_MAX_OLD_SPACE_SIZE_MB', 128),
+  jsEngine: {
+    memoryLimitMb: int('RUNNER_JS_MEMORY_LIMIT_MB', 64),
+    defaultTimeoutMs: int('RUNNER_JS_TIMEOUT_MS', 2000),
+    maxOutputBytes: int('RUNNER_JS_MAX_OUTPUT_BYTES', 64 * 1024),
+    maxLogs: int('RUNNER_JS_MAX_LOGS', 100),
+    maxLogLineLength: int('RUNNER_JS_MAX_LOG_LINE_LENGTH', 1000),
+  },
   docker: {
     image: str('DOCKER_IMAGE', 'proctored-runner-sandbox:latest'),
     memory: str('DOCKER_MEMORY', '256m'),
