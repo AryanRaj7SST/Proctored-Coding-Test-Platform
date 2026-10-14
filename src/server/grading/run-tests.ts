@@ -203,6 +203,7 @@ async function persistGrade(params: {
     if (final) {
       // Score and gradedAt land with the results: an attempt is either fully
       // graded or still "grading pending".
+      const isAccepted = grade.status === 'PASSED' || grade.scoreMicro >= toMicro(attempt.maxScore);
       await tx.attempt.updateMany({
         where: { id: attempt.id, status: { not: 'IN_PROGRESS' } },
         data: {
@@ -213,6 +214,8 @@ async function persistGrade(params: {
           enabledCount: grade.enabledCount,
           gradingError: null,
           gradedAt: new Date(),
+          triesCount: { increment: 1 },
+          ...(isAccepted && !attempt.acceptedAt ? { acceptedAt: new Date() } : {}),
         },
       });
     }

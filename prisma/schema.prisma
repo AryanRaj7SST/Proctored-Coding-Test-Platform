@@ -132,6 +132,17 @@ enum ResultVisibility {
   FULL // plus per-question and per-test-case results
 }
 
+enum LeaderboardMode {
+  LIVE
+  AFTER_END
+  HIDDEN
+}
+
+enum AttemptFlagKind {
+  PLAGIARISM
+  MANUAL_REVIEW
+}
+
 /// Outcome of grading one question attempt.
 enum QuestionResultStatus {
   NOT_RUN // not graded yet
@@ -150,20 +161,22 @@ enum SittingResult {
 model User {
   id        String    @id @default(cuid())
   email     String    @unique
-  name      String?
-  image     String?
-  role      Role      @default(STUDENT)
-  batch     String?
-  active    Boolean   @default(true)
-  lastLogin DateTime?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  name          String?
+  displayHandle String?   @unique
+  image         String?
+  role          Role      @default(STUDENT)
+  batch         String?
+  active        Boolean   @default(true)
+  lastLogin     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
-  attempts      Attempt[]
-  assignments   ExamAssignment[]
-  proctorEvents ProctorEvent[]
-  sessions      ExamSession[]
-  auditLogs     AuditLog[]
+  attempts            Attempt[]
+  assignments         ExamAssignment[]
+  proctorEvents       ProctorEvent[]
+  sessions            ExamSession[]
+  auditLogs           AuditLog[]
+  attemptFlagsCreated AttemptFlag[]    @relation("AdminAttemptFlags")
 
   @@index([role])
   @@index([batch])
@@ -268,11 +281,14 @@ model Exam {
   accessMode        ExamAccessMode   @default(ANY_AUTHENTICATED_USER)
   maxAttempts       Int              @default(1)
   passingPercentage Decimal          @default(40) @db.Decimal(5, 2)
-  timezone          String           @default("Asia/Kolkata") // IANA zone the admin schedules in; instants are UTC
-  resultVisibility  ResultVisibility @default(FULL)
-  publishedAt       DateTime?
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
+  timezone                String           @default("Asia/Kolkata") // IANA zone the admin schedules in; instants are UTC
+  resultVisibility        ResultVisibility @default(FULL)
+  leaderboardMode         LeaderboardMode  @default(AFTER_END)
+  wrongTryPenaltySeconds  Int              @default(300)
+  leaderboardFrozenAt     DateTime?
+  publishedAt             DateTime?
+  createdAt               DateTime         @default(now())
+  updatedAt               DateTime         @updatedAt
 
   questions   ExamQuestion[]
   assignments ExamAssignment[]
@@ -362,6 +378,8 @@ model Attempt {
   startedAt         DateTime             @default(now())
   submittedAt       DateTime?
   gradedAt          DateTime?
+  acceptedAt        DateTime?
+  triesCount        Int                  @default(0)
   updatedAt         DateTime             @updatedAt
 
   user     User        @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -373,12 +391,30 @@ model Attempt {
   testRuns       TestRun[]
   events         ProctorEvent[]
   scoreHistories AttemptScoreHistory[]
+  attemptFlags   AttemptFlag[]
 
   @@unique([sessionId, questionId])
   @@index([examId, status])
   @@index([userId, examId])
   @@index([status, gradedAt])
   @@map("attempts")
+}
+
+model AttemptFlag {
+  id        String          @id @default(cuid())
+  attemptId String
+  kind      AttemptFlagKind
+  setById   String?
+  note      String?         @db.Text
+  createdAt DateTime        @default(now())
+
+  attempt Attempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  setBy   User?   @relation("AdminAttemptFlags", fields: [setById], references: [id], onDelete: SetNull)
+
+  @@unique([attemptId, kind])
+  @@index([attemptId])
+  @@index([kind])
+  @@map("attempt_flags")
 }
 
 model TestResult {
