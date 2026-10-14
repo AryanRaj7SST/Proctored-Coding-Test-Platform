@@ -50,8 +50,41 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
     js: (snapshot.starterJs as string) ?? attempt.question.starterJs,
   };
 
+  const flags = Array.isArray(attempt.flags)
+    ? (attempt.flags as Array<{ rule: string; description: string; snippet?: string }>)
+    : [];
+
   return (
     <div className="space-y-4">
+      {flags.length > 0 && (
+        <div className="rounded-lg border border-rose-300 bg-rose-50 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-base font-semibold text-rose-900">⚠️ Static Integrity Red Flags</span>
+              <Badge tone="bad">{flags.length} flagged</Badge>
+            </div>
+            <span className="text-xs text-rose-700">Stored on submit · Not automatically blocked</span>
+          </div>
+          <p className="mt-1 text-xs text-rose-700">
+            Automated static analysis detected suspicious patterns in the submitted code (e.g. eval, constructor access, prototype mutations, or hardcoded test args).
+          </p>
+          <div className="mt-3 space-y-2">
+            {flags.map((flag, idx) => (
+              <div key={idx} className="flex flex-wrap items-center gap-2 rounded bg-white/80 px-2.5 py-1.5 border border-rose-200 text-xs">
+                <span className="rounded bg-rose-100 px-1.5 py-0.5 font-mono text-[11px] font-bold text-rose-900">
+                  {flag.rule}
+                </span>
+                <span className="text-rose-950">{flag.description}</span>
+                {flag.snippet && (
+                  <code className="rounded bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] text-slate-800">
+                    {flag.snippet}
+                  </code>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="flex items-center gap-2 text-xs text-slate-400">
         <Link href="/admin/attempts" className="transition hover:text-white">
           &larr; Back to Submissions

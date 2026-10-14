@@ -65,7 +65,13 @@ export const CAMERA_TYPES: ProctorEventType[] = [
   'CAMERA_RESTORED',
 ];
 
-export function isViolation(type: ProctorEventType): boolean {
+export function isViolation(
+  type: ProctorEventType,
+  options?: { countClipboardViolations?: boolean },
+): boolean {
+  if (options?.countClipboardViolations && (type === 'COPY' || type === 'CUT' || type === 'CONTEXT_MENU')) {
+    return true;
+  }
   return VIOLATION_TYPES.includes(type);
 }
 
@@ -192,6 +198,12 @@ export function violationMessage(type: ProctorEventType): string {
       return 'Leaving fullscreen is prohibited during the test. This has been recorded.';
     case 'PASTE':
       return 'Pasting code into the editor is not allowed. This has been recorded.';
+    case 'COPY':
+      return 'Copying code from the test is prohibited. This has been recorded.';
+    case 'CUT':
+      return 'Cutting code from the test is prohibited. This has been recorded.';
+    case 'CONTEXT_MENU':
+      return 'Opening the context menu is prohibited. This has been recorded.';
     case 'PAGE_RELOAD':
       return 'Refreshing or reloading the test page is prohibited. This has been recorded.';
     case 'HEARTBEAT_LOST':

@@ -149,6 +149,7 @@ const testFields = {
   resultVisibility: z.enum(['HIDDEN', 'SCORE_ONLY', 'FULL']),
   maxViolations: z.number().int().min(0).max(100),
   shuffleQuestions: z.boolean(),
+  countClipboardViolations: z.boolean().default(false),
   questions: testQuestionsInput,
 };
 
@@ -168,6 +169,7 @@ export const examCreateInput = z
     resultVisibility: testFields.resultVisibility.default('FULL'),
     maxViolations: testFields.maxViolations.default(0),
     shuffleQuestions: testFields.shuffleQuestions.default(false),
+    countClipboardViolations: z.boolean().default(false),
     questions: testQuestionsInput.default([]),
   })
   .refine(windowIsOrdered, windowMessage);

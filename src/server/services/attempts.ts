@@ -8,6 +8,7 @@ import { marksToNumber } from '@/server/grading/marks';
 import { pinnedSnapshot } from './questions';
 import { currentSession, getExamTimeState, type ExamTimeState } from './sessions';
 import { recordAudit } from './audit';
+import { scanRedFlags, extractTestCasesFromSnapshot } from '@/lib/static-analysis';
 
 type ExamQuestionWithTests = Prisma.ExamQuestionGetPayload<{
   include: { question: { include: { tests: true } } };
@@ -205,6 +206,7 @@ export async function claimAttempt(
   attemptId: string,
   status: 'SUBMITTED' | 'AUTO_SUBMITTED',
   code?: { html: string; css: string; js: string },
+  flags?: unknown,
 ): Promise<boolean> {
   const claimed = await prisma.attempt.updateMany({
     where: { id: attemptId, status: 'IN_PROGRESS' },
@@ -213,6 +215,7 @@ export async function claimAttempt(
       submittedAt: new Date(),
       gradedAt: null,
       ...(code ? { html: code.html, css: code.css, js: code.js } : {}),
+      ...(flags !== undefined ? { flags: flags as Prisma.InputJsonValue } : {}),
     },
   });
   return claimed.count === 1;
@@ -265,9 +268,11 @@ export async function submitAttempt(params: {
   if (state && openForResubmission(attempt, state)) {
     assertAcceptingSubmissions(state);
     const code = params.code ?? { html: attempt.html, css: attempt.css, js: attempt.js };
+    const testCases = extractTestCasesFromSnapshot(attempt.snapshot);
+    const flags = scanRedFlags(code.js, { testCases });
     await prisma.attempt.updateMany({
       where: { id: attempt.id, status: 'SUBMITTED', session: { endedAt: null } },
-      data: { ...code, submittedAt: new Date() },
+      data: { ...code, submittedAt: new Date(), flags: flags as unknown as Prisma.InputJsonValue },
     });
     const graded = await gradeAttempt(attempt.id, { reason: 'resubmission', keepBest: true });
     if (graded.busy) {
@@ -288,8 +293,9 @@ export async function submitAttempt(params: {
             maxScore: graded.outcome.maxScore,
             bestScore,
             counted: Boolean(graded.counted),
+            flagsCount: flags.length,
           }
-        : { gradingPending: true },
+        : { gradingPending: true, flagsCount: flags.length },
     });
     if (graded.outcome) {
       return { ...graded.outcome, alreadySubmitted: false, gradingPending: false, bestScore };
@@ -307,7 +313,9 @@ export async function submitAttempt(params: {
     assertAcceptingSubmissions(state);
 
     const code = params.code ?? { html: attempt.html, css: attempt.css, js: attempt.js };
-    if (await claimAttempt(attempt.id, 'SUBMITTED', code)) {
+    const testCases = extractTestCasesFromSnapshot(attempt.snapshot);
+    const flags = scanRedFlags(code.js, { testCases });
+    if (await claimAttempt(attempt.id, 'SUBMITTED', code, flags)) {
       const graded = await gradeAttempt(attempt.id);
       await recordAudit({
         userId: params.userId,
@@ -315,8 +323,8 @@ export async function submitAttempt(params: {
         entity: 'Attempt',
         entityId: attempt.id,
         metadata: graded.outcome
-          ? { score: graded.outcome.score, maxScore: graded.outcome.maxScore }
-          : { gradingPending: true },
+          ? { score: graded.outcome.score, maxScore: graded.outcome.maxScore, flagsCount: flags.length }
+          : { gradingPending: true, flagsCount: flags.length },
       });
       // The sitting stays open: it ends only when time runs out or the student ends the test.
       const bestScore = graded.outcome ? graded.outcome.score : null;

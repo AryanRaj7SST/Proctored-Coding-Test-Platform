@@ -71,6 +71,9 @@ const settingsData = (input: ExamUpdateInput) => ({
   ...(input.resultVisibility !== undefined ? { resultVisibility: input.resultVisibility } : {}),
   ...(input.maxViolations !== undefined ? { maxViolations: input.maxViolations } : {}),
   ...(input.shuffleQuestions !== undefined ? { shuffleQuestions: input.shuffleQuestions } : {}),
+  ...(input.countClipboardViolations !== undefined
+    ? { countClipboardViolations: input.countClipboardViolations }
+    : {}),
 });
 
 /** A new test is always a DRAFT. */

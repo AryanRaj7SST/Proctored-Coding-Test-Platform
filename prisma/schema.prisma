@@ -263,6 +263,7 @@ model Exam {
   batch             String?
   maxViolations     Int              @default(0) // 0 = never auto-submit on violations
   shuffleQuestions  Boolean          @default(false)
+  countClipboardViolations Boolean       @default(false)
   instructions      String?          @db.Text
   accessMode        ExamAccessMode   @default(ANY_AUTHENTICATED_USER)
   maxAttempts       Int              @default(1)
@@ -356,6 +357,7 @@ model Attempt {
   reviewedById      String?
   // Frozen copy of the question + its tests (incl. points) at attempt creation.
   snapshot          Json
+  flags             Json?
   questionVersion   Int                  @default(1)
   startedAt         DateTime             @default(now())
   submittedAt       DateTime?

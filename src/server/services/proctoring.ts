@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import {
   dedupeFamily,
   isViolation,
+  isClipboardExempt,
   shouldRecordEvent,
   violationMessage,
   type ProctorEventType,
@@ -56,7 +57,17 @@ export async function recordProctorEvent(params: {
       await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${`proctor:${params.userId}:${params.examId}`}))`;
 
       // Events belong to the current sitting; violation limits are per sitting.
-      const session = await currentSession(params.examId, params.userId, tx);
+      const [session, exam, assignment] = await Promise.all([
+        currentSession(params.examId, params.userId, tx),
+        tx.exam.findUnique({
+          where: { id: params.examId },
+          select: { countClipboardViolations: true },
+        }),
+        tx.examAssignment.findFirst({
+          where: { examId: params.examId, userId: params.userId },
+          select: { allowClipboard: true },
+        }),
+      ]);
       const sessionId = session?.id ?? null;
       if (session?.endedAt) {
         // Events after the sitting closed (a late blur while the "submitted"
@@ -82,6 +93,10 @@ export async function recordProctorEvent(params: {
         last ? { type: last.type as ProctorEventType, occurredAt: last.occurredAt } : null,
       );
 
+      const countClipboard = Boolean(exam?.countClipboardViolations);
+      const isExempt = assignment ? isClipboardExempt(params.type, assignment) : false;
+      const isViol = !isExempt && isViolation(params.type, { countClipboardViolations: countClipboard });
+
       if (decision.accept) {
         await tx.proctorEvent.create({
           data: {
@@ -92,11 +107,11 @@ export async function recordProctorEvent(params: {
             type: params.type,
             occurredAt: now,
             durationMs: params.durationMs ?? null,
-            violation: isViolation(params.type),
+            violation: isViol,
             metadata: params.metadata ? (params.metadata as object) : undefined,
           },
         });
-        if (session && isViolation(params.type)) {
+        if (session && isViol) {
           await tx.examSession.update({
             where: { id: session.id },
             data: { violationCount: { increment: 1 } },
@@ -126,7 +141,7 @@ export async function recordProctorEvent(params: {
       return {
         recorded: decision.accept,
         violationCount,
-        message: isViolation(params.type) ? violationMessage(params.type) : null,
+        message: isViol ? violationMessage(params.type) : null,
         ...(decision.reason ? { reason: decision.reason } : {}),
       };
     },

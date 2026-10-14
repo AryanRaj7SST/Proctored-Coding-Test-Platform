@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/authz';
@@ -81,7 +82,21 @@ export default async function ResultsPage({ searchParams }: { searchParams: Prom
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {selectedExam ? (
-            <BulkRegradeDialog examId={selectedExam.id} examTitle={selectedExam.title} />
+            <>
+              <Link
+                href={`/admin/exams/${selectedExam.id}/standings`}
+                className="shadow-xs inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Contest Standings
+              </Link>
+              <Link
+                href={`/admin/exams/${selectedExam.id}/similarity`}
+                className="shadow-xs inline-flex h-9 items-center rounded-lg border border-slate-300 bg-white px-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+              >
+                Similarity Report
+              </Link>
+              <BulkRegradeDialog examId={selectedExam.id} examTitle={selectedExam.title} />
+            </>
           ) : null}
           <a
             href={`/api/admin/results/export${exportQuery ? `?${exportQuery}` : ''}`}
