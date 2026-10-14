@@ -245,10 +245,7 @@ describe('load test production safety & safeguards', () => {
         testRun: {
           deleteMany: vi.fn().mockImplementation((args) => {
             deletedCalls.push('testRun');
-            expect(args.where.OR).toEqual([
-              { attemptId: { in: ['att-1'] } },
-              { userId: { in: ['user-1'] } },
-            ]);
+            expect(args.where.OR).toEqual([{ attemptId: { in: ['att-1'] } }, { userId: { in: ['user-1'] } }]);
           }),
         },
         attemptFlag: {

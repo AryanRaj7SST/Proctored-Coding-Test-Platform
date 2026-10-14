@@ -13,3 +13,5 @@ prisma/migrations
 e2e-state.json
 e2e-admin-state.json
 .vercel
+.agents
+loadtest-results

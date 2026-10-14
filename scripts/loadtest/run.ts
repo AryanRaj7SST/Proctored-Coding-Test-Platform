@@ -234,9 +234,13 @@ async function main() {
       // ignore
     }
 
-    console.log('\x1b[33m========================================================================================');
+    console.log(
+      '\x1b[33m========================================================================================',
+    );
     console.log('⚠️  PRODUCTION LOAD TEST CONFIRMATION REQUIRED');
-    console.log('========================================================================================\x1b[0m');
+    console.log(
+      '========================================================================================\x1b[0m',
+    );
     console.log(`  Target Host:        ${parsedUrl.host}`);
     console.log(`  Database Host:      ${dbHost}`);
     console.log(`  Simulated Students: ${args.studentsCount}`);

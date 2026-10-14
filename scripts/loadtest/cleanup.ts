@@ -34,7 +34,14 @@ export interface CleanupCounts {
 export async function getCleanupCounts(
   client: PrismaClient,
   runId: string,
-): Promise<{ counts: CleanupCounts; userIds: string[]; attemptIds: string[]; sessionIds: string[]; assignmentIds: string[]; proctorEventIds: string[] }> {
+): Promise<{
+  counts: CleanupCounts;
+  userIds: string[];
+  attemptIds: string[];
+  sessionIds: string[];
+  assignmentIds: string[];
+  proctorEventIds: string[];
+}> {
   const prefix = `loadtest-${runId}-`;
 
   // 1. Identify users created for this run
@@ -115,28 +122,28 @@ export async function getCleanupCounts(
   });
 
   // Query child records linked to the identified attempts/users
-  const testResultsCount = attemptIds.length > 0
-    ? await client.testResult.count({ where: { attemptId: { in: attemptIds } } })
-    : 0;
+  const testResultsCount =
+    attemptIds.length > 0 ? await client.testResult.count({ where: { attemptId: { in: attemptIds } } }) : 0;
 
-  const testRunsCount = attemptIds.length > 0 || userIds.length > 0
-    ? await client.testRun.count({
-        where: {
-          OR: [
-            ...(attemptIds.length > 0 ? [{ attemptId: { in: attemptIds } }] : []),
-            ...(userIds.length > 0 ? [{ userId: { in: userIds } }] : []),
-          ],
-        },
-      })
-    : 0;
+  const testRunsCount =
+    attemptIds.length > 0 || userIds.length > 0
+      ? await client.testRun.count({
+          where: {
+            OR: [
+              ...(attemptIds.length > 0 ? [{ attemptId: { in: attemptIds } }] : []),
+              ...(userIds.length > 0 ? [{ userId: { in: userIds } }] : []),
+            ],
+          },
+        })
+      : 0;
 
-  const attemptFlagsCount = attemptIds.length > 0
-    ? await client.attemptFlag.count({ where: { attemptId: { in: attemptIds } } })
-    : 0;
+  const attemptFlagsCount =
+    attemptIds.length > 0 ? await client.attemptFlag.count({ where: { attemptId: { in: attemptIds } } }) : 0;
 
-  const attemptScoreHistoriesCount = attemptIds.length > 0
-    ? await client.attemptScoreHistory.count({ where: { attemptId: { in: attemptIds } } })
-    : 0;
+  const attemptScoreHistoriesCount =
+    attemptIds.length > 0
+      ? await client.attemptScoreHistory.count({ where: { attemptId: { in: attemptIds } } })
+      : 0;
 
   const auditLogsCount = await client.auditLog.count({
     where: { userId: { in: userIds } },
@@ -190,10 +197,7 @@ export async function executeCleanup(
       // 2. Delete test runs
       await tx.testRun.deleteMany({
         where: {
-          OR: [
-            { attemptId: { in: attemptIds } },
-            { userId: { in: userIds } },
-          ],
+          OR: [{ attemptId: { in: attemptIds } }, { userId: { in: userIds } }],
         },
       });
 
@@ -254,10 +258,12 @@ export async function executeCleanup(
 function printTable(rows: { table: string; before: number; after?: number }[], isExecuted: boolean) {
   if (isExecuted) {
     console.log('----------------------------------------------------------------------');
-    console.log(`${'Table'.padEnd(28)} | ${'Before'.padStart(10)} | ${'After'.padStart(10)} | ${'Deleted'.padStart(10)}`);
+    console.log(
+      `${'Table'.padEnd(28)} | ${'Before'.padStart(10)} | ${'After'.padStart(10)} | ${'Deleted'.padStart(10)}`,
+    );
     console.log('----------------------------------------------------------------------');
     for (const row of rows) {
-      const deleted = (row.before - (row.after ?? 0));
+      const deleted = row.before - (row.after ?? 0);
       console.log(
         `${row.table.padEnd(28)} | ${String(row.before).padStart(10)} | ${String(row.after ?? 0).padStart(10)} | ${String(deleted).padStart(10)}`,
       );
@@ -307,12 +313,16 @@ Options:
 
   console.log('======================================================================');
   console.log(`LOAD TEST DATA CLEANUP: runId = "${runId}"`);
-  console.log(`Mode: ${execute ? '\x1b[31mEXECUTE (DELETION ENABLED)\x1b[0m' : '\x1b[33mDRY RUN (NO RECORDS TOUCHED)\x1b[0m'}`);
+  console.log(
+    `Mode: ${execute ? '\x1b[31mEXECUTE (DELETION ENABLED)\x1b[0m' : '\x1b[33mDRY RUN (NO RECORDS TOUCHED)\x1b[0m'}`,
+  );
   console.log('======================================================================');
   console.log('Scope:');
   console.log(`  Users matching prefix:       "loadtest-${runId}-*"`);
   console.log('  Exams scoped:                Title starting with "LOADTEST "');
-  console.log('  Preserved tables (skipped):  exams, questions, question_tests, exam_questions, allowed_emails');
+  console.log(
+    '  Preserved tables (skipped):  exams, questions, question_tests, exam_questions, allowed_emails',
+  );
   console.log('----------------------------------------------------------------------\n');
 
   try {
@@ -333,7 +343,11 @@ Options:
       { table: 'test_runs', before: before.test_runs, after: after.test_runs },
       { table: 'proctor_events', before: before.proctor_events, after: after.proctor_events },
       { table: 'attempt_flags', before: before.attempt_flags, after: after.attempt_flags },
-      { table: 'attempt_score_histories', before: before.attempt_score_histories, after: after.attempt_score_histories },
+      {
+        table: 'attempt_score_histories',
+        before: before.attempt_score_histories,
+        after: after.attempt_score_histories,
+      },
       { table: 'audit_logs', before: before.audit_logs, after: after.audit_logs },
     ];
 
@@ -341,9 +355,13 @@ Options:
 
     if (!execute) {
       console.log('\n\x1b[33m[DRY RUN COMPLETE] No records were modified or deleted.\x1b[0m');
-      console.log(`To delete the rows listed above, run:\n  npx tsx scripts/loadtest/cleanup.ts --run-id ${runId} --execute\n`);
+      console.log(
+        `To delete the rows listed above, run:\n  npx tsx scripts/loadtest/cleanup.ts --run-id ${runId} --execute\n`,
+      );
     } else {
-      console.log('\n\x1b[32m[EXECUTE COMPLETE] Successfully deleted all scoped load-test records in one transaction.\x1b[0m\n');
+      console.log(
+        '\n\x1b[32m[EXECUTE COMPLETE] Successfully deleted all scoped load-test records in one transaction.\x1b[0m\n',
+      );
     }
   } catch (err) {
     console.error('\x1b[31m[ERROR] Cleanup failed:\x1b[0m', err);

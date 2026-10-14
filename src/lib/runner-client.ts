@@ -260,7 +260,9 @@ async function postToCandidateUrls(
     throw new HttpResponseError(new RunnerError('BUSY', 'Runner queue is full.'));
   }
   if (had503) {
-    throw new HttpResponseError(new RunnerError('UNAVAILABLE', 'Runner responded with 503: Service Unavailable'));
+    throw new HttpResponseError(
+      new RunnerError('UNAVAILABLE', 'Runner responded with 503: Service Unavailable'),
+    );
   }
   const errorDetails =
     lastNetworkError instanceof Error
@@ -374,7 +376,8 @@ export async function runnerPoolHealth(): Promise<RunnerPoolHealthResult> {
             if (data && typeof data === 'object') {
               if (typeof data.active === 'number' && Number.isFinite(data.active)) active = data.active;
               if (typeof data.queued === 'number' && Number.isFinite(data.queued)) queued = data.queued;
-              if (typeof data.capacity === 'number' && Number.isFinite(data.capacity)) capacity = data.capacity;
+              if (typeof data.capacity === 'number' && Number.isFinite(data.capacity))
+                capacity = data.capacity;
             }
           } catch {
             // ignore missing or malformed body

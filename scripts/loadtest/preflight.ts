@@ -200,9 +200,12 @@ export async function checkRunner(
         try {
           const warmData = await warmRes.json();
           if (warmData && typeof warmData === 'object') {
-            if (typeof warmData.active === 'number' && Number.isFinite(warmData.active)) active = warmData.active;
-            if (typeof warmData.queued === 'number' && Number.isFinite(warmData.queued)) queued = warmData.queued;
-            if (typeof warmData.capacity === 'number' && Number.isFinite(warmData.capacity)) capacity = warmData.capacity;
+            if (typeof warmData.active === 'number' && Number.isFinite(warmData.active))
+              active = warmData.active;
+            if (typeof warmData.queued === 'number' && Number.isFinite(warmData.queued))
+              queued = warmData.queued;
+            if (typeof warmData.capacity === 'number' && Number.isFinite(warmData.capacity))
+              capacity = warmData.capacity;
           }
         } catch {
           // ignore
@@ -265,9 +268,7 @@ export async function runPreflight(options: PreflightOptions): Promise<Preflight
       );
     }
 
-    const queues = new Set(
-      healthyRunners.map((r) => r.queued).filter((q): q is number => q !== undefined),
-    );
+    const queues = new Set(healthyRunners.map((r) => r.queued).filter((q): q is number => q !== undefined));
     if (queues.size > 1) {
       discrepancies.push(
         `Discrepancy: Runner queued depths differ across pool: ${healthyRunners
@@ -308,9 +309,13 @@ export async function runPreflight(options: PreflightOptions): Promise<Preflight
 
 /** Print human-readable report table to console. */
 export function printPreflightReport(report: PreflightReport): void {
-  console.log('================================================================================================');
+  console.log(
+    '================================================================================================',
+  );
   console.log('RUNNER POOL PREFLIGHT VERIFICATION');
-  console.log('================================================================================================');
+  console.log(
+    '================================================================================================',
+  );
 
   if (report.runners.length === 0) {
     console.log('No runner URLs provided.');
@@ -348,7 +353,9 @@ export function printPreflightReport(report: PreflightReport): void {
   for (const row of rows) {
     console.log(row.map((val, i) => pad(val, colWidths[i]!)).join('  '));
   }
-  console.log('================================================================================================');
+  console.log(
+    '================================================================================================',
+  );
 
   // Cold start advisory
   const coldCount = report.runners.filter((r) => r.isColdStart).length;

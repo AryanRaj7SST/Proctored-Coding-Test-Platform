@@ -117,18 +117,18 @@ npx tsx scripts/loadtest/run.ts \
 
 ## CLI Options
 
-| Flag                     | Default      | Description                                                    |
-| :----------------------- | :----------- | :------------------------------------------------------------- |
-| `--base-url <url>`       | _(Required)_ | Target application base URL.                                   |
+| Flag                     | Default      | Description                                                             |
+| :----------------------- | :----------- | :---------------------------------------------------------------------- |
+| `--base-url <url>`       | _(Required)_ | Target application base URL.                                            |
 | `--exam-id <id>`         | _(Required)_ | ID of the test/exam to run against (title must start with `LOADTEST `). |
-| `--students <N>`         | `250`        | Number of concurrent students to simulate.                     |
-| `--max-students <M>`     | `250`        | Safety limit for max concurrent students.                      |
-| `--ramp-seconds <S>`     | `30`         | Duration over which students start their tests.                |
-| `--duration-seconds <D>` | `45`         | Duration of each student's exam session before submission.     |
-| `--simultaneous-finish`  | `false`      | Synchronizes all students to submit at the exact same instant. |
-| `--skip-db-verify`       | `false`      | Skips database code match assertion.                           |
-| `--allow-production`     | `false`      | Explicit opt-in required to target production.                 |
-| `--run-id <id>`          | _(auto)_     | Unique run identifier for record tagging and scoped cleanup.   |
+| `--students <N>`         | `250`        | Number of concurrent students to simulate.                              |
+| `--max-students <M>`     | `250`        | Safety limit for max concurrent students.                               |
+| `--ramp-seconds <S>`     | `30`         | Duration over which students start their tests.                         |
+| `--duration-seconds <D>` | `45`         | Duration of each student's exam session before submission.              |
+| `--simultaneous-finish`  | `false`      | Synchronizes all students to submit at the exact same instant.          |
+| `--skip-db-verify`       | `false`      | Skips database code match assertion.                                    |
+| `--allow-production`     | `false`      | Explicit opt-in required to target production.                          |
+| `--run-id <id>`          | _(auto)_     | Unique run identifier for record tagging and scoped cleanup.            |
 
 ---
 

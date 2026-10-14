@@ -57,9 +57,9 @@ describe('production configuration is validated at startup', () => {
     ).toEqual([]);
 
     // One bad URL in the list
-    expect(
-      missingServerEnv({ ...prod, runnerUrlsRaw: 'https://r1.example.com, not a url' }),
-    ).toEqual(['RUNNER_URLS[1] (not a valid URL)']);
+    expect(missingServerEnv({ ...prod, runnerUrlsRaw: 'https://r1.example.com, not a url' })).toEqual([
+      'RUNNER_URLS[1] (not a valid URL)',
+    ]);
 
     // HTTP public host in the list
     expect(

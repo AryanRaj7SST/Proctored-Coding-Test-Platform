@@ -86,7 +86,7 @@ export default async function SettingsPage() {
               title={r.detail ?? (r.ok ? 'healthy' : 'down')}
             >
               <span className={`h-1.5 w-1.5 rounded-full ${r.ok ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-              {r.host}: {r.ok ? 'online' : r.detail ?? 'down'}
+              {r.host}: {r.ok ? 'online' : (r.detail ?? 'down')}
             </span>
           ))}
         </div>

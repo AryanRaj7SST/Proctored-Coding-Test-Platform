@@ -33,6 +33,7 @@ RUNNER_SECRET="your-32-byte-hex-secret-here" docker compose -f docker-compose.po
 Because runner ports are not exposed on the host for network isolation, query runner health endpoints from within the Docker network or directly inside the runner containers:
 
 1. **Directly inside a runner container via Node fetch:**
+
    ```bash
    docker compose -f docker-compose.pool.yml exec runner1 node -e "fetch('http://127.0.0.1:4000/health').then(r=>r.json()).then(console.log)"
    docker compose -f docker-compose.pool.yml exec runner2 node -e "fetch('http://127.0.0.1:4000/health').then(r=>r.json()).then(console.log)"
@@ -59,6 +60,7 @@ While `runner2` restarts, the application automatically detects unreachable atte
 ### Scaling the pool up or down
 
 #### Scaling up (adding runner4..N):
+
 1. In `docker-compose.pool.yml`, define the new service:
    ```yaml
    runner4:
@@ -76,6 +78,7 @@ While `runner2` restarts, the application automatically detects unreachable atte
    ```
 
 #### Scaling down:
+
 1. Remove the service URL from `RUNNER_URLS` in `docker-compose.pool.yml` (or `.env`).
 2. Reload the app container:
    ```bash
