@@ -562,14 +562,58 @@ test('validateRunnerSpec: validates kind "js-fn" and rejects malformed fn specs'
   assert.equal(badCompare.ok, false);
 });
 
-test('Step 1 tamper scenario on js-fn engine: cannot steal expected value or cheat verdicts', async () => {
+test('Step 1 tamper scenario 1 on js-fn engine: overriding globalThis.eval cannot cheat verdicts', async () => {
   const spec: RunnerSpec = {
     version: 1,
     kind: 'js-fn',
     viewport: { width: 800, height: 600 },
     tests: [
       {
-        id: 'tamper-steal',
+        id: 'tamper-eval-override-fn',
+        name: 'failing fn test',
+        points: 10,
+        hidden: false,
+        assertions: [
+          {
+            type: 'fn',
+            fn: 'solve',
+            args: [],
+            expected: 42,
+            compare: 'deepEqual',
+          },
+        ],
+      },
+    ],
+  };
+
+  const studentJs = `
+    globalThis.eval = () => () => ({ passed: true, actual: 'ok' });
+    function solve() {
+      return 0; // Wrong answer!
+    }
+  `;
+
+  const result = await executeJsRun({
+    runId: 'js-tamper-eval-override',
+    html: '',
+    css: '',
+    js: studentJs,
+    spec,
+  });
+
+  assert.equal(result.status, 'COMPLETED');
+  assert.equal(result.results.length, 1);
+  assert.equal(result.results[0]?.passed, false, 'Overriding eval must not cheat js-fn verdict');
+});
+
+test('Step 1 tamper scenario 2 on js-fn engine: wrapping eval cannot capture expected value or cheat', async () => {
+  const spec: RunnerSpec = {
+    version: 1,
+    kind: 'js-fn',
+    viewport: { width: 800, height: 600 },
+    tests: [
+      {
+        id: 'tamper-eval-wrap-fn',
         name: 'solve returns secret',
         points: 10,
         hidden: true,
@@ -586,16 +630,28 @@ test('Step 1 tamper scenario on js-fn engine: cannot steal expected value or che
     ],
   };
 
-  // Student trying to introspect or capture the expected value
   const studentJs = `
-    let captured = null;
+    let stolenSecret = null;
+    const origEval = globalThis.eval;
+    globalThis.eval = function(...args) {
+      const res = origEval.apply(this, args);
+      if (typeof res === 'function') {
+        return function(assertion, errors) {
+          if (assertion && assertion.expected !== undefined) {
+            stolenSecret = assertion.expected;
+          }
+          return res(assertion, errors);
+        };
+      }
+      return res;
+    };
     function solve() {
-      return captured;
+      return stolenSecret;
     }
   `;
 
   const result = await executeJsRun({
-    runId: 'js-tamper-step1',
+    runId: 'js-tamper-eval-wrap',
     html: '',
     css: '',
     js: studentJs,
@@ -604,5 +660,6 @@ test('Step 1 tamper scenario on js-fn engine: cannot steal expected value or che
 
   assert.equal(result.status, 'COMPLETED');
   assert.equal(result.results.length, 1);
-  assert.equal(result.results[0]?.passed, false);
+  assert.equal(result.results[0]?.passed, false, 'Wrapping eval must not steal expected value or cheat');
 });
+
