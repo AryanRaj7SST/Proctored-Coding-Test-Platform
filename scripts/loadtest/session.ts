@@ -40,24 +40,26 @@ export async function provisionStudents({
   examId,
   baseUrl,
   authSecret,
+  runId = 'default',
 }: {
   count: number;
   examId: string;
   baseUrl: string;
   authSecret: string;
+  runId?: string;
 }): Promise<ProvisionedStudent[]> {
   const isSecure = baseUrl.startsWith('https://');
   const cookieName = isSecure ? '__Secure-authjs.session-token' : 'authjs.session-token';
   const maxAge = 2 * 60 * 60; // 2 hours
 
-  console.log(`[Setup] Provisioning ${count} simulated students for exam ${examId}...`);
+  console.log(`[Setup] Provisioning ${count} simulated students for exam ${examId} (runId: ${runId})...`);
 
   const students: ProvisionedStudent[] = [];
 
   for (let i = 1; i <= count; i++) {
     const pad = String(i).padStart(3, '0');
-    const email = `loadtest-student-${pad}@loadtest.local`;
-    const name = `LoadTest Student ${pad}`;
+    const email = `loadtest-${runId}-student-${pad}@loadtest.local`;
+    const name = `loadtest-${runId}-Student ${pad}`;
 
     // Upsert student record in DB
     const user = await prisma.user.upsert({
@@ -67,7 +69,7 @@ export async function provisionStudents({
         name,
         role: 'STUDENT',
         active: true,
-        batch: 'LOADTEST',
+        batch: `LOADTEST-${runId}`,
       },
       update: {
         active: true,

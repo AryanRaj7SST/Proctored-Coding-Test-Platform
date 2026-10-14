@@ -31,6 +31,7 @@ export const env = {
   runnerUrl: str('RUNNER_URL', 'http://127.0.0.1:4000'),
   /** False when RUNNER_URL was left unset and the local default above is in use. */
   runnerUrlConfigured: str('RUNNER_URL') !== '',
+  runnerUrlsRaw: str('RUNNER_URLS'),
   runnerSecret: str('RUNNER_SECRET'),
   runnerTimeoutMs: int('RUNNER_TIMEOUT_MS', 30_000),
   /** Must match the runner's TEST_TIMEOUT_MS: the per-test allowance added to the wait. */
@@ -68,6 +69,36 @@ const REQUIRED: Partial<Record<StringKey, string>> = {
 /** The variable behind each setting requireEnv() can be asked for. */
 const ENV_KEY_MAP: Partial<Record<StringKey, string>> = { ...REQUIRED, runnerUrl: 'RUNNER_URL' };
 
+/** Split, trim, drop empties, strip trailing slashes, and dedupe runner URLs. */
+export function parseRunnerUrls(raw?: string, single?: string): string[] {
+  if (!raw || raw.trim() === '') {
+    if (!single || single.trim() === '') return [];
+    return [single.trim().replace(/\/+$/, '')];
+  }
+  const parts = raw
+    .split(',')
+    .map((u) => u.trim().replace(/\/+$/, ''))
+    .filter((u) => u.length > 0);
+  if (parts.length === 0) {
+    if (!single || single.trim() === '') return [];
+    return [single.trim().replace(/\/+$/, '')];
+  }
+  return Array.from(new Set(parts));
+}
+
+/** Reads process.env live at call time, falling back to static env. */
+export function getRunnerUrls(): string[] {
+  const raw =
+    process.env.RUNNER_URLS !== undefined && process.env.RUNNER_URLS !== ''
+      ? process.env.RUNNER_URLS
+      : env.runnerUrlsRaw;
+  const single =
+    process.env.RUNNER_URL !== undefined && process.env.RUNNER_URL !== ''
+      ? process.env.RUNNER_URL
+      : env.runnerUrl;
+  return parseRunnerUrls(raw, single);
+}
+
 /** Hosts reachable only inside a private network, where plain http to the runner is acceptable. */
 export function isPrivateHost(hostname: string): boolean {
   const h = hostname.toLowerCase().replace(/^\[|\]$/g, '');
@@ -95,16 +126,30 @@ export function missingServerEnv(source: typeof env = env): string[] {
     missing.push('RUNNER_SECRET (min 32 chars in production)');
   }
   if (source.cronSecret && source.cronSecret.length < 16) missing.push('CRON_SECRET (min 16 chars)');
-  if (!source.runnerUrlConfigured) missing.push('RUNNER_URL (must be set in production)');
-  // Student code and test specs travel to the runner: over the internet that must be https.
-  let runner: URL | null = null;
-  try {
-    runner = new URL(source.runnerUrl);
-  } catch {
-    missing.push('RUNNER_URL (not a valid URL)');
+
+  const isMulti = Boolean(source.runnerUrlsRaw && source.runnerUrlsRaw.trim() !== '');
+  const isConfigured = isMulti || source.runnerUrlConfigured;
+  if (!isConfigured) {
+    missing.push('RUNNER_URL (must be set in production)');
   }
-  if (runner && runner.protocol !== 'https:' && !isPrivateHost(runner.hostname)) {
-    missing.push('RUNNER_URL (must be https:// unless the runner is on a private network)');
+
+  const runnerUrls = parseRunnerUrls(source.runnerUrlsRaw, source.runnerUrl);
+  if (isMulti && runnerUrls.length > 20) {
+    missing.push('RUNNER_URLS (max 20 allowed)');
+  }
+
+  for (let i = 0; i < runnerUrls.length; i++) {
+    const url = runnerUrls[i]!;
+    const label = isMulti ? `RUNNER_URLS[${i}]` : 'RUNNER_URL';
+    let runner: URL | null = null;
+    try {
+      runner = new URL(url);
+    } catch {
+      missing.push(`${label} (not a valid URL)`);
+    }
+    if (runner && runner.protocol !== 'https:' && !isPrivateHost(runner.hostname)) {
+      missing.push(`${label} (must be https:// unless the runner is on a private network)`);
+    }
   }
   if (source.allowNoRateLimit || process.env.ALLOW_NO_RATE_LIMIT === 'true') {
     console.warn(

@@ -1,7 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import type { RunnerRunResult, RunnerSpec } from '@shared/test-spec';
-import { env, requireEnv } from './env';
+import { env, requireEnv, getRunnerUrls } from './env';
 import { logger, sanitizeError } from './logger';
+
+export { getRunnerUrls };
 
 export interface RunnerRequest {
   runId: string;
@@ -89,91 +91,181 @@ export function signedHeaders(body: string, secret: string): Record<string, stri
   };
 }
 
+/** Extract hostname + port from URL string for logging and identification. */
+export function extractHost(urlStr: string): string {
+  try {
+    return new URL(urlStr).host;
+  } catch {
+    return urlStr.replace(/^https?:\/\//, '').split('/')[0] || urlStr;
+  }
+}
+
+/** Build primary and local loopback variants for a runner base URL. */
+export function buildCandidateUrls(baseUrl: string, path: string): string[] {
+  const base = baseUrl.replace(/\/+$/, '');
+  const primary = `${base}${path}`;
+  const variants = [primary];
+  if (base.includes('127.0.0.1')) {
+    variants.push(`${base.replace('127.0.0.1', 'localhost')}${path}`);
+  } else if (base.includes('localhost')) {
+    variants.push(`${base.replace('localhost', '127.0.0.1')}${path}`);
+  }
+  return variants;
+}
+
+/** Get runner groups rotated to a random start index on every call. */
+export function getRotatedRunnerGroups(): { host: string; urls: string[] }[] {
+  const urls = getRunnerUrls();
+  if (urls.length === 0) {
+    throw new RunnerError('UNAVAILABLE', 'No runner URLs configured.');
+  }
+  const groups = urls.map((u) => ({
+    host: extractHost(u),
+    urls: buildCandidateUrls(u, '/run'),
+  }));
+  if (groups.length <= 1) return groups;
+  const startIndex = Math.floor(Math.random() * groups.length);
+  return [...groups.slice(startIndex), ...groups.slice(0, startIndex)];
+}
+
 async function postToCandidateUrls(
-  candidateUrls: string[],
+  runnerGroups: { host: string; urls: string[] }[],
   secret: string,
   body: string,
   timeoutMs: number,
+  runId: string,
 ): Promise<RunnerRunResult> {
   const headers = signedHeaders(body, secret);
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
-  let lastError: unknown = null;
+  let had429 = false;
+  let had503 = false;
+  let lastNetworkError: unknown = null;
 
-  for (const url of candidateUrls) {
-    try {
-      const res = await fetch(url, {
-        method: 'POST',
-        headers,
-        body,
-        signal: controller.signal,
-        cache: 'no-store',
-      });
+  for (let i = 0; i < runnerGroups.length; i++) {
+    const { host, urls } = runnerGroups[i]!;
+    const hasNextRunner = i < runnerGroups.length - 1;
 
-      if (!res.ok) {
-        const bodyText = typeof res.text === 'function' ? await res.text().catch(() => '') : '';
-        const sanitizedBody = bodyText
-          .slice(0, 500)
-          .replace(/[\r\n]+/g, ' ')
-          .trim();
-        logger.error('runner.post_failed', {
-          url,
-          status: res.status,
-          statusText: res.statusText,
-          body: sanitizedBody,
+    let runnerNetworkError: unknown = null;
+    let runnerHandled = false;
+
+    for (const url of urls) {
+      try {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers,
+          body,
+          signal: controller.signal,
+          cache: 'no-store',
         });
 
-        if (res.status === 429) {
-          throw new HttpResponseError(new RunnerError('BUSY', 'Runner queue is full.'));
-        }
-        if (res.status === 401 || res.status === 403) {
-          throw new HttpResponseError(new RunnerError('REJECTED', 'Runner rejected the request.'));
-        }
-        if (res.status === 400) {
+        if (!res.ok) {
+          const bodyText = typeof res.text === 'function' ? await res.text().catch(() => '') : '';
+          const sanitizedBody = bodyText
+            .slice(0, 500)
+            .replace(/[\r\n]+/g, ' ')
+            .trim();
+          logger.error('runner.post_failed', {
+            url,
+            status: res.status,
+            statusText: res.statusText,
+            body: sanitizedBody,
+          });
+
+          if (res.status === 429) {
+            had429 = true;
+            runnerHandled = true;
+            if (hasNextRunner) {
+              logger.warn('runner.failover', { runId, host, reason: '429' });
+            }
+            break;
+          }
+
+          if (res.status === 503) {
+            had503 = true;
+            runnerHandled = true;
+            if (hasNextRunner) {
+              logger.warn('runner.failover', { runId, host, reason: '503' });
+            }
+            break;
+          }
+
+          // 400 -> INVALID, 401/403 -> REJECTED, any other non-ok status -> UNAVAILABLE
+          // all thrown immediately with no failover.
+          clearTimeout(timer);
+          if (res.status === 400) {
+            throw new HttpResponseError(
+              new RunnerError('INVALID', `Runner rejected the payload: ${sanitizedBody || 'Bad Request'}`),
+            );
+          }
+          if (res.status === 401 || res.status === 403) {
+            throw new HttpResponseError(new RunnerError('REJECTED', 'Runner rejected the request.'));
+          }
           throw new HttpResponseError(
-            new RunnerError('INVALID', `Runner rejected the payload: ${sanitizedBody || 'Bad Request'}`),
+            new RunnerError(
+              'UNAVAILABLE',
+              `Runner responded with ${res.status}: ${sanitizedBody || res.statusText}`,
+            ),
           );
         }
-        throw new HttpResponseError(
-          new RunnerError(
-            'UNAVAILABLE',
-            `Runner responded with ${res.status}: ${sanitizedBody || res.statusText}`,
-          ),
-        );
-      }
 
-      let json: RunnerRunResult;
-      try {
-        json = (await res.json()) as RunnerRunResult;
-      } catch {
-        throw new HttpResponseError(new RunnerError('INVALID', 'Malformed runner response.'));
-      }
+        let json: RunnerRunResult;
+        try {
+          json = (await res.json()) as RunnerRunResult;
+        } catch {
+          clearTimeout(timer);
+          throw new HttpResponseError(new RunnerError('INVALID', 'Malformed runner response.'));
+        }
 
-      if (!json || !Array.isArray(json.results)) {
-        throw new HttpResponseError(new RunnerError('INVALID', 'Malformed runner response.'));
-      }
+        if (!json || !Array.isArray(json.results)) {
+          clearTimeout(timer);
+          throw new HttpResponseError(new RunnerError('INVALID', 'Malformed runner response.'));
+        }
 
-      clearTimeout(timer);
-      return json;
-    } catch (err) {
-      if (err instanceof HttpResponseError) {
         clearTimeout(timer);
-        throw err;
+        return json;
+      } catch (err) {
+        if (err instanceof HttpResponseError) {
+          clearTimeout(timer);
+          throw err;
+        }
+        if (err instanceof Error && err.name === 'AbortError') {
+          clearTimeout(timer);
+          throw new RunnerError('TIMEOUT', 'Runner request timed out.');
+        }
+        runnerNetworkError = err;
+        // Network error on this url variant, try next variant for this runner if any
       }
-      if (err instanceof Error && err.name === 'AbortError') {
-        clearTimeout(timer);
-        throw new RunnerError('TIMEOUT', 'Runner request timed out.');
+    }
+
+    if (!runnerHandled && runnerNetworkError) {
+      lastNetworkError = runnerNetworkError;
+      if (hasNextRunner) {
+        const reason =
+          runnerNetworkError instanceof Error ? runnerNetworkError.message : String(runnerNetworkError);
+        logger.warn('runner.failover', { runId, host, reason });
       }
-      lastError = err;
-      // Network failure on this URL candidate, try next if available
     }
   }
 
   clearTimeout(timer);
+
+  // When all runners have failed in the attempt:
+  // - any runner answered 429 -> throw BUSY (as HttpResponseError, so no outer retry)
+  // - all were network errors -> throw plain UNAVAILABLE as today (outer retry runs)
+  // - otherwise (503s) -> UNAVAILABLE as HttpResponseError
+  if (had429) {
+    throw new HttpResponseError(new RunnerError('BUSY', 'Runner queue is full.'));
+  }
+  if (had503) {
+    throw new HttpResponseError(new RunnerError('UNAVAILABLE', 'Runner responded with 503: Service Unavailable'));
+  }
   const errorDetails =
-    lastError instanceof Error ? `${lastError.name}: ${lastError.message}` : String(lastError);
+    lastNetworkError instanceof Error
+      ? `${lastNetworkError.name}: ${lastNetworkError.message}`
+      : String(lastNetworkError);
   throw new RunnerError('UNAVAILABLE', `Runner is unreachable (${errorDetails}).`);
 }
 
@@ -182,16 +274,6 @@ export async function runOnRunner(
   timeoutMs = runTimeoutFor(request.spec.tests.length),
   retryBackoffMs = 1500,
 ): Promise<RunnerRunResult> {
-  const baseUrl = requireEnv('runnerUrl').replace(/\/$/, '');
-  const candidateUrls = [
-    `${baseUrl}/run`,
-    baseUrl.includes('127.0.0.1')
-      ? `${baseUrl.replace('127.0.0.1', 'localhost')}/run`
-      : baseUrl.includes('localhost')
-        ? `${baseUrl.replace('localhost', '127.0.0.1')}/run`
-        : null,
-  ].filter(Boolean) as string[];
-
   const secret = requireEnv('runnerSecret');
   const body = JSON.stringify(request);
 
@@ -201,7 +283,8 @@ export async function runOnRunner(
   const startedAt = Date.now();
 
   try {
-    return await postToCandidateUrls(candidateUrls, secret, body, timeoutMs);
+    const runnerGroups = getRotatedRunnerGroups();
+    return await postToCandidateUrls(runnerGroups, secret, body, timeoutMs, request.runId);
   } catch (err) {
     if (err instanceof HttpResponseError) {
       // The runner was reachable and responded with an HTTP status (429, 4xx, 5xx) or body.
@@ -226,7 +309,8 @@ export async function runOnRunner(
     }
 
     try {
-      const result = await postToCandidateUrls(candidateUrls, secret, body, retryTimeout);
+      const retryGroups = getRotatedRunnerGroups();
+      const result = await postToCandidateUrls(retryGroups, secret, body, retryTimeout, request.runId);
       logger.info('runner.retry_succeeded', {
         runId: request.runId,
         attempt: 2,
@@ -247,33 +331,110 @@ export async function runOnRunner(
   }
 }
 
-export async function runnerHealth(): Promise<{ ok: boolean; detail?: string }> {
-  const baseUrl = requireEnv('runnerUrl').replace(/\/$/, '');
-  const candidateUrls = [
-    `${baseUrl}/health`,
-    baseUrl.includes('127.0.0.1')
-      ? `${baseUrl.replace('127.0.0.1', 'localhost')}/health`
-      : baseUrl.includes('localhost')
-        ? `${baseUrl.replace('localhost', '127.0.0.1')}/health`
-        : null,
-  ].filter(Boolean) as string[];
+export interface RunnerHealthEntry {
+  host: string;
+  ok: boolean;
+  detail?: string;
+  active?: number;
+  queued?: number;
+  capacity?: number;
+}
 
-  let lastDetail = 'unreachable';
-  for (const url of candidateUrls) {
-    try {
-      const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
-      if (!res.ok) {
-        lastDetail = `status ${res.status}`;
-        continue;
-      }
-      // Reachable is not enough: a runner that rejects the app's secret looks
-      // healthy here but refuses every run. Prove the credentials too.
-      return await checkRunnerCredentials(url.replace(/\/health$/, '/auth-check'));
-    } catch (err) {
-      lastDetail = sanitizeError(err, 120);
-    }
+export interface RunnerPoolHealthResult {
+  status: 'ok' | 'degraded' | 'down';
+  runners: RunnerHealthEntry[];
+}
+
+export async function runnerPoolHealth(): Promise<RunnerPoolHealthResult> {
+  const runnerUrls = getRunnerUrls();
+  if (runnerUrls.length === 0) {
+    return { status: 'down', runners: [] };
   }
-  return { ok: false, detail: lastDetail };
+
+  const runners = await Promise.all(
+    runnerUrls.map(async (rUrl): Promise<RunnerHealthEntry> => {
+      const host = extractHost(rUrl);
+      const candidateUrls = buildCandidateUrls(rUrl, '/health');
+
+      let lastDetail = 'unreachable';
+      let active: number | undefined;
+      let queued: number | undefined;
+      let capacity: number | undefined;
+
+      for (const url of candidateUrls) {
+        try {
+          const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+          if (!res.ok) {
+            lastDetail = `status ${res.status}`;
+            continue;
+          }
+
+          try {
+            const data = await res.json();
+            if (data && typeof data === 'object') {
+              if (typeof data.active === 'number' && Number.isFinite(data.active)) active = data.active;
+              if (typeof data.queued === 'number' && Number.isFinite(data.queued)) queued = data.queued;
+              if (typeof data.capacity === 'number' && Number.isFinite(data.capacity)) capacity = data.capacity;
+            }
+          } catch {
+            // ignore missing or malformed body
+          }
+
+          const credCheck = await checkRunnerCredentials(url.replace(/\/health$/, '/auth-check'));
+          return {
+            host,
+            ok: credCheck.ok,
+            ...(credCheck.detail ? { detail: credCheck.detail } : {}),
+            ...(active !== undefined ? { active } : {}),
+            ...(queued !== undefined ? { queued } : {}),
+            ...(capacity !== undefined ? { capacity } : {}),
+          };
+        } catch (err) {
+          lastDetail = sanitizeError(err, 120);
+        }
+      }
+
+      return {
+        host,
+        ok: false,
+        detail: lastDetail,
+        ...(active !== undefined ? { active } : {}),
+        ...(queued !== undefined ? { queued } : {}),
+        ...(capacity !== undefined ? { capacity } : {}),
+      };
+    }),
+  );
+
+  const upCount = runners.filter((r) => r.ok).length;
+  let status: 'ok' | 'degraded' | 'down';
+  if (upCount === runners.length && runners.length > 0) {
+    status = 'ok';
+  } else if (upCount > 0) {
+    status = 'degraded';
+  } else {
+    status = 'down';
+  }
+
+  return { status, runners };
+}
+
+export async function runnerHealth(): Promise<{ ok: boolean; detail?: string }> {
+  const pool = await runnerPoolHealth();
+  const total = pool.runners.length;
+  if (total === 0) return { ok: false, detail: 'no runners configured' };
+  const upCount = pool.runners.filter((r) => r.ok).length;
+  const ok = upCount > 0;
+
+  if (total > 1) {
+    return { ok, detail: `${upCount}/${total} runners up` };
+  }
+
+  const single = pool.runners[0];
+  if (!single) return { ok: false, detail: 'unreachable' };
+  return {
+    ok: single.ok,
+    ...(single.detail ? { detail: single.detail } : {}),
+  };
 }
 
 export const RUNNER_SECRET_MISMATCH =

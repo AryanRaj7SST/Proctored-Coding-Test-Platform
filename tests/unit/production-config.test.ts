@@ -50,6 +50,57 @@ describe('production configuration is validated at startup', () => {
     expect(missingServerEnv({ ...prod, runnerUrl: 'not a url' })).toContain('RUNNER_URL (not a valid URL)');
   });
 
+  it('validates RUNNER_URLS pool list, http requirements, deduplication, and bounds', () => {
+    // Valid list passes
+    expect(
+      missingServerEnv({ ...prod, runnerUrlsRaw: 'https://r1.example.com, https://r2.example.com' }),
+    ).toEqual([]);
+
+    // One bad URL in the list
+    expect(
+      missingServerEnv({ ...prod, runnerUrlsRaw: 'https://r1.example.com, not a url' }),
+    ).toEqual(['RUNNER_URLS[1] (not a valid URL)']);
+
+    // HTTP public host in the list
+    expect(
+      missingServerEnv({ ...prod, runnerUrlsRaw: 'https://r1.example.com, http://r2.example.com' }),
+    ).toEqual(['RUNNER_URLS[1] (must be https:// unless the runner is on a private network)']);
+
+    // Only RUNNER_URL set
+    expect(
+      missingServerEnv({
+        ...prod,
+        runnerUrlsRaw: '',
+        runnerUrlConfigured: true,
+        runnerUrl: 'https://runner.example.com',
+      }),
+    ).toEqual([]);
+
+    // Neither set
+    expect(
+      missingServerEnv({
+        ...prod,
+        runnerUrlsRaw: '',
+        runnerUrlConfigured: false,
+        runnerUrl: '',
+      }),
+    ).toEqual(['RUNNER_URL (must be set in production)']);
+
+    // Duplicates removed (passes and deduplicated)
+    expect(
+      missingServerEnv({
+        ...prod,
+        runnerUrlsRaw: 'https://r1.example.com, https://r1.example.com',
+      }),
+    ).toEqual([]);
+
+    // Reject lists longer than 20
+    const overTwenty = Array.from({ length: 21 }, (_, i) => `https://r${i}.example.com`).join(', ');
+    expect(missingServerEnv({ ...prod, runnerUrlsRaw: overTwenty })).toEqual([
+      'RUNNER_URLS (max 20 allowed)',
+    ]);
+  });
+
   it('required values are still required everywhere', () => {
     expect(missingServerEnv({ ...prod, isProduction: false, databaseUrl: '', googleSecret: '' })).toEqual([
       'DATABASE_URL',
