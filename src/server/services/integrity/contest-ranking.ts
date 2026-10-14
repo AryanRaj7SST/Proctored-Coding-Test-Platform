@@ -59,7 +59,9 @@ export function rankContestStandings(candidates: ContestCandidate[]): ContestSta
   return sorted.map((item, index) => ({
     ...item,
     rank: index + 1,
-    lastAcceptedSubmissionAtIso: item.lastAcceptedSubmissionAt ? item.lastAcceptedSubmissionAt.toISOString() : null,
+    lastAcceptedSubmissionAtIso: item.lastAcceptedSubmissionAt
+      ? item.lastAcceptedSubmissionAt.toISOString()
+      : null,
   }));
 }
 

@@ -6,11 +6,49 @@ import { recordAudit } from '../audit';
  * User-defined variable, function, and parameter names are renamed to canonical placeholders (v0, v1, v2...).
  */
 const PRESERVED_IDENTIFIERS = new Set([
-  'break', 'case', 'catch', 'class', 'const', 'continue', 'debugger', 'default',
-  'delete', 'do', 'else', 'export', 'extends', 'finally', 'for', 'function',
-  'if', 'import', 'in', 'instanceof', 'let', 'new', 'return', 'super', 'switch',
-  'this', 'throw', 'try', 'typeof', 'var', 'void', 'while', 'with', 'yield',
-  'async', 'await', 'of', 'true', 'false', 'null', 'undefined', 'NaN', 'Infinity',
+  'break',
+  'case',
+  'catch',
+  'class',
+  'const',
+  'continue',
+  'debugger',
+  'default',
+  'delete',
+  'do',
+  'else',
+  'export',
+  'extends',
+  'finally',
+  'for',
+  'function',
+  'if',
+  'import',
+  'in',
+  'instanceof',
+  'let',
+  'new',
+  'return',
+  'super',
+  'switch',
+  'this',
+  'throw',
+  'try',
+  'typeof',
+  'var',
+  'void',
+  'while',
+  'with',
+  'yield',
+  'async',
+  'await',
+  'of',
+  'true',
+  'false',
+  'null',
+  'undefined',
+  'NaN',
+  'Infinity',
 ]);
 
 /**
@@ -24,12 +62,11 @@ export function normalizeJsTokens(code: string): string[] {
   if (!code || typeof code !== 'string') return [];
 
   // Strip comments
-  const cleanCode = code
-    .replace(/\/\*[\s\S]*?\*\//g, ' ')
-    .replace(/\/\/.*$/gm, ' ');
+  const cleanCode = code.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/\/\/.*$/gm, ' ');
 
   // Regex matching strings, numbers, multi-character operators, single-character operators, and words
-  const tokenRegex = /(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\b\d+(?:\.\d+)?\b|\b0x[0-9a-fA-F]+\b|===|!==|==|!=|<=|>=|=>|\+\+|--|\+=|-=|\*=|\/=|&&|\|\||\?\?|<<|>>|[{}()\[\];,\.\?\:\+\-\*\/%&|\^~<>=!]|[a-zA-Z_$][a-zA-Z0-9_$]*)/g;
+  const tokenRegex =
+    /(?:"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`|\b\d+(?:\.\d+)?\b|\b0x[0-9a-fA-F]+\b|===|!==|==|!=|<=|>=|=>|\+\+|--|\+=|-=|\*=|\/=|&&|\|\||\?\?|<<|>>|[{}()\[\];,\.\?\:\+\-\*\/%&|\^~<>=!]|[a-zA-Z_$][a-zA-Z0-9_$]*)/g;
 
   const matches = cleanCode.match(tokenRegex) ?? [];
   const identifierMap = new Map<string, string>();
@@ -98,7 +135,11 @@ export function computeJaccardSimilarity(shinglesA: Set<string>, shinglesB: Set<
 /**
  * Compare two code strings and return Jaccard similarity score.
  */
-export function compareSubmissions(codeA: string, codeB: string, k = 3): {
+export function compareSubmissions(
+  codeA: string,
+  codeB: string,
+  k = 3,
+): {
   similarity: number;
   tokensA: number;
   tokensB: number;

@@ -130,15 +130,29 @@ test('fair queuing: serves waiting clients in round-robin order rather than stri
   const executionOrder: string[] = [];
 
   let releaseGate: () => void = () => {};
-  const blocker = q.run(() => new Promise<void>((resolve) => { releaseGate = resolve; }), 'blocker');
+  const blocker = q.run(
+    () =>
+      new Promise<void>((resolve) => {
+        releaseGate = resolve;
+      }),
+    'blocker',
+  );
 
   // Student A queues 3 tasks
-  const a1 = q.run(async () => { executionOrder.push('A1'); }, 'student-A');
-  const a2 = q.run(async () => { executionOrder.push('A2'); }, 'student-A');
-  const a3 = q.run(async () => { executionOrder.push('A3'); }, 'student-A');
+  const a1 = q.run(async () => {
+    executionOrder.push('A1');
+  }, 'student-A');
+  const a2 = q.run(async () => {
+    executionOrder.push('A2');
+  }, 'student-A');
+  const a3 = q.run(async () => {
+    executionOrder.push('A3');
+  }, 'student-A');
 
   // Student B queues 1 task afterwards
-  const b1 = q.run(async () => { executionOrder.push('B1'); }, 'student-B');
+  const b1 = q.run(async () => {
+    executionOrder.push('B1');
+  }, 'student-B');
 
   // Release the initial blocking task
   releaseGate();
@@ -154,7 +168,13 @@ test('per-key queue limit: prevents a single client from monopolizing the wait l
   const q = new BoundedQueue(1, 10, 2);
 
   let releaseGate: () => void = () => {};
-  const blocker = q.run(() => new Promise<void>((resolve) => { releaseGate = resolve; }), 'blocker');
+  const blocker = q.run(
+    () =>
+      new Promise<void>((resolve) => {
+        releaseGate = resolve;
+      }),
+    'blocker',
+  );
 
   // Student A queues 2 tasks (up to per-key limit)
   const a1 = q.run(async () => {}, 'student-A');
@@ -175,4 +195,3 @@ test('per-key queue limit: prevents a single client from monopolizing the wait l
   releaseGate();
   await Promise.all([blocker, a1, a2, b1]);
 });
-

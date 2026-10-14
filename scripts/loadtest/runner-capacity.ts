@@ -132,7 +132,7 @@ export const SUBMISSION_TEMPLATES = {
 };
 
 export function selectSubmissionType(rand: number): SubmissionType {
-  if (rand < 0.70) {
+  if (rand < 0.7) {
     return { kind: 'correct', code: SUBMISSION_TEMPLATES.correct };
   }
   if (rand < 0.95) {
@@ -233,24 +233,42 @@ export class CapacityMetrics {
   printReport() {
     const s = this.summary();
     console.log('\n========================================================================================');
-    console.log(`RUNNER CAPACITY PERFORMANCE REPORT (${s.elapsedSeconds.toFixed(1)}s elapsed, ${s.total} runs)`);
+    console.log(
+      `RUNNER CAPACITY PERFORMANCE REPORT (${s.elapsedSeconds.toFixed(1)}s elapsed, ${s.total} runs)`,
+    );
     console.log('========================================================================================');
     console.log(`Throughput:           ${s.rps} runs/sec`);
-    console.log(`Successful (200 OK):  ${s.success2xx} (${s.total > 0 ? ((s.success2xx / s.total) * 100).toFixed(1) : 0}%)`);
+    console.log(
+      `Successful (200 OK):  ${s.success2xx} (${s.total > 0 ? ((s.success2xx / s.total) * 100).toFixed(1) : 0}%)`,
+    );
     console.log(`429 Runner Busy:      ${s.busy429} (${s.busyRate}%)`);
     console.log(`Errors (5xx / Net):   ${s.errors5xx} (${s.errorRate}%)`);
     console.log('----------------------------------------------------------------------------------------');
     console.log('Latency Percentiles (ms):');
-    console.log(`  Overall:      min=${s.overallPct.min}ms | p50=${s.overallPct.p50}ms | p90=${s.overallPct.p90}ms | p95=${s.overallPct.p95}ms | p99=${s.overallPct.p99}ms | max=${s.overallPct.max}ms`);
-    console.log(`  Correct (70%): p50=${s.correct.pct.p50}ms | p95=${s.correct.pct.p95}ms | max=${s.correct.pct.max}ms (n=${s.correct.count})`);
-    console.log(`  Wrong   (25%): p50=${s.wrong.pct.p50}ms | p95=${s.wrong.pct.p95}ms | max=${s.wrong.pct.max}ms (n=${s.wrong.count})`);
-    console.log(`  InfLoop(2.5%): p50=${s.infiniteLoop.pct.p50}ms | p95=${s.infiniteLoop.pct.p95}ms | max=${s.infiniteLoop.pct.max}ms (n=${s.infiniteLoop.count})`);
-    console.log(`  MemBomb(2.5%): p50=${s.memoryBomb.pct.p50}ms | p95=${s.memoryBomb.pct.p95}ms | max=${s.memoryBomb.pct.max}ms (n=${s.memoryBomb.count})`);
+    console.log(
+      `  Overall:      min=${s.overallPct.min}ms | p50=${s.overallPct.p50}ms | p90=${s.overallPct.p90}ms | p95=${s.overallPct.p95}ms | p99=${s.overallPct.p99}ms | max=${s.overallPct.max}ms`,
+    );
+    console.log(
+      `  Correct (70%): p50=${s.correct.pct.p50}ms | p95=${s.correct.pct.p95}ms | max=${s.correct.pct.max}ms (n=${s.correct.count})`,
+    );
+    console.log(
+      `  Wrong   (25%): p50=${s.wrong.pct.p50}ms | p95=${s.wrong.pct.p95}ms | max=${s.wrong.pct.max}ms (n=${s.wrong.count})`,
+    );
+    console.log(
+      `  InfLoop(2.5%): p50=${s.infiniteLoop.pct.p50}ms | p95=${s.infiniteLoop.pct.p95}ms | max=${s.infiniteLoop.pct.max}ms (n=${s.infiniteLoop.count})`,
+    );
+    console.log(
+      `  MemBomb(2.5%): p50=${s.memoryBomb.pct.p50}ms | p95=${s.memoryBomb.pct.p95}ms | max=${s.memoryBomb.pct.max}ms (n=${s.memoryBomb.count})`,
+    );
     if (this.initialMemoryMb && this.finalMemoryMb) {
       console.log('----------------------------------------------------------------------------------------');
       console.log('Runner Memory Tracking:');
-      console.log(`  Initial RSS:  ${this.initialMemoryMb.rss} MB (Heap: ${this.initialMemoryMb.heapUsed}/${this.initialMemoryMb.heapTotal} MB)`);
-      console.log(`  Final RSS:    ${this.finalMemoryMb.rss} MB (Heap: ${this.finalMemoryMb.heapUsed}/${this.finalMemoryMb.heapTotal} MB)`);
+      console.log(
+        `  Initial RSS:  ${this.initialMemoryMb.rss} MB (Heap: ${this.initialMemoryMb.heapUsed}/${this.initialMemoryMb.heapTotal} MB)`,
+      );
+      console.log(
+        `  Final RSS:    ${this.finalMemoryMb.rss} MB (Heap: ${this.finalMemoryMb.heapUsed}/${this.finalMemoryMb.heapTotal} MB)`,
+      );
       const delta = this.finalMemoryMb.rss - this.initialMemoryMb.rss;
       console.log(`  Delta RSS:    ${delta >= 0 ? '+' : ''}${delta} MB`);
     }
@@ -280,7 +298,9 @@ export async function runLoadSimulation(options: {
   metrics.startTime = Date.now();
   const endTime = metrics.startTime + options.durationSeconds * 1000;
 
-  console.log(`Simulating N=${options.students} students every ~${options.intervalSeconds}s for ${options.durationSeconds}s...`);
+  console.log(
+    `Simulating N=${options.students} students every ~${options.intervalSeconds}s for ${options.durationSeconds}s...`,
+  );
 
   try {
     const health = await fetch(`${options.runnerUrl.replace(/\/+$/, '')}/health`).then((r) => r.json());

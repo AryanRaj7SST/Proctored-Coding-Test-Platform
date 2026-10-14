@@ -83,9 +83,10 @@ export function toStudentFeedback(row: ExecutionResultRow): StudentTestFeedback 
     points: row.points,
     pointsAwarded: row.pointsAwarded,
     durationMs: row.durationMs,
-    message: isHidden || row.passed
-      ? undefined
-      : (row.message ?? 'This test did not pass.').slice(0, MAX_STUDENT_MESSAGE),
+    message:
+      isHidden || row.passed
+        ? undefined
+        : (row.message ?? 'This test did not pass.').slice(0, MAX_STUDENT_MESSAGE),
     expected: isHidden || row.passed ? undefined : row.expected?.slice(0, MAX_STUDENT_VALUE),
     actual: isHidden || row.passed ? undefined : row.actual?.slice(0, MAX_STUDENT_VALUE),
   };

@@ -113,10 +113,7 @@ describe('Production Env & Rate Limiting Hardening', () => {
 
       const res = await rateLimit('proctor:user123', 120, 60_000);
       expect(res.allowed).toBe(true);
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringMatching(/failing open/i),
-        expect.any(Error),
-      );
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/failing open/i), expect.any(Error));
     });
   });
 });

@@ -48,6 +48,7 @@ student's request, that decides which spec runs for a given attempt
 from the attempt's own snapshot).
 
 **Execution.** The runner (`runner/src/executor.ts`, `runner/src/js-engine.ts`) executes code according to question kind:
+
 - **HTML/CSS/DOM questions (`kind: 'dom'`)**: The runner builds a single HTML
   document from the student's code, intercepts all network requests so nothing
   the student wrote can reach the real internet, navigates a fresh browser
@@ -191,19 +192,18 @@ resource ceilings, and a `tmpfs` for `/tmp` (see `docker-compose.yml`).
 
 ## Directory-to-concept map
 
-| Concept                        | Where                                                          |
-| ------------------------------ | -------------------------------------------------------------- |
-| Grading DSL                    | `shared/test-spec.ts`                                          |
-| Spec compilation, snapshotting | `src/server/services/questions.ts`                             |
-| Attempt lifecycle, run/submit  | `src/server/services/attempts.ts`                              |
-| Timing rules                   | `src/lib/timing.ts`, `src/server/services/sessions.ts`         |
-| Proctoring dedupe + status     | `src/lib/proctor.ts`, `src/server/services/proctoring.ts`      |
-| Student-safe projections       | `src/lib/outcome.ts`, `toStudentQuestion`                      |
-| Runner auth (HMAC)             | `src/lib/runner-client.ts`, `runner/src/auth.ts`               |
-| Runner execution (DOM)         | `runner/src/executor.ts`, `runner/src/page-script.ts`          |
-| Runner execution (JS V8 Isolate)| `runner/src/js-engine.ts`                                     |
-| Code similarity analysis       | `src/server/services/integrity/similarity.ts`                  |
-| Static red-flag scanner        | `src/lib/static-analysis.ts`                                   |
-| Contest ranking & standings    | `src/server/services/integrity/contest-ranking.ts`             |
-| Sandboxed live preview         | `src/lib/preview.ts`, `src/components/editor/PreviewFrame.tsx` |
-
+| Concept                          | Where                                                          |
+| -------------------------------- | -------------------------------------------------------------- |
+| Grading DSL                      | `shared/test-spec.ts`                                          |
+| Spec compilation, snapshotting   | `src/server/services/questions.ts`                             |
+| Attempt lifecycle, run/submit    | `src/server/services/attempts.ts`                              |
+| Timing rules                     | `src/lib/timing.ts`, `src/server/services/sessions.ts`         |
+| Proctoring dedupe + status       | `src/lib/proctor.ts`, `src/server/services/proctoring.ts`      |
+| Student-safe projections         | `src/lib/outcome.ts`, `toStudentQuestion`                      |
+| Runner auth (HMAC)               | `src/lib/runner-client.ts`, `runner/src/auth.ts`               |
+| Runner execution (DOM)           | `runner/src/executor.ts`, `runner/src/page-script.ts`          |
+| Runner execution (JS V8 Isolate) | `runner/src/js-engine.ts`                                      |
+| Code similarity analysis         | `src/server/services/integrity/similarity.ts`                  |
+| Static red-flag scanner          | `src/lib/static-analysis.ts`                                   |
+| Contest ranking & standings      | `src/server/services/integrity/contest-ranking.ts`             |
+| Sandboxed live preview           | `src/lib/preview.ts`, `src/components/editor/PreviewFrame.tsx` |

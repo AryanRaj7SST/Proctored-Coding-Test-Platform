@@ -125,7 +125,10 @@ export function storedOutcome(
     questionStatus: gradedStatus(attempt.resultStatus),
     results: stored.map((r) => {
       const isHidden =
-        r.hidden ?? (r.testId ? hiddenById.get(r.testId) : undefined) ?? hiddenByName.get(r.testName) ?? false;
+        r.hidden ??
+        (r.testId ? hiddenById.get(r.testId) : undefined) ??
+        hiddenByName.get(r.testName) ??
+        false;
       return {
         testName: r.testName,
         passed: r.passed,

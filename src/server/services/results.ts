@@ -305,8 +305,8 @@ function questionResult(a: LoadedAttempt, options: { forStudent?: boolean } = {}
     testCases: a.testResults.map((r) => {
       const isHidden = Boolean(
         (r.testId && hiddenNameByTestId.has(r.testId)) ||
-          hiddenNameByTestName.has(r.testName) ||
-          testMap.get(r.testName)?.hidden,
+        hiddenNameByTestName.has(r.testName) ||
+        testMap.get(r.testName)?.hidden,
       );
 
       if (options.forStudent && isHidden) {

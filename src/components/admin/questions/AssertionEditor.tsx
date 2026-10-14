@@ -635,13 +635,7 @@ function JsFields({
   );
 }
 
-function FnFields({
-  value,
-  set,
-}: {
-  value: RawObject;
-  set: (key: string, v: unknown) => void;
-}) {
+function FnFields({ value, set }: { value: RawObject; set: (key: string, v: unknown) => void }) {
   const fn = readString(value, 'fn') || 'solve';
   const argsStr = JSON.stringify(Array.isArray(value.args) ? value.args : []);
   const expectedStr = JSON.stringify(value.expected !== undefined ? value.expected : '');
@@ -691,7 +685,7 @@ function FnFields({
           </MiniField>
         ) : null}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
         <MiniField label="Arguments (JSON array)" hint="e.g. [2, 3] or [[1, 2], 'target']">
           {(id) => (
             <Textarea

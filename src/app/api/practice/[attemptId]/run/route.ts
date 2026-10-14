@@ -25,7 +25,9 @@ export const POST = handler(async (req: Request, ctx: Ctx): Promise<NextResponse
   const user = await requireAuth();
   const { attemptId } = await ctx.params;
 
-  const limit = await rateLimit(`practice-run:${user.id}`, env.runRateLimitPerMin, 60_000, { failClosed: true });
+  const limit = await rateLimit(`practice-run:${user.id}`, env.runRateLimitPerMin, 60_000, {
+    failClosed: true,
+  });
   if (!limit.allowed) {
     throw tooManyRequests(`Too many test runs. Try again in ${Math.ceil(limit.resetInMs / 1000)}s.`);
   }

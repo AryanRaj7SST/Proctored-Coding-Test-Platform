@@ -5,7 +5,14 @@ import { Plus, Sparkles, Trash2 } from 'lucide-react';
 import { Button, ConfirmDialog, EmptyState, Input, Select, Tabs } from '@/components/ui';
 import { SPEC_LIMITS, type FnCompareMode } from '@shared/test-spec';
 import { Notice } from './questions/bits';
-import { duplicateTest, newKey, newTest, suiteProblems, testProblems, testServerErrors } from './questions/draft';
+import {
+  duplicateTest,
+  newKey,
+  newTest,
+  suiteProblems,
+  testProblems,
+  testServerErrors,
+} from './questions/draft';
 import { formatMarks, marksWord, equalShare, parseMarks, splitSummary } from './questions/marks';
 import { TemplatePicker } from './questions/TemplatePicker';
 import { TestCaseCard } from './questions/TestCaseCard';
@@ -262,15 +269,15 @@ export function TestCaseEditor({
         <div className="space-y-3">
           <div className="overflow-x-auto rounded-md border border-slate-200 bg-white">
             <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-semibold">
+              <thead className="border-b border-slate-200 bg-slate-50 font-semibold text-slate-600">
                 <tr>
-                  <th className="py-2 px-3 w-10">#</th>
-                  <th className="py-2 px-3 w-32">Function</th>
-                  <th className="py-2 px-3">Arguments (JSON array)</th>
-                  <th className="py-2 px-3">Expected (JSON)</th>
-                  <th className="py-2 px-3 w-36">Compare</th>
-                  <th className="py-2 px-3 w-20 text-center">Hidden?</th>
-                  <th className="py-2 px-3 w-16 text-center">Action</th>
+                  <th className="w-10 px-3 py-2">#</th>
+                  <th className="w-32 px-3 py-2">Function</th>
+                  <th className="px-3 py-2">Arguments (JSON array)</th>
+                  <th className="px-3 py-2">Expected (JSON)</th>
+                  <th className="w-36 px-3 py-2">Compare</th>
+                  <th className="w-20 px-3 py-2 text-center">Hidden?</th>
+                  <th className="w-16 px-3 py-2 text-center">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 font-mono">
@@ -278,10 +285,10 @@ export function TestCaseEditor({
                   const row = testToFnRow(test);
                   return (
                     <tr key={test._key} className="hover:bg-slate-50/50">
-                      <td className="py-2 px-3 text-slate-400 font-sans">{idx + 1}</td>
-                      <td className="py-2 px-3">
+                      <td className="px-3 py-2 font-sans text-slate-400">{idx + 1}</td>
+                      <td className="px-3 py-2">
                         <Input
-                          className="h-7 text-xs font-mono"
+                          className="h-7 font-mono text-xs"
                           value={row.fn}
                           placeholder="solve"
                           readOnly={readOnly}
@@ -291,9 +298,9 @@ export function TestCaseEditor({
                           }}
                         />
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="px-3 py-2">
                         <Input
-                          className="h-7 text-xs font-mono"
+                          className="h-7 font-mono text-xs"
                           value={row.argsText}
                           placeholder="[1, 2]"
                           readOnly={readOnly}
@@ -303,9 +310,9 @@ export function TestCaseEditor({
                           }}
                         />
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="px-3 py-2">
                         <Input
-                          className="h-7 text-xs font-mono"
+                          className="h-7 font-mono text-xs"
                           value={row.expectedText}
                           placeholder="3"
                           readOnly={readOnly}
@@ -315,9 +322,9 @@ export function TestCaseEditor({
                           }}
                         />
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="px-3 py-2">
                         <Select
-                          className="h-7 text-xs font-sans"
+                          className="h-7 font-sans text-xs"
                           value={row.compare}
                           disabled={readOnly}
                           onChange={(e) => {
@@ -331,7 +338,7 @@ export function TestCaseEditor({
                           <option value="trim">trim</option>
                         </Select>
                       </td>
-                      <td className="py-2 px-3 text-center">
+                      <td className="px-3 py-2 text-center">
                         <input
                           type="checkbox"
                           checked={row.hidden}
@@ -343,7 +350,7 @@ export function TestCaseEditor({
                           className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                         />
                       </td>
-                      <td className="py-2 px-3 text-center">
+                      <td className="px-3 py-2 text-center">
                         <Button
                           size="sm"
                           variant="ghost"

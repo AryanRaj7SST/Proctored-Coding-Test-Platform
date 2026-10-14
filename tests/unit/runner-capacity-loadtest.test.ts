@@ -11,7 +11,7 @@ describe('Runner Capacity Load Test Harness', () => {
     expect(selectSubmissionType(0.1).kind).toBe('correct');
     expect(selectSubmissionType(0.69).kind).toBe('correct');
 
-    expect(selectSubmissionType(0.70).kind).toBe('wrong');
+    expect(selectSubmissionType(0.7).kind).toBe('wrong');
     expect(selectSubmissionType(0.94).kind).toBe('wrong');
 
     expect(selectSubmissionType(0.95).kind).toBe('infinite-loop');

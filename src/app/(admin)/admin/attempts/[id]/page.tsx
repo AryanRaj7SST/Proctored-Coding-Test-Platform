@@ -66,11 +66,15 @@ export default async function AttemptDetailPage({ params }: { params: Promise<{ 
             <span className="text-xs text-rose-700">Stored on submit · Not automatically blocked</span>
           </div>
           <p className="mt-1 text-xs text-rose-700">
-            Automated static analysis detected suspicious patterns in the submitted code (e.g. eval, constructor access, prototype mutations, or hardcoded test args).
+            Automated static analysis detected suspicious patterns in the submitted code (e.g. eval,
+            constructor access, prototype mutations, or hardcoded test args).
           </p>
           <div className="mt-3 space-y-2">
             {flags.map((flag, idx) => (
-              <div key={idx} className="flex flex-wrap items-center gap-2 rounded bg-white/80 px-2.5 py-1.5 border border-rose-200 text-xs">
+              <div
+                key={idx}
+                className="flex flex-wrap items-center gap-2 rounded border border-rose-200 bg-white/80 px-2.5 py-1.5 text-xs"
+              >
                 <span className="rounded bg-rose-100 px-1.5 py-0.5 font-mono text-[11px] font-bold text-rose-900">
                   {flag.rule}
                 </span>

@@ -130,7 +130,9 @@ export async function runContestPreflight(options: PreflightOptions = {}): Promi
       }
     }
   } catch (err: unknown) {
-    errors.push(`Failed to query contest exams from database: ${err instanceof Error ? err.message : String(err)}`);
+    errors.push(
+      `Failed to query contest exams from database: ${err instanceof Error ? err.message : String(err)}`,
+    );
   }
 
   return {

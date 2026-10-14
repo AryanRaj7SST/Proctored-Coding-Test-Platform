@@ -54,7 +54,8 @@ describe('Image Proxy Hardening (/api/image-proxy)', () => {
       });
     });
 
-    const req = () => new NextRequest('http://localhost:3000/api/image-proxy?url=https://example.com/test.png');
+    const req = () =>
+      new NextRequest('http://localhost:3000/api/image-proxy?url=https://example.com/test.png');
 
     // Default limit is 30 per min
     let lastStatus = 200;
@@ -84,7 +85,9 @@ describe('Image Proxy Hardening (/api/image-proxy)', () => {
       });
     });
 
-    const req = new NextRequest('http://localhost:3000/api/image-proxy?url=http://example.com/images/pic.png');
+    const req = new NextRequest(
+      'http://localhost:3000/api/image-proxy?url=http://example.com/images/pic.png',
+    );
     const res = await GET(req);
     expect(res.status).toBe(200);
 

@@ -8,11 +8,7 @@ import { formatDateTime } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
-export default async function ExamStandingsPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function ExamStandingsPage({ params }: { params: Promise<{ id: string }> }) {
   await requireAdmin();
   const { id } = await params;
 
@@ -78,16 +74,8 @@ export default async function ExamStandingsPage({
           value={standings[0] ? `${standings[0].score}/${standings[0].maxScore}` : '0'}
           hint={standings[0] ? `${standings[0].studentName}` : undefined}
         />
-        <StatCard
-          label="Leaderboard Tie-Breaker"
-          value="Earliest Time"
-          hint="Standard ICPC / DSA rule"
-        />
-        <StatCard
-          label="CSV Protection"
-          value="Formula Safe"
-          hint="=, +, -, @ escaped"
-        />
+        <StatCard label="Leaderboard Tie-Breaker" value="Earliest Time" hint="Standard ICPC / DSA rule" />
+        <StatCard label="CSV Protection" value="Formula Safe" hint="=, +, -, @ escaped" />
       </div>
 
       {/* Standings Table */}
@@ -98,9 +86,7 @@ export default async function ExamStandingsPage({
         />
         <CardBody className="p-0">
           {standings.length === 0 ? (
-            <div className="p-8 text-center text-sm text-slate-500">
-              No contest submissions recorded yet.
-            </div>
+            <div className="p-8 text-center text-sm text-slate-500">No contest submissions recorded yet.</div>
           ) : (
             <Table>
               <thead>
@@ -151,24 +137,20 @@ export default async function ExamStandingsPage({
                       </Td>
                       <Td>
                         <span className="font-mono text-xs text-slate-600">
-                          {row.lastAcceptedSubmissionAt
-                            ? formatDateTime(row.lastAcceptedSubmissionAt)
-                            : '—'}
+                          {row.lastAcceptedSubmissionAt ? formatDateTime(row.lastAcceptedSubmissionAt) : '—'}
                         </span>
                       </Td>
                       <Td>
                         <span
-                          className={`text-xs font-mono ${
-                            row.violationCount > 0 ? 'text-amber-700 font-semibold' : 'text-slate-500'
+                          className={`font-mono text-xs ${
+                            row.violationCount > 0 ? 'font-semibold text-amber-700' : 'text-slate-500'
                           }`}
                         >
                           {row.violationCount}
                         </span>
                       </Td>
                       <Td>
-                        <Badge tone={stateBadgeTone}>
-                          {row.state.toLowerCase()}
-                        </Badge>
+                        <Badge tone={stateBadgeTone}>{row.state.toLowerCase()}</Badge>
                       </Td>
                     </tr>
                   );

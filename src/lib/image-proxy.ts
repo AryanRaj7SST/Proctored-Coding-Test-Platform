@@ -114,9 +114,7 @@ export async function isBlockedByDns(hostname: string): Promise<boolean> {
   }
 }
 
-export type HostValidationResult =
-  | { ok: true; ip: string }
-  | { ok: false; error: string; status: number };
+export type HostValidationResult = { ok: true; ip: string } | { ok: false; error: string; status: number };
 
 /**
  * Resolves a hostname via DNS once, validates that none of the resolved IPs
@@ -124,7 +122,10 @@ export type HostValidationResult =
  * If the hostname is already an IP, validates it directly.
  */
 export async function resolveAndValidateHost(hostname: string): Promise<HostValidationResult> {
-  const clean = hostname.replace(/^\[|\]$/g, '').toLowerCase().trim();
+  const clean = hostname
+    .replace(/^\[|\]$/g, '')
+    .toLowerCase()
+    .trim();
 
   if (isBlockedHostname(clean)) {
     return { ok: false, error: 'Access to private or internal network addresses is forbidden.', status: 403 };
@@ -132,7 +133,11 @@ export async function resolveAndValidateHost(hostname: string): Promise<HostVali
 
   if (net.isIP(clean)) {
     if (isPrivateOrReservedIp(clean)) {
-      return { ok: false, error: 'Access to private or internal network addresses is forbidden.', status: 403 };
+      return {
+        ok: false,
+        error: 'Access to private or internal network addresses is forbidden.',
+        status: 403,
+      };
     }
     return { ok: true, ip: clean };
   }
@@ -144,7 +149,11 @@ export async function resolveAndValidateHost(hostname: string): Promise<HostVali
     }
     for (const record of records) {
       if (isPrivateOrReservedIp(record.address)) {
-        return { ok: false, error: 'Access to private or internal network addresses is forbidden.', status: 403 };
+        return {
+          ok: false,
+          error: 'Access to private or internal network addresses is forbidden.',
+          status: 403,
+        };
       }
     }
     return { ok: true, ip: records[0]!.address };
@@ -153,4 +162,3 @@ export async function resolveAndValidateHost(hostname: string): Promise<HostVali
     return { ok: false, error: `DNS lookup failed for upstream server: ${message}`, status: 502 };
   }
 }
-

@@ -38,8 +38,8 @@ export function ReadableTestPreview({
       </div>
       {hidden ? (
         <p className="rounded border border-amber-200 bg-amber-50 p-1.5 text-[11px] text-amber-800">
-          Students see only generic &ldquo;Hidden test N&rdquo; and points. Definition, steps, checks, and failure
-          details are concealed.
+          Students see only generic &ldquo;Hidden test N&rdquo; and points. Definition, steps, checks, and
+          failure details are concealed.
         </p>
       ) : null}
       {summary ? <p className="leading-relaxed text-slate-600">{summary}</p> : null}

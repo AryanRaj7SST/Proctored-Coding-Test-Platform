@@ -662,4 +662,3 @@ test('Step 1 tamper scenario 2 on js-fn engine: wrapping eval cannot capture exp
   assert.equal(result.results.length, 1);
   assert.equal(result.results[0]?.passed, false, 'Wrapping eval must not steal expected value or cheat');
 });
-

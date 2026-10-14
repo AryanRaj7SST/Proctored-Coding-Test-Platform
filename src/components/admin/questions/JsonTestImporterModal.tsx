@@ -331,9 +331,7 @@ export function JsonTestImporterModal({
         testCodeString = JSON.stringify(bodyObj, null, 2);
         bodyToValidate = bodyObj;
       } else {
-        validationErrors.push(
-          `Test #${idx + 1} ("${name}"): Missing "fn", "testCode" or "assertions".`,
-        );
+        validationErrors.push(`Test #${idx + 1} ("${name}"): Missing "fn", "testCode" or "assertions".`);
         return;
       }
 

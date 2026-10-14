@@ -48,7 +48,7 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
    - Wake the compute and pooler by accessing `/admin` or running `npm run verify:deploy`.
    - Confirm connection pooler accepts queries without delay.
 
-4. **Runner Health Check**:
+5. **Runner Health Check**:
    Query the runner health endpoint:
 
    ```bash
@@ -71,7 +71,7 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
 
    Verify that `active == 0`, `queued == 0`, and `uptimeSeconds` indicates a stable instance.
 
-5. **Upstash Redis Rate Limit Check**:
+6. **Upstash Redis Rate Limit Check**:
    - Ensure Upstash Redis database is active and token credentials are functional.
    - Verify rate limits: `RUN_RATE_LIMIT_PER_MIN` (default 10), `SUBMIT_RATE_LIMIT_PER_MIN` (default 10), `PROCTOR_RATE_LIMIT_PER_MIN` (default 60).
 
@@ -231,6 +231,7 @@ If an unexpected application defect occurs during or immediately prior to the ex
 ### Benchmark Methodology (`scripts/loadtest/runner-capacity.ts`)
 
 To measure runner capacity with the new isolated-vm (`js-fn`) engine:
+
 - **Simulated Population**: $N=200$ concurrent students.
 - **Run Cadence**: Each student triggers a run approximately every ~20s with $\pm 10\%$ jitter.
 - **Submission Traffic Mix**:
@@ -245,6 +246,7 @@ To measure runner capacity with the new isolated-vm (`js-fn`) engine:
 ### Measured Benchmark Results
 
 #### 1. 60-Second Sustained High-Throughput Run
+
 - **Total Executions**: 598 runs
 - **Throughput**: 7.2 runs / second
 - **Success Rate (HTTP 200 OK)**: **100.0%** (598 / 598)
@@ -267,6 +269,7 @@ To measure runner capacity with the new isolated-vm (`js-fn`) engine:
   - Net Delta RSS: **+5 MB** (flat memory line with automatic isolate cleanup and zero memory leakage)
 
 #### 2. 30-Second Warmup Run
+
 - **Total Executions**: 296 runs (5.7 runs/sec)
 - **Success Rate**: **100.0%** (0 busy, 0 errors)
 - **Latency**: p50 = **19 ms**, p95 = **35 ms**
@@ -278,18 +281,20 @@ To measure runner capacity with the new isolated-vm (`js-fn`) engine:
 
 Based on measured capacity and fair queuing behavior, the runner and app should be configured with:
 
-| Environment Variable | Recommended Value | Default | Rationale |
-|----------------------|-------------------|---------|-----------|
-| `RUNNER_MAX_CONCURRENCY` | `16` | `16` | With `isolated-vm` asynchronous worker threads, 16 concurrent isolates process 10–20 req/s with p50 < 25ms without thread starvation. |
-| `RUNNER_MAX_QUEUE` | `128` | `128` | Absorbs momentary bursts when hundreds of students submit concurrently at the end of an exam block. |
-| `RUNNER_MAX_PER_KEY_QUEUE` | `8` | `8` | Fair queuing quota: caps any single user from holding more than 8 slots in the wait line. |
-| `RUN_RATE_LIMIT_PER_MIN` | `10` | `10` | Upstash Redis sliding window: ~1 run every 6 seconds per student prevents denial-of-service spam. |
-| `SUBMIT_RATE_LIMIT_PER_MIN` | `10` | `10` | Protects final grading endpoints from duplicate rapid clicks. |
-| `RUNNER_JS_MEMORY_LIMIT_MB` | `64` | `64` | Sufficient for algorithmic DSA problems while instantly aborting memory bombs. |
-| `RUNNER_JS_TIMEOUT_MS` | `2000` | `2000` | Hard timeout per test case; prevents infinite loops from hanging workers. |
+| Environment Variable        | Recommended Value | Default | Rationale                                                                                                                             |
+| --------------------------- | ----------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `RUNNER_MAX_CONCURRENCY`    | `16`              | `16`    | With `isolated-vm` asynchronous worker threads, 16 concurrent isolates process 10–20 req/s with p50 < 25ms without thread starvation. |
+| `RUNNER_MAX_QUEUE`          | `128`             | `128`   | Absorbs momentary bursts when hundreds of students submit concurrently at the end of an exam block.                                   |
+| `RUNNER_MAX_PER_KEY_QUEUE`  | `8`               | `8`     | Fair queuing quota: caps any single user from holding more than 8 slots in the wait line.                                             |
+| `RUN_RATE_LIMIT_PER_MIN`    | `10`              | `10`    | Upstash Redis sliding window: ~1 run every 6 seconds per student prevents denial-of-service spam.                                     |
+| `SUBMIT_RATE_LIMIT_PER_MIN` | `10`              | `10`    | Protects final grading endpoints from duplicate rapid clicks.                                                                         |
+| `RUNNER_JS_MEMORY_LIMIT_MB` | `64`              | `64`    | Sufficient for algorithmic DSA problems while instantly aborting memory bombs.                                                        |
+| `RUNNER_JS_TIMEOUT_MS`      | `2000`            | `2000`  | Hard timeout per test case; prevents infinite loops from hanging workers.                                                             |
 
 #### Fair Queuing Implementation (`runner/src/queue.ts`)
+
 The runner implements fair round-robin scheduling across client keys:
+
 1. When requests arrive, they are grouped into per-user queues keyed by authenticated `userId` (passed securely via HMAC-signed runner client payload).
 2. Schedulers dequeue requests using **round-robin across active keys** rather than strict FIFO. A single student submitting 20 requests in 1 second will not starve other students whose requests arrive behind them.
 3. If an individual student exceeds `RUNNER_MAX_PER_KEY_QUEUE` (8), their subsequent requests are immediately rejected with HTTP 429 (`QUEUE_FULL`), preserving capacity for peers.
@@ -301,6 +306,7 @@ The runner implements fair round-robin scheduling across client keys:
 To reproduce or stress-test the runner in staging or production before exam day:
 
 1. **Start the Runner Service**:
+
    ```bash
    RUNNER_MAX_CONCURRENCY=16 \
    RUNNER_MAX_QUEUE=128 \
@@ -311,6 +317,7 @@ To reproduce or stress-test the runner in staging or production before exam day:
    ```
 
 2. **Execute the Simulation (N=200 students for 10 minutes)**:
+
    ```bash
    npm run loadtest:runner -- \
      --runner-url http://127.0.0.1:4000 \
@@ -321,6 +328,7 @@ To reproduce or stress-test the runner in staging or production before exam day:
    ```
 
    For a quick 60-second health check:
+
    ```bash
    npm run loadtest:runner -- \
      --runner-url http://127.0.0.1:4000 \
@@ -339,4 +347,3 @@ For the runner cluster to be certified ready for exam day under 200 concurrent s
 - **HTTP 429 ("Runner Busy") Rate**: $< 0.5\%$ across the exam window.
 - **Error Rate (5xx or Dropped Requests)**: **0.0%** (Zero lost submissions).
 - **Memory Consumption**: Runner process RSS remains $< 512\text{ MB}$ without unbounded drift after repeated GC cycles.
-

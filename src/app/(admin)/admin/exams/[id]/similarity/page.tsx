@@ -30,8 +30,7 @@ export default async function ExamSimilarityPage({
 
   if (!exam) notFound();
 
-  const activeQuestionId =
-    selectedQuestionId ?? exam.questions[0]?.questionId;
+  const activeQuestionId = selectedQuestionId ?? exam.questions[0]?.questionId;
 
   const threshold = thresholdParam ? Number(thresholdParam) : 0.75;
   const safeThreshold = Number.isFinite(threshold) ? Math.min(1.0, Math.max(0.1, threshold)) : 0.75;
@@ -70,8 +69,8 @@ export default async function ExamSimilarityPage({
             Code Similarity & Plagiarism Report
           </h1>
           <p className="mt-1 text-sm text-slate-500">
-            Normalised token streams (strip comments/whitespace, rename identifiers to placeholders) and Jaccard shingling for{' '}
-            <strong className="text-slate-700">{exam.title}</strong>.
+            Normalised token streams (strip comments/whitespace, rename identifiers to placeholders) and
+            Jaccard shingling for <strong className="text-slate-700">{exam.title}</strong>.
           </p>
         </div>
       </div>
@@ -105,10 +104,8 @@ export default async function ExamSimilarityPage({
             <Link
               key={th}
               href={`/admin/exams/${exam.id}/similarity?questionId=${activeQuestionId}&threshold=${th}`}
-              className={`rounded px-2.5 py-1 text-xs font-mono transition ${
-                isSelected
-                  ? 'bg-slate-900 text-white'
-                  : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+              className={`rounded px-2.5 py-1 font-mono text-xs transition ${
+                isSelected ? 'bg-slate-900 text-white' : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
               }`}
             >
               {Math.round(th * 100)}%
@@ -119,10 +116,7 @@ export default async function ExamSimilarityPage({
 
       {/* Stats Summary */}
       <div className="grid gap-3 sm:grid-cols-4">
-        <StatCard
-          label="Submissions Analyzed"
-          value={report ? report.totalSubmissions : 0}
-        />
+        <StatCard label="Submissions Analyzed" value={report ? report.totalSubmissions : 0} />
         <StatCard
           label="Flagged Pairs"
           value={report ? report.flaggedPairs.length : 0}
@@ -133,10 +127,7 @@ export default async function ExamSimilarityPage({
           value={`${Math.round(safeThreshold * 100)}%`}
           hint="Jaccard 3-shingle similarity"
         />
-        <StatCard
-          label="Question"
-          value={report?.questionTitle ?? 'N/A'}
-        />
+        <StatCard label="Question" value={report?.questionTitle ?? 'N/A'} />
       </div>
 
       {/* Flagged Pairs Table */}
@@ -148,7 +139,8 @@ export default async function ExamSimilarityPage({
         <CardBody className="p-0">
           {!report || report.flaggedPairs.length === 0 ? (
             <div className="p-8 text-center text-sm text-slate-500">
-              No submission pairs exceeded the {Math.round(safeThreshold * 100)}% similarity threshold for this question.
+              No submission pairs exceeded the {Math.round(safeThreshold * 100)}% similarity threshold for
+              this question.
             </div>
           ) : (
             <Table>
@@ -172,16 +164,24 @@ export default async function ExamSimilarityPage({
                       </Td>
                       <Td>
                         <div className="text-xs">
-                          <p className="font-medium text-slate-900">{pair.studentA.name ?? pair.studentA.email}</p>
+                          <p className="font-medium text-slate-900">
+                            {pair.studentA.name ?? pair.studentA.email}
+                          </p>
                           <p className="text-slate-500">{pair.studentA.email}</p>
-                          {pair.studentA.batch && <p className="text-[10px] text-slate-400">Batch: {pair.studentA.batch}</p>}
+                          {pair.studentA.batch && (
+                            <p className="text-[10px] text-slate-400">Batch: {pair.studentA.batch}</p>
+                          )}
                         </div>
                       </Td>
                       <Td>
                         <div className="text-xs">
-                          <p className="font-medium text-slate-900">{pair.studentB.name ?? pair.studentB.email}</p>
+                          <p className="font-medium text-slate-900">
+                            {pair.studentB.name ?? pair.studentB.email}
+                          </p>
                           <p className="text-slate-500">{pair.studentB.email}</p>
-                          {pair.studentB.batch && <p className="text-[10px] text-slate-400">Batch: {pair.studentB.batch}</p>}
+                          {pair.studentB.batch && (
+                            <p className="text-[10px] text-slate-400">Batch: {pair.studentB.batch}</p>
+                          )}
                         </div>
                       </Td>
                       <Td>

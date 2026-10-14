@@ -1,10 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import {
-  MAX_IMAGE_BYTES,
-  FETCH_TIMEOUT_MS,
-  MAX_REDIRECTS,
-  resolveAndValidateHost,
-} from '@/lib/image-proxy';
+import { MAX_IMAGE_BYTES, FETCH_TIMEOUT_MS, MAX_REDIRECTS, resolveAndValidateHost } from '@/lib/image-proxy';
 import { requireAuth } from '@/lib/authz';
 import { rateLimit } from '@/lib/rate-limit';
 import { env } from '@/lib/env';
@@ -26,10 +21,7 @@ export async function GET(request: NextRequest) {
 
   const limit = await rateLimit(`image-proxy:${user.id}`, env.imageProxyRateLimitPerMin, 60_000);
   if (!limit.allowed) {
-    return NextResponse.json(
-      { error: 'Too many image requests. Please try again later.' },
-      { status: 429 },
-    );
+    return NextResponse.json({ error: 'Too many image requests. Please try again later.' }, { status: 429 });
   }
 
   const { searchParams } = new URL(request.url);

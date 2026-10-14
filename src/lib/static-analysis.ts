@@ -26,7 +26,9 @@ export interface ScanOptions {
   minLiteralStringLength?: number;
 }
 
-export function extractTestCasesFromSnapshot(snapshot: unknown): Array<{ args?: unknown[]; expected?: unknown }> {
+export function extractTestCasesFromSnapshot(
+  snapshot: unknown,
+): Array<{ args?: unknown[]; expected?: unknown }> {
   if (!snapshot || typeof snapshot !== 'object') return [];
   const s = snapshot as {
     tests?: Array<{

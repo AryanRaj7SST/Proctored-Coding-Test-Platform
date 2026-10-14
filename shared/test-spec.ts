@@ -629,13 +629,18 @@ function validateAssertion(raw: unknown, errors: string[], path: string): Assert
       return null;
     }
     if (expectedBytes > SPEC_LIMITS.maxFnExpectedBytes) {
-      errors.push(`${path}: fn assertion expected exceeds maximum size of ${SPEC_LIMITS.maxFnExpectedBytes} bytes`);
+      errors.push(
+        `${path}: fn assertion expected exceeds maximum size of ${SPEC_LIMITS.maxFnExpectedBytes} bytes`,
+      );
       return null;
     }
 
     let compare: FnCompareMode = 'deepEqual';
     if (a.compare !== undefined) {
-      if (typeof a.compare !== 'string' || !(FN_COMPARE_MODES as readonly string[]).includes(a.compare as FnCompareMode)) {
+      if (
+        typeof a.compare !== 'string' ||
+        !(FN_COMPARE_MODES as readonly string[]).includes(a.compare as FnCompareMode)
+      ) {
         errors.push(`${path}: fn assertion compare must be one of ${FN_COMPARE_MODES.join(', ')}`);
         return null;
       }
