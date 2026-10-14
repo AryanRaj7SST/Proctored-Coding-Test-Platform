@@ -14,6 +14,7 @@ export {
   tooManyRequests,
   unauthorized,
   validationError,
+  serviceUnavailable,
 } from './errors';
 
 export function ok<T>(data: T, init?: ResponseInit): NextResponse {

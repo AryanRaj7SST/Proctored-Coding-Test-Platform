@@ -1,5 +1,6 @@
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { serviceUnavailable } from '@/lib/errors';
 
 /**
  * Sliding-window rate limiter backed by Upstash Redis.
@@ -60,15 +61,28 @@ function getLimiter(redis: Redis, limit: number, windowMs: number): Ratelimit {
   return limiter;
 }
 
-export async function rateLimit(key: string, limit: number, windowMs = 60_000): Promise<RateLimitResult> {
+export interface RateLimitOptions {
+  failClosed?: boolean;
+}
+
+export async function rateLimit(
+  key: string,
+  limit: number,
+  windowMs = 60_000,
+  options?: RateLimitOptions,
+): Promise<RateLimitResult> {
   const fallback: RateLimitResult = {
     allowed: true,
     remaining: limit,
     resetInMs: 0,
   };
 
+  const isProd = process.env.NODE_ENV === 'production';
   const redis = getRedis();
   if (!redis) {
+    if (options?.failClosed && isProd && process.env.ALLOW_NO_RATE_LIMIT !== 'true') {
+      throw serviceUnavailable('Rate limit service is temporarily unavailable. Please try again shortly.');
+    }
     return fallback;
   }
 
@@ -81,6 +95,9 @@ export async function rateLimit(key: string, limit: number, windowMs = 60_000): 
       resetInMs: Math.max(0, res.reset - Date.now()),
     };
   } catch (err) {
+    if (options?.failClosed && isProd) {
+      throw serviceUnavailable('Rate limit service is temporarily unavailable. Please try again shortly.');
+    }
     console.warn(`[RateLimit] Upstash rate limit error for key "${key}", failing open:`, err);
     return fallback;
   }

@@ -113,3 +113,44 @@ export async function isBlockedByDns(hostname: string): Promise<boolean> {
     return false;
   }
 }
+
+export type HostValidationResult =
+  | { ok: true; ip: string }
+  | { ok: false; error: string; status: number };
+
+/**
+ * Resolves a hostname via DNS once, validates that none of the resolved IPs
+ * are private or reserved, and returns the first validated IP address.
+ * If the hostname is already an IP, validates it directly.
+ */
+export async function resolveAndValidateHost(hostname: string): Promise<HostValidationResult> {
+  const clean = hostname.replace(/^\[|\]$/g, '').toLowerCase().trim();
+
+  if (isBlockedHostname(clean)) {
+    return { ok: false, error: 'Access to private or internal network addresses is forbidden.', status: 403 };
+  }
+
+  if (net.isIP(clean)) {
+    if (isPrivateOrReservedIp(clean)) {
+      return { ok: false, error: 'Access to private or internal network addresses is forbidden.', status: 403 };
+    }
+    return { ok: true, ip: clean };
+  }
+
+  try {
+    const records = await dns.promises.lookup(clean, { all: true });
+    if (!records || records.length === 0) {
+      return { ok: false, error: 'DNS resolution failed for upstream server.', status: 502 };
+    }
+    for (const record of records) {
+      if (isPrivateOrReservedIp(record.address)) {
+        return { ok: false, error: 'Access to private or internal network addresses is forbidden.', status: 403 };
+      }
+    }
+    return { ok: true, ip: records[0]!.address };
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'DNS lookup failed';
+    return { ok: false, error: `DNS lookup failed for upstream server: ${message}`, status: 502 };
+  }
+}
+

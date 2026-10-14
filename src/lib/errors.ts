@@ -19,6 +19,7 @@ export type ErrorCode =
   | 'RUNNER_UNAVAILABLE'
   | 'RUNNER_TIMEOUT'
   | 'RUNNER_BUSY'
+  | 'SERVICE_UNAVAILABLE'
   | 'INTERNAL_ERROR';
 
 export interface ApiErrorBody {
@@ -58,3 +59,7 @@ export const conflict = (m = 'This action conflicts with the current state.') =>
 export const tooLarge = (m = 'Payload too large.') => new AppError(413, m, 'PAYLOAD_TOO_LARGE');
 export const tooManyRequests = (m = 'Too many requests. Please slow down.') =>
   new AppError(429, m, 'RATE_LIMITED');
+export const serviceUnavailable = (
+  m = 'Service temporarily unavailable. Please try again.',
+  d?: Record<string, string>,
+) => new AppError(503, m, 'SERVICE_UNAVAILABLE', d);

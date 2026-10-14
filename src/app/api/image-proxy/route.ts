@@ -3,14 +3,35 @@ import {
   MAX_IMAGE_BYTES,
   FETCH_TIMEOUT_MS,
   MAX_REDIRECTS,
-  isBlockedHostname,
-  isBlockedByDns,
+  resolveAndValidateHost,
 } from '@/lib/image-proxy';
+import { requireAuth } from '@/lib/authz';
+import { rateLimit } from '@/lib/rate-limit';
+import { env } from '@/lib/env';
+import { AppError } from '@/lib/errors';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
+  let user;
+  try {
+    user = await requireAuth();
+  } catch (err) {
+    if (err instanceof AppError) {
+      return NextResponse.json({ error: err.message, code: err.code }, { status: err.status });
+    }
+    return NextResponse.json({ error: 'You must sign in to continue.' }, { status: 401 });
+  }
+
+  const limit = await rateLimit(`image-proxy:${user.id}`, env.imageProxyRateLimitPerMin, 60_000);
+  if (!limit.allowed) {
+    return NextResponse.json(
+      { error: 'Too many image requests. Please try again later.' },
+      { status: 429 },
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const target = searchParams.get('url');
 
@@ -42,17 +63,19 @@ export async function GET(request: NextRequest) {
 
   try {
     while (redirectCount <= MAX_REDIRECTS) {
-      const isBlocked = isBlockedHostname(currentUrl.hostname) || (await isBlockedByDns(currentUrl.hostname));
-      if (isBlocked) {
-        return NextResponse.json(
-          { error: 'Access to private or internal network addresses is forbidden.' },
-          { status: 403 },
-        );
+      const validation = await resolveAndValidateHost(currentUrl.hostname);
+      if (!validation.ok) {
+        return NextResponse.json({ error: validation.error }, { status: validation.status });
       }
 
-      response = await fetch(currentUrl.toString(), {
+      const targetFetchUrl = new URL(currentUrl.toString());
+      const originalHost = targetFetchUrl.host;
+      targetFetchUrl.hostname = validation.ip.includes(':') ? `[${validation.ip}]` : validation.ip;
+
+      response = await fetch(targetFetchUrl.toString(), {
         method: 'GET',
         headers: {
+          Host: originalHost,
           Accept: 'image/*,*/*',
           'User-Agent': 'Mozilla/5.0 (compatible; ProctoredCodingPlatform/1.0; +image-proxy)',
         },

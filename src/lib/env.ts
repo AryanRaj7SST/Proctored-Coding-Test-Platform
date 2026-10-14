@@ -47,6 +47,10 @@ export const env = {
   logLevel: (LOG_LEVELS as readonly string[]).includes(str('LOG_LEVEL'))
     ? (str('LOG_LEVEL') as LogLevel)
     : 'info',
+  imageProxyRateLimitPerMin: int('IMAGE_PROXY_RATE_LIMIT_PER_MIN', 30),
+  upstashRedisRestUrl: str('UPSTASH_REDIS_REST_URL'),
+  upstashRedisRestToken: str('UPSTASH_REDIS_REST_TOKEN'),
+  allowNoRateLimit: str('ALLOW_NO_RATE_LIMIT') === 'true',
   isProduction: process.env.NODE_ENV === 'production',
 } as const;
 
@@ -101,6 +105,18 @@ export function missingServerEnv(source: typeof env = env): string[] {
   }
   if (runner && runner.protocol !== 'https:' && !isPrivateHost(runner.hostname)) {
     missing.push('RUNNER_URL (must be https:// unless the runner is on a private network)');
+  }
+  if (source.allowNoRateLimit || process.env.ALLOW_NO_RATE_LIMIT === 'true') {
+    console.warn(
+      '[SECURITY WARNING] ALLOW_NO_RATE_LIMIT=true is set in production! Rate limiting is disabled.',
+    );
+  } else {
+    if (!source.upstashRedisRestUrl && !process.env.UPSTASH_REDIS_REST_URL) {
+      missing.push('UPSTASH_REDIS_REST_URL (must be set in production unless ALLOW_NO_RATE_LIMIT=true)');
+    }
+    if (!source.upstashRedisRestToken && !process.env.UPSTASH_REDIS_REST_TOKEN) {
+      missing.push('UPSTASH_REDIS_REST_TOKEN (must be set in production unless ALLOW_NO_RATE_LIMIT=true)');
+    }
   }
   return missing;
 }

@@ -29,7 +29,7 @@ services:
     environment:
       PORT: '4000'
       # MUST match RUNNER_SECRET in the app's .env
-      RUNNER_SECRET: ${RUNNER_SECRET:-dev-runner-secret-change-me-0123456789}
+      RUNNER_SECRET: ${RUNNER_SECRET:?RUNNER_SECRET must be set}
       RUNNER_ISOLATION: 'container'
       RUNNER_MAX_CONCURRENCY: '4'
       RUNNER_MAX_QUEUE: '64'
@@ -41,7 +41,7 @@ services:
       # then the isolation boundary (see docs/security.md).
       RUNNER_CHROMIUM_NO_SANDBOX: ${RUNNER_CHROMIUM_NO_SANDBOX:-false}
     ports:
-      - '4000:4000'
+      - '127.0.0.1:4000:4000'
     # Hard resource ceilings. The runner holds NO database URL, NO OAuth
     # credentials and NO application secrets -- only RUNNER_SECRET.
     mem_limit: 2g
@@ -49,8 +49,11 @@ services:
     pids_limit: 512
     security_opt:
       - no-new-privileges:true
+    read_only: true
     tmpfs:
       - /tmp:rw,nosuid,size=256m
+      - /dev/shm:rw,nosuid,size=512m
+      - /home/pwuser:rw,nosuid,size=128m
     healthcheck:
       test: ['CMD-SHELL', "node -e \"fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
       interval: 20s

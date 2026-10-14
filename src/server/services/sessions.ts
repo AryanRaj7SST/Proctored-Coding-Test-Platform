@@ -33,7 +33,13 @@ export function currentSession(examId: string, userId: string, db: SessionReader
 }
 
 /** Accounts outside the ADMIN role that have open test access (see hasOpenTestAccess). */
-const OPEN_ACCESS_EMAILS: ReadonlySet<string> = new Set(['agnihotriaryan5361@gmail.com']);
+export const OPEN_ACCESS_EMAILS: ReadonlySet<string> = new Set(
+  process.env.OPEN_ACCESS_EMAILS !== undefined
+    ? process.env.OPEN_ACCESS_EMAILS.split(',')
+        .map((e) => e.trim().toLowerCase())
+        .filter(Boolean)
+    : ['agnihotriaryan5361@gmail.com'],
+);
 
 /**
  * Open test access: the account is bound by neither a test's window nor its

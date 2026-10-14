@@ -1,6 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NextRequest } from 'next/server';
 import dns from 'node:dns';
+
+vi.mock('@/lib/auth', () => ({
+  auth: vi.fn(async () => ({
+    user: { id: 'test-user-id', email: 'test@example.com', role: 'STUDENT' },
+  })),
+}));
+
 import { GET } from '@/app/api/image-proxy/route';
 import { isPrivateOrReservedIp, isBlockedHostname } from '@/lib/image-proxy';
 

@@ -78,7 +78,7 @@ class HttpResponseError extends Error {
 }
 
 /** Headers that authenticate one request body to the runner (bearer + timestamped HMAC). */
-function signedHeaders(body: string, secret: string): Record<string, string> {
+export function signedHeaders(body: string, secret: string): Record<string, string> {
   const timestamp = String(Date.now());
   return {
     'content-type': 'application/json',

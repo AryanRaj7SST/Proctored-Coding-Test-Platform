@@ -13,6 +13,8 @@ const prod = {
   runnerUrlConfigured: true,
   runnerSecret: 'r'.repeat(64),
   cronSecret: 'c'.repeat(64),
+  upstashRedisRestUrl: 'https://upstash.example.com',
+  upstashRedisRestToken: 'token'.repeat(8),
 };
 
 describe('production configuration is validated at startup', () => {
