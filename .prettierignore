@@ -1,6 +1,15 @@
 node_modules
 .next
+dist
 runner/dist
+runner/node_modules
 coverage
+playwright-report
+test-results
+blob-report
 package-lock.json
+runner/package-lock.json
 prisma/migrations
+e2e-state.json
+e2e-admin-state.json
+.vercel
