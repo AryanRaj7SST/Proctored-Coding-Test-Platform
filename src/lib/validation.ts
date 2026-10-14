@@ -150,6 +150,13 @@ const testFields = {
   maxViolations: z.number().int().min(0).max(100),
   shuffleQuestions: z.boolean(),
   countClipboardViolations: z.boolean().default(false),
+  leaderboardMode: z.enum(['LIVE', 'AFTER_END', 'HIDDEN']).default('AFTER_END'),
+  wrongTryPenaltySeconds: z.number().int().min(0).max(86400).default(300),
+  leaderboardFrozenAt: optionalInstant,
+  mandatory: z.boolean().default(true),
+  notesMd: z.string().max(50_000).optional().nullable(),
+  instructorInfoMd: z.string().max(50_000).optional().nullable(),
+  resultsPublishedAt: optionalInstant,
   questions: testQuestionsInput,
 };
 

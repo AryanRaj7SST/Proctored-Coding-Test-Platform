@@ -190,6 +190,58 @@ resource ceilings, and a `tmpfs` for `/tmp` (see `docker-compose.yml`).
 4. **Contest standings & ranking (`src/server/services/integrity/contest-ranking.ts`)**:
    Ranks participants by total score descending, tie-breaking by earliest last-accepted-submission timestamp, followed by lowest violation count. Accessible at `/admin/exams/[id]/standings` and exportable as CSV with automatic spreadsheet formula-injection escaping (`'`, `+`, `-`, `=`, `@`).
 
+## Contest leaderboard and real-time caching
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│                        Student / Admin Request                         │
+└───────────────────────────────────┬────────────────────────────────────┘
+                                    │
+                         GET /api/exams/[id]/leaderboard
+                                    │
+                                    ▼
+                ┌───────────────────────────────────────┐
+                │ In-Memory Leaderboard Cache (~10s TTL)│
+                │ `examBoardCache` (Map<examId, Data>)  │
+                └───────┬───────────────────────┬───────┘
+                        │                       │
+                Cache Hit (fresh < 10s)    Cache Miss (expired or invalidated)
+                        │                       │
+                        │                       ▼
+                        │          ┌─────────────────────────┐
+                        │          │ Batched Prisma Queries   │
+                        │          │ - Exam metadata         │
+                        │          │ - ExamQuestions         │
+                        │          │ - Sessions + Attempts   │
+                        │          └────────────┬────────────┘
+                        │                       │
+                        │                       ▼
+                        │          ┌─────────────────────────┐
+                        │          │ computeLeaderboard()     │
+                        │          │ (Pure, deterministic)   │
+                        │          └────────────┬────────────┘
+                        │                       │ Store in cache
+                        ▼                       ▼
+            ┌───────────────────────────────────────────────┐
+            │             Sanitization Barrier              │
+            │ Student: Strip emails, userIds, code, tests   │
+            │ Admin: Include emails, flags, audit metadata  │
+            └───────────────────────────────────────────────┘
+```
+
+1. **Deterministic Ranking Engine (`src/lib/leaderboard.ts`)**:
+   Pure, dependency-free computation (`computeLeaderboard`):
+   - **Primary metric**: Total score descending.
+   - **Tie-breaker**: Effective contest time ascending (`effectiveSeconds = elapsedSeconds + (wrongTries * penaltySeconds)`).
+   - **ICPC / DSA penalty rule**: Penalties accrue **only** on questions that are eventually ACCEPTED. Failed attempts on unsolved problems do not add penalty time.
+   - **Dense ranking with identical ties**: Two participants share the exact same rank if and only if both their score and effectiveSeconds are identical.
+2. **High-Concurrency In-Memory Caching (`src/server/services/leaderboard.ts`)**:
+   - Stores computed projections in an in-memory Map (`examBoardCache`) with a 10-second TTL (`LEADERBOARD_CACHE_TTL_MS = 10_000`).
+   - Under heavy load (e.g. 200 concurrent students polling every 15s), all requests within the 10s window are served in sub-millisecond memory lookups. Database load is capped at ~1 batched query set per 10 seconds.
+   - **Targeted invalidation (`invalidateLeaderboardCache(examId)`)**: Immediately clears the cache upon new submissions, test completion, admin actions (disqualification, plagiarism flagging), or exam configuration changes.
+3. **Disqualification Isolation**:
+   - `ExamSession.disqualifiedAt` isolates disqualified participants from public view while preserving the sitting in `allRowsForAdmin` for auditability and review.
+
 ## Directory-to-concept map
 
 | Concept                          | Where                                                          |
@@ -206,4 +258,9 @@ resource ceilings, and a `tmpfs` for `/tmp` (see `docker-compose.yml`).
 | Code similarity analysis         | `src/server/services/integrity/similarity.ts`                  |
 | Static red-flag scanner          | `src/lib/static-analysis.ts`                                   |
 | Contest ranking & standings      | `src/server/services/integrity/contest-ranking.ts`             |
+| Deterministic leaderboard engine | `src/lib/leaderboard.ts`                                       |
+| Leaderboard caching & service    | `src/server/services/leaderboard.ts`                           |
+| Student Scoreboard UI            | `src/app/(student)/exams/[examId]/leaderboard/page.tsx`        |
+| Contest landing page             | `src/app/(student)/exams/[examId]/page.tsx`                    |
+| Admin leaderboard controls       | `src/components/admin/leaderboard/AdminLeaderboardView.tsx`    |
 | Sandboxed live preview           | `src/lib/preview.ts`, `src/components/editor/PreviewFrame.tsx` |

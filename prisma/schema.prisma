@@ -141,6 +141,7 @@ enum LeaderboardMode {
 enum AttemptFlagKind {
   PLAGIARISM
   MANUAL_REVIEW
+  DISQUALIFIED
 }
 
 /// Outcome of grading one question attempt.
@@ -286,7 +287,11 @@ model Exam {
   leaderboardMode         LeaderboardMode  @default(AFTER_END)
   wrongTryPenaltySeconds  Int              @default(300)
   leaderboardFrozenAt     DateTime?
+  mandatory               Boolean          @default(true)
+  notesMd                 String?          @db.Text
+  instructorInfoMd        String?          @db.Text
   publishedAt             DateTime?
+  resultsPublishedAt      DateTime?
   createdAt               DateTime         @default(now())
   updatedAt               DateTime         @updatedAt
 
@@ -515,6 +520,9 @@ model ExamSession {
   percentage     Decimal?       @db.Decimal(7, 4)
   result         SittingResult?
   gradedAt       DateTime?
+  disqualifiedAt DateTime?
+  disqualifiedById String?
+  disqualifiedReason String? @db.Text
 
   user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   exam     Exam           @relation(fields: [examId], references: [id], onDelete: Cascade)

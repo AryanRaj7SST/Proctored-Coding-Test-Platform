@@ -120,7 +120,10 @@ export function PracticeWorkspace({ attemptId, question, examTitle, initialCode 
       <header className="flex h-12 shrink-0 items-center justify-between border-b border-ink-800 bg-[#0f172a] px-4">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-sm font-bold tracking-tight text-blue-500">SCALER</span>
+            <div className="flex items-center rounded bg-white px-1.5 py-0.5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/scaler-logo.png" alt="Scaler" className="h-4 w-auto object-contain" />
+            </div>
             <span className="text-slate-500">/</span>
             <span className="text-xs font-medium text-slate-400">{examTitle}</span>
             <span className="text-slate-500">/</span>

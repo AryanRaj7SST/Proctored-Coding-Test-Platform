@@ -713,11 +713,7 @@ export function ExamWorkspace({
             {/* SCALER Logo */}
             <div className="flex cursor-pointer items-center">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="https://s3-ap-southeast-1.amazonaws.com/ghost-production-blog/2022/12/Scaler_Logo_Transparent.png"
-                alt="Scaler"
-                className="h-8 w-auto object-contain sm:h-9"
-              />
+              <img src="/scaler-logo.png" alt="Scaler" className="h-8 w-auto object-contain sm:h-9" />
             </div>
             <span className="text-slate-300">|</span>
             <h1 className="max-w-xs truncate text-xs font-semibold text-slate-800 sm:text-[13px] md:max-w-md">

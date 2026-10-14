@@ -43,8 +43,9 @@ export default async function LoginPage({
     <main id="main" className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
         <div className="mb-6 text-center">
-          <div className="shadow-xs mx-auto mb-4 flex h-11 w-11 items-center justify-center rounded-lg bg-blue-600 text-lg font-bold text-white">
-            &lt;/&gt;
+          <div className="mb-4 flex items-center justify-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/scaler-logo.png" alt="Scaler" className="h-10 w-auto object-contain" />
           </div>
           <h1 className="text-lg font-semibold text-slate-900">Coding Assessment Platform</h1>
           <p className="mt-1 text-xs text-slate-600">Sign in with your Google account to continue.</p>

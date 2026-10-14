@@ -218,3 +218,22 @@ true, audio: false })` (`src/lib/camera.ts`, the only caller) is shown in a
   a `<script>` still costs the runner that timeout's worth of wall-clock time
   per run; `BoundedQueue` prevents that from taking down the whole service,
   it does not make a single bad run free.
+
+## Leaderboard and contest security
+
+- **Student privacy boundary on leaderboard APIs**:
+  - `GET /api/exams/[id]/leaderboard` and `GET /api/exams/[id]/me/rank` strip all private identity markers before returning data. Responses contain **zero** email addresses, internal user IDs, submitted source code, test names, expected outputs, or runner diagnostic details.
+  - Public handles are generated via `generateDisplayHandle(name, userId)` using the student's name and a SHA256 slice of their user ID. The email local-part is **never** used as a handle to prevent accidental email exposure.
+  - Route handlers enforce `requireAuth()` and `requireTestAccess(examId, user)`. Students not assigned to the exam or whose access was revoked receive **404 (not 403)**, preventing test existence enumeration.
+- **Server-side visibility enforcement**:
+  - Contest visibility (`LIVE`, `AFTER_END`, `HIDDEN`) is strictly checked in `getExamLeaderboard` on the server:
+    - `HIDDEN`: Always returns `403 Forbidden` to non-admin students.
+    - `AFTER_END`: Returns `403 Forbidden` until `now >= exam.endTime` or `exam.status === 'ENDED'`.
+    - `LIVE`: Permitted throughout the contest window.
+  - Visibility rules are never delegated to the client UI.
+- **Admin moderation, audit logging & data retention**:
+  - Participant disqualification (`disqualify`) sets `disqualifiedAt`, `disqualifiedById`, and `disqualifiedReason` on the student's primary sitting.
+  - Disqualified participants are immediately excluded from the student-facing leaderboard, while remaining fully visible to administrators with their full attempt logs, scores, and code. Disqualification is non-destructive and reversible (`undisqualify`); no data is ever deleted.
+  - Every administrative action (`disqualify`, `undisqualify`, `flag_plagiarism`, `clear_flag`, `promote_similarity_pair`, `freeze_now`, `publish_final`) writes an immutable entry via `recordAudit` (`AuditEvent`).
+- **Formula injection (CSV injection) defense**:
+  - CSV exports (`/api/admin/exams/[id]/leaderboard?export=csv`) sanitize all text fields using `toCsv` (`src/lib/csv.ts`). Any field starting with formula execution triggers (`=`, `+`, `-`, `@`, `\t`, `\r`) is prefixed with a single quote (`'`), neutralizing spreadsheet formula injection attacks.

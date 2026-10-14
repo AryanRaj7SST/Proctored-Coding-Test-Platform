@@ -3,6 +3,7 @@ import { marksError, percentError, toCents } from './format';
 import type {
   AccessMode,
   Difficulty,
+  LeaderboardMode,
   QuestionBankItem,
   QuestionStatus,
   ResultVisibility,
@@ -70,6 +71,12 @@ export interface BuilderForm {
   resultVisibility: ResultVisibility;
   maxViolations: string;
   shuffleQuestions: boolean;
+  leaderboardMode: LeaderboardMode;
+  wrongTryPenaltySeconds: string;
+  mandatory: boolean;
+  notesMd: string;
+  instructorInfoMd: string;
+  leaderboardFrozenAt: string | null;
   questions: SelectedQuestion[];
 }
 
@@ -90,6 +97,12 @@ export const EMPTY_FORM: BuilderForm = {
   resultVisibility: 'FULL',
   maxViolations: '0',
   shuffleQuestions: false,
+  leaderboardMode: 'AFTER_END',
+  wrongTryPenaltySeconds: '300',
+  mandatory: true,
+  notesMd: '',
+  instructorInfoMd: '',
+  leaderboardFrozenAt: null,
   questions: [],
 };
 
@@ -146,6 +159,12 @@ export function formFromDetail(detail: TestDetail): BuilderForm {
     resultVisibility: detail.resultVisibility,
     maxViolations: String(detail.maxViolations),
     shuffleQuestions: detail.shuffleQuestions,
+    leaderboardMode: detail.leaderboardMode ?? 'AFTER_END',
+    wrongTryPenaltySeconds: String(detail.wrongTryPenaltySeconds ?? 300),
+    mandatory: detail.mandatory ?? true,
+    notesMd: detail.notesMd ?? '',
+    instructorInfoMd: detail.instructorInfoMd ?? '',
+    leaderboardFrozenAt: detail.leaderboardFrozenAt ?? null,
     questions: [...detail.questions].sort((a, b) => a.order - b.order).map(questionFromDto),
   };
 }
@@ -203,7 +222,19 @@ export function stepOfField(field: string): StepId {
   if (field.startsWith('questions')) return 'questions';
   if (['startTime', 'endTime', 'durationMinutes', 'timezone'].includes(field)) return 'schedule';
   if (['accessMode', 'maxAttempts'].includes(field)) return 'access';
-  if (['resultVisibility', 'maxViolations', 'shuffleQuestions'].includes(field)) return 'settings';
+  if (
+    [
+      'resultVisibility',
+      'maxViolations',
+      'shuffleQuestions',
+      'leaderboardMode',
+      'wrongTryPenaltySeconds',
+      'mandatory',
+      'notesMd',
+      'instructorInfoMd',
+    ].includes(field)
+  )
+    return 'settings';
   return 'basics';
 }
 
@@ -236,6 +267,12 @@ export function buildPayload(form: BuilderForm, opts: { includeQuestions: boolea
     resultVisibility: form.resultVisibility,
     maxViolations: Number(form.maxViolations),
     shuffleQuestions: form.shuffleQuestions,
+    leaderboardMode: form.leaderboardMode,
+    wrongTryPenaltySeconds: Number(form.wrongTryPenaltySeconds) || 300,
+    mandatory: form.mandatory,
+    notesMd: form.notesMd.trim() ? form.notesMd : null,
+    instructorInfoMd: form.instructorInfoMd.trim() ? form.instructorInfoMd : null,
+    leaderboardFrozenAt: form.leaderboardFrozenAt,
     ...(opts.includeQuestions ? { questions: questionsPayload(form.questions) } : {}),
   };
 }
@@ -274,8 +311,17 @@ export function dirtySteps(form: BuilderForm, base: BuilderForm): Set<StepId> {
   if (w.start !== bw.start || w.end !== bw.end || differs('timezone') || differs('durationMinutes')) {
     dirty.add('schedule');
   }
-  if (differs('accessMode') || differs('maxAttempts')) dirty.add('access');
-  if (differs('resultVisibility') || differs('maxViolations') || differs('shuffleQuestions')) {
+  if (
+    differs('resultVisibility') ||
+    differs('maxViolations') ||
+    differs('shuffleQuestions') ||
+    differs('leaderboardMode') ||
+    differs('wrongTryPenaltySeconds') ||
+    form.mandatory !== base.mandatory ||
+    differs('notesMd') ||
+    differs('instructorInfoMd') ||
+    form.leaderboardFrozenAt !== base.leaderboardFrozenAt
+  ) {
     dirty.add('settings');
   }
   return dirty;

@@ -8,6 +8,7 @@ import { refreshSittingTotals } from '@/server/grading/sitting-totals';
 import { buildSnapshot } from './questions';
 import { finalizeOverdueSittings } from './finalization';
 import { hasOpenTestAccess } from './sessions';
+import { invalidateLeaderboardCache } from './leaderboard';
 
 /**
  * Tests ("exams" in the schema): building, scheduling, publishing.
@@ -74,6 +75,15 @@ const settingsData = (input: ExamUpdateInput) => ({
   ...(input.countClipboardViolations !== undefined
     ? { countClipboardViolations: input.countClipboardViolations }
     : {}),
+  ...(input.leaderboardMode !== undefined ? { leaderboardMode: input.leaderboardMode } : {}),
+  ...(input.wrongTryPenaltySeconds !== undefined
+    ? { wrongTryPenaltySeconds: input.wrongTryPenaltySeconds }
+    : {}),
+  ...(input.leaderboardFrozenAt !== undefined ? { leaderboardFrozenAt: input.leaderboardFrozenAt } : {}),
+  ...(input.mandatory !== undefined ? { mandatory: input.mandatory } : {}),
+  ...(input.notesMd !== undefined ? { notesMd: input.notesMd || null } : {}),
+  ...(input.instructorInfoMd !== undefined ? { instructorInfoMd: input.instructorInfoMd || null } : {}),
+  ...(input.resultsPublishedAt !== undefined ? { resultsPublishedAt: input.resultsPublishedAt } : {}),
 });
 
 /** A new test is always a DRAFT. */
@@ -133,6 +143,9 @@ export async function updateExam(id: string, input: ExamUpdateInput): Promise<Ex
       select: { id: true },
     });
     for (const s of graded) await refreshSittingTotals(s.id);
+  }
+  if (changed.length > 0) {
+    invalidateLeaderboardCache(id);
   }
   return { exam: updated, changed };
 }

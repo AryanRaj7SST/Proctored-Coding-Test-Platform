@@ -13,6 +13,8 @@ interface Toast {
 
 interface ToastContextValue {
   push: (message: string, tone?: ToastTone) => void;
+  success: (message: string) => void;
+  error: (message: string) => void;
 }
 
 const ToastContext = React.createContext<ToastContextValue | null>(null);
@@ -33,7 +35,14 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 5000);
   }, []);
 
-  const value = React.useMemo(() => ({ push }), [push]);
+  const value = React.useMemo(
+    () => ({
+      push,
+      success: (message: string) => push(message, 'success'),
+      error: (message: string) => push(message, 'error'),
+    }),
+    [push],
+  );
 
   return (
     <ToastContext.Provider value={value}>

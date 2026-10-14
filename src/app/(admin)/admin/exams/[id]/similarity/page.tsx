@@ -4,6 +4,7 @@ import { requireAdmin } from '@/lib/authz';
 import { prisma } from '@/lib/prisma';
 import { getQuestionSimilarityReport } from '@/server/services/integrity/similarity';
 import { Badge, Card, CardBody, CardHeader, StatCard, Table, Td, Th } from '@/components/ui';
+import { SimilarityPromotionButton } from '@/components/admin/integrity/SimilarityPromotionButton';
 
 export const dynamic = 'force-dynamic';
 
@@ -206,6 +207,12 @@ export default async function ExamSimilarityPage({
                           >
                             View B
                           </Link>
+                          <span>&middot;</span>
+                          <SimilarityPromotionButton
+                            examId={exam.id}
+                            attemptAId={pair.attemptAId}
+                            attemptBId={pair.attemptBId}
+                          />
                         </div>
                       </Td>
                     </tr>
