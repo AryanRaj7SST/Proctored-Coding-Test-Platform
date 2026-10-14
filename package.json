@@ -29,6 +29,7 @@
     "db:seed": "prisma db seed",
     "e2e:session": "tsx scripts/e2e-session.ts",
     "loadtest": "tsx scripts/loadtest/run.ts",
+    "loadtest:preflight": "tsx scripts/loadtest/preflight.ts",
     "loadtest:runner": "tsx scripts/loadtest/runner-capacity.ts",
     "db:sample-questions": "tsx scripts/seed-sample-questions.ts",
     "db:seed-admins": "tsx scripts/seed-admins.ts",
