@@ -101,6 +101,7 @@ app.post('/run', async (req: Request, res: Response) => {
 
   const input: RunInput = {
     runId,
+    userId: typeof parsed.userId === 'string' && parsed.userId.trim() ? parsed.userId.trim() : undefined,
     html: parsed.html.slice(0, 400_000),
     css: parsed.css.slice(0, 400_000),
     js: parsed.js.slice(0, 400_000),
@@ -111,15 +112,14 @@ app.post('/run', async (req: Request, res: Response) => {
     // Each test has its own timeout, so a run's budget grows with its size: a
     // slow or broken student page fails its tests instead of timing the run out.
     const runBudgetMs = config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs;
-    const userKey =
-      (typeof parsed.userId === 'string' && parsed.userId.trim()) ||
-      (typeof req.ip === 'string' && req.ip) ||
-      runId;
+    const userKey = input.userId || (typeof req.ip === 'string' && req.ip) || runId;
     const result = await queue.run(async () => {
       if (input.spec.kind === 'js-fn') {
         return executeJsRun(input, runBudgetMs);
       }
-      return config.isolation === 'docker' ? executeInDocker(input, runBudgetMs) : executeRun(input, runBudgetMs);
+      return config.isolation === 'docker'
+        ? executeInDocker(input, runBudgetMs)
+        : executeRun(input, runBudgetMs);
     }, userKey);
     log.info('run.completed', {
       runId,

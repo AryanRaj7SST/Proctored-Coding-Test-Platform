@@ -16,6 +16,7 @@ import { isSandboxNetworkNoise } from './console-noise';
 
 export interface RunInput {
   runId: string;
+  userId?: string;
   html: string;
   css: string;
   js: string;
@@ -195,7 +196,7 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): P
  */
 export async function executeRun(input: RunInput, runBudgetMs?: number): Promise<RunnerRunResult> {
   const started = Date.now();
-  const budget = runBudgetMs ?? (config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs);
+  const budget = runBudgetMs ?? config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs;
   const deadline = started + budget;
 
   const browser = await getBrowser();
@@ -275,7 +276,11 @@ export async function executeRun(input: RunInput, runBudgetMs?: number): Promise
       let needsFreshPage = false;
 
       const remainingRunTime = Math.max(100, deadline - Date.now());
-      const testBudget = Math.min(test.timeoutMs ?? config.testTimeoutMs, config.testTimeoutMs, remainingRunTime);
+      const testBudget = Math.min(
+        test.timeoutMs ?? config.testTimeoutMs,
+        config.testTimeoutMs,
+        remainingRunTime,
+      );
 
       try {
         await withTimeout(

@@ -241,14 +241,15 @@ async function runSingleTestCase(
   const maxOutputBytes = config.jsEngine.maxOutputBytes;
 
   let isolate: ivm.Isolate | null = null;
-  let logCallback: ivm.Callback | null = null;
+  let context: ivm.Context | null = null;
+  let fnRunner: ivm.Reference<ivm.Callback> | null = null;
 
   try {
     isolate = new ivm.Isolate({ memoryLimit: memoryLimitMb });
-    const context = isolate.createContextSync();
+    context = isolate.createContextSync();
     const jail = context.global;
 
-    logCallback = new ivm.Callback((msg: unknown) => {
+    const logCallback = new ivm.Callback((msg: unknown) => {
       if (consoleLogs.length < config.jsEngine.maxLogs) {
         consoleLogs.push(String(msg ?? '').slice(0, config.jsEngine.maxLogLineLength));
       }
@@ -265,7 +266,7 @@ async function runSingleTestCase(
     await studentScript.run(context, { timeout: timeoutMs });
 
     // 3. Execute assertions
-    const fnRunner = jail.getSync('__runFn', { reference: true }) as ivm.Reference<ivm.Callback>;
+    fnRunner = jail.getSync('__runFn', { reference: true }) as ivm.Reference<ivm.Callback>;
 
     for (const assertion of test.assertions) {
       if (assertion.type !== 'fn') {
@@ -337,9 +338,7 @@ async function runSingleTestCase(
           passed: false,
           expected: expectedFormatted,
           actual: actualFormatted,
-          message:
-            fnAssertion.message ??
-            `Expected ${expectedFormatted}. Found: ${actualFormatted}`,
+          message: fnAssertion.message ?? `Expected ${expectedFormatted}. Found: ${actualFormatted}`,
         };
       }
     }
@@ -364,9 +363,14 @@ async function runSingleTestCase(
       message: `Runtime error: ${errMessage}`,
     };
   } finally {
-    if (logCallback) {
+    if (fnRunner) {
       try {
-        logCallback.dispose();
+        fnRunner.release();
+      } catch {}
+    }
+    if (context) {
+      try {
+        context.release();
       } catch {}
     }
     if (isolate) {
@@ -377,14 +381,12 @@ async function runSingleTestCase(
   }
 }
 
-export async function executeJsRun(
-  input: RunInput,
-  runBudgetMs?: number,
-): Promise<RunnerRunResult> {
+export async function executeJsRun(input: RunInput, runBudgetMs?: number): Promise<RunnerRunResult> {
   const startedAt = Date.now();
   const consoleLogs: string[] = [];
   const testResults: RunnerTestResult[] = [];
-  const deadline = startedAt + (runBudgetMs ?? (config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs));
+  const deadline =
+    startedAt + (runBudgetMs ?? config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs);
 
   let status: 'COMPLETED' | 'FAILED' | 'TIMEOUT' = 'COMPLETED';
 

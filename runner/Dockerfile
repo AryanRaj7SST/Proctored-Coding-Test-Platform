@@ -1,6 +1,7 @@
 # Build context is the REPOSITORY ROOT (the runner imports ../shared).
 #   docker build -f runner/Dockerfile -t proctored-runner:latest .
 FROM mcr.microsoft.com/playwright:v1.55.0-noble AS build
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY runner/package.json runner/package-lock.json* ./runner/
 WORKDIR /app/runner
@@ -10,12 +11,13 @@ COPY shared ./shared
 COPY runner ./runner
 WORKDIR /app/runner
 RUN npm run build
+RUN npm prune --omit=dev
 
 FROM mcr.microsoft.com/playwright:v1.55.0-noble AS runtime
 ENV NODE_ENV=production
 WORKDIR /app/runner
-COPY runner/package.json runner/package-lock.json* ./
-RUN npm install --omit=dev --no-audit --no-fund && npm cache clean --force
+COPY runner/package.json ./
+COPY --from=build /app/runner/node_modules ./node_modules
 COPY --from=build /app/runner/dist ./dist
 
 # Never run the browser as root.
