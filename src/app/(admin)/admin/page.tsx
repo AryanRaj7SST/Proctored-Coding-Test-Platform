@@ -84,22 +84,22 @@ async function RunnerAlert() {
     >
       {isDown ? (
         <>
-          The test runner is not usable. Students can still write and save code, but running
-          tests, grading and question validation will wait until it is fixed (submissions show &ldquo;grading
-          pending&rdquo;, never 0). Check <code>RUNNER_URLS</code>, <code>RUNNER_URL</code>,{' '}
-          <code>RUNNER_SECRET</code> and the runner service.
+          The test runner is not usable. Students can still write and save code, but running tests, grading
+          and question validation will wait until it is fixed (submissions show &ldquo;grading pending&rdquo;,
+          never 0). Check <code>RUNNER_URLS</code>, <code>RUNNER_URL</code>, <code>RUNNER_SECRET</code> and
+          the runner service.
         </>
       ) : (
         <>
-          Runner pool is degraded ({upCount}/{pool.runners.length} runners up). Some runners are unreachable or
-          reporting errors. Submissions are automatically routed to healthy runners.
+          Runner pool is degraded ({upCount}/{pool.runners.length} runners up). Some runners are unreachable
+          or reporting errors. Submissions are automatically routed to healthy runners.
         </>
       )}
       {pool.runners.length > 0 ? (
         <div className="mt-2 flex flex-wrap gap-2 font-mono text-[11px]">
           {pool.runners.map((r) => (
             <span key={r.host} className={r.ok ? 'text-emerald-700' : 'font-semibold text-rose-700'}>
-              {r.host}: {r.ok ? 'online' : r.detail ?? 'down'}
+              {r.host}: {r.ok ? 'online' : (r.detail ?? 'down')}
             </span>
           ))}
         </div>
