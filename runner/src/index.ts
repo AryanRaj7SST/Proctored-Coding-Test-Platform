@@ -42,12 +42,18 @@ app.disable('x-powered-by');
 app.use(express.raw({ type: '*/*', limit: config.maxPayloadBytes }));
 
 app.get('/health', (_req: Request, res: Response) => {
+  const mem = process.memoryUsage();
   res.json({
     ok: true,
     service: 'runner',
     isolation: config.isolation,
     ...queue.stats,
     uptimeSeconds: Math.round(process.uptime()),
+    memoryMb: {
+      rss: Math.round(mem.rss / (1024 * 1024)),
+      heapUsed: Math.round(mem.heapUsed / (1024 * 1024)),
+      heapTotal: Math.round(mem.heapTotal / (1024 * 1024)),
+    },
   });
 });
 
@@ -105,12 +111,16 @@ app.post('/run', async (req: Request, res: Response) => {
     // Each test has its own timeout, so a run's budget grows with its size: a
     // slow or broken student page fails its tests instead of timing the run out.
     const runBudgetMs = config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs;
+    const userKey =
+      (typeof parsed.userId === 'string' && parsed.userId.trim()) ||
+      (typeof req.ip === 'string' && req.ip) ||
+      runId;
     const result = await queue.run(async () => {
       if (input.spec.kind === 'js-fn') {
         return executeJsRun(input, runBudgetMs);
       }
       return config.isolation === 'docker' ? executeInDocker(input, runBudgetMs) : executeRun(input, runBudgetMs);
-    });
+    }, userKey);
     log.info('run.completed', {
       runId,
       status: result.status,

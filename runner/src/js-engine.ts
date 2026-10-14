@@ -258,11 +258,11 @@ async function runSingleTestCase(
 
     // 1. Run pristine harness code
     const harnessScript = isolate.compileScriptSync(HARNESS_SCRIPT);
-    harnessScript.runSync(context, { timeout: 1000 });
+    await harnessScript.run(context, { timeout: 1000 });
 
     // 2. Run student code
     const studentScript = isolate.compileScriptSync(studentJs);
-    studentScript.runSync(context, { timeout: timeoutMs });
+    await studentScript.run(context, { timeout: timeoutMs });
 
     // 3. Execute assertions
     const fnRunner = jail.getSync('__runFn', { reference: true }) as ivm.Reference<ivm.Callback>;
@@ -281,9 +281,9 @@ async function runSingleTestCase(
       const assertionTimeout = fnAssertion.timeoutMs ?? timeoutMs;
 
       // Invoke harness inside the isolate
-      const rawRes = fnRunner.applySync(undefined, [fnName, argsJson], {
+      const rawRes = (await fnRunner.apply(undefined, [fnName, argsJson], {
         timeout: assertionTimeout,
-      }) as string;
+      })) as string;
 
       if (typeof rawRes !== 'string') {
         return {

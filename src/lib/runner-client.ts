@@ -5,6 +5,7 @@ import { logger, sanitizeError } from './logger';
 
 export interface RunnerRequest {
   runId: string;
+  userId?: string;
   html: string;
   css: string;
   js: string;

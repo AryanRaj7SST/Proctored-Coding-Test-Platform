@@ -124,3 +124,55 @@ test('a task that throws still frees its slot for the next one', async () => {
   });
   assert.equal(ran, true);
 });
+
+test('fair queuing: serves waiting clients in round-robin order rather than strict FIFO', async () => {
+  const q = new BoundedQueue(1, 10, 5);
+  const executionOrder: string[] = [];
+
+  let releaseGate: () => void = () => {};
+  const blocker = q.run(() => new Promise<void>((resolve) => { releaseGate = resolve; }), 'blocker');
+
+  // Student A queues 3 tasks
+  const a1 = q.run(async () => { executionOrder.push('A1'); }, 'student-A');
+  const a2 = q.run(async () => { executionOrder.push('A2'); }, 'student-A');
+  const a3 = q.run(async () => { executionOrder.push('A3'); }, 'student-A');
+
+  // Student B queues 1 task afterwards
+  const b1 = q.run(async () => { executionOrder.push('B1'); }, 'student-B');
+
+  // Release the initial blocking task
+  releaseGate();
+  await Promise.all([blocker, a1, a2, a3, b1]);
+
+  // With fair queuing, round-robin ensures Student B is served after A's first task
+  // Execution order must be A1 -> B1 -> A2 -> A3 (not A1 -> A2 -> A3 -> B1)
+  assert.deepEqual(executionOrder, ['A1', 'B1', 'A2', 'A3']);
+});
+
+test('per-key queue limit: prevents a single client from monopolizing the wait line', async () => {
+  // maxConcurrency: 1, maxQueue: 10, maxPerKeyQueue: 2
+  const q = new BoundedQueue(1, 10, 2);
+
+  let releaseGate: () => void = () => {};
+  const blocker = q.run(() => new Promise<void>((resolve) => { releaseGate = resolve; }), 'blocker');
+
+  // Student A queues 2 tasks (up to per-key limit)
+  const a1 = q.run(async () => {}, 'student-A');
+  const a2 = q.run(async () => {}, 'student-A');
+
+  // Student A tries to queue a 3rd task -> rejected with QUEUE_FULL
+  await assert.rejects(
+    q.run(async () => {}, 'student-A'),
+    (err: Error & { code?: string }) => {
+      assert.equal(err.code, 'QUEUE_FULL');
+      return true;
+    },
+  );
+
+  // Student B is still allowed to queue
+  const b1 = q.run(async () => {}, 'student-B');
+
+  releaseGate();
+  await Promise.all([blocker, a1, a2, b1]);
+});
+

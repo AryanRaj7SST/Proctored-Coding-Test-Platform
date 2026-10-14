@@ -60,7 +60,7 @@ export async function executeTests(params: {
   const started = Date.now();
   let outcome: RunnerOutcome;
   try {
-    const raw = await runOnRunner({ runId: testRun.id, ...params.code, spec });
+    const raw = await runOnRunner({ runId: testRun.id, userId: params.userId, ...params.code, spec });
     outcome = outcomeFromResult(
       raw,
       tests.map((t) => t.id),

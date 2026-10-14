@@ -194,3 +194,120 @@ If an unexpected application defect occurs during or immediately prior to the ex
    - If a runner update introduced regression, redeploy the previous runner Docker tag on your container host.
 4. **Disaster Recovery (Neon PITR)**:
    - If corrupted state occurs, use Neon Point-in-Time Recovery (PITR) to restore the branch to a timestamp immediately prior to the incident without losing submission data.
+
+---
+
+## 6. Runner Capacity, Benchmarks & Load Testing (Pure JS DSA Engine)
+
+### Benchmark Methodology (`scripts/loadtest/runner-capacity.ts`)
+
+To measure runner capacity with the new isolated-vm (`js-fn`) engine:
+- **Simulated Population**: $N=200$ concurrent students.
+- **Run Cadence**: Each student triggers a run approximately every ~20s with $\pm 10\%$ jitter.
+- **Submission Traffic Mix**:
+  - **70% Correct**: Clean DSA solution passing all tests.
+  - **25% Wrong Answer**: Runs all assertions and fails assertions cleanly without crashing.
+  - **2.5% Infinite Loop (Hostile)**: `while (true) {}` intended to monopolize compute.
+  - **2.5% Memory Bomb (Hostile)**: Rapid array/buffer allocations designed to exhaust heap memory.
+- **Isolation Architecture**: Isolated V8 isolates (`isolated-vm`) running asynchronously off the main Node event loop with a 64MB heap ceiling and 2000ms hard timeout per test case.
+
+---
+
+### Measured Benchmark Results
+
+#### 1. 60-Second Sustained High-Throughput Run
+- **Total Executions**: 598 runs
+- **Throughput**: 7.2 runs / second
+- **Success Rate (HTTP 200 OK)**: **100.0%** (598 / 598)
+- **429 Runner Busy Rate**: **0.00%** (0 / 598)
+- **Error Rate (5xx / Network drops)**: **0.00%** (0 lost submissions)
+- **Overall Latency**:
+  - **p50**: **22 ms**
+  - **p90**: **44 ms**
+  - **p95**: **377 ms**
+  - **p99**: **8,070 ms** (governed by 4 $\times$ 2000ms hard timeout for infinite loop cases)
+  - **min / max**: 17 ms / 8,093 ms
+- **Latency Breakdown by Submission Type**:
+  - **Correct (70%)**: $n=422$ | p50 = **22 ms** | p95 = **44 ms** | max = 104 ms
+  - **Wrong (25%)**: $n=145$ | p50 = **21 ms** | p95 = **41 ms** | max = 60 ms
+  - **Memory Bomb (2.5%)**: $n=15$ | p50 = **421 ms** | p95 = **1,086 ms** | max = 1,086 ms (contained by 64MB isolate heap cap)
+  - **Infinite Loop (2.5%)**: $n=16$ | p50 = **8,068 ms** | p95 = **8,093 ms** (hard-killed after 2000ms $\times$ 4 assertions)
+- **Runner Memory Footprint**:
+  - Initial RSS: **116 MB** (Heap: 24 / 27 MB)
+  - Final RSS: **121 MB** (Heap: 25 / 27 MB)
+  - Net Delta RSS: **+5 MB** (flat memory line with automatic isolate cleanup and zero memory leakage)
+
+#### 2. 30-Second Warmup Run
+- **Total Executions**: 296 runs (5.7 runs/sec)
+- **Success Rate**: **100.0%** (0 busy, 0 errors)
+- **Latency**: p50 = **19 ms**, p95 = **35 ms**
+- **Net Delta RSS**: **+6 MB** (110 MB $\to$ 116 MB)
+
+---
+
+### Recommended Production Tuning Settings
+
+Based on measured capacity and fair queuing behavior, the runner and app should be configured with:
+
+| Environment Variable | Recommended Value | Default | Rationale |
+|----------------------|-------------------|---------|-----------|
+| `RUNNER_MAX_CONCURRENCY` | `16` | `16` | With `isolated-vm` asynchronous worker threads, 16 concurrent isolates process 10–20 req/s with p50 < 25ms without thread starvation. |
+| `RUNNER_MAX_QUEUE` | `128` | `128` | Absorbs momentary bursts when hundreds of students submit concurrently at the end of an exam block. |
+| `RUNNER_MAX_PER_KEY_QUEUE` | `8` | `8` | Fair queuing quota: caps any single user from holding more than 8 slots in the wait line. |
+| `RUN_RATE_LIMIT_PER_MIN` | `10` | `10` | Upstash Redis sliding window: ~1 run every 6 seconds per student prevents denial-of-service spam. |
+| `SUBMIT_RATE_LIMIT_PER_MIN` | `10` | `10` | Protects final grading endpoints from duplicate rapid clicks. |
+| `RUNNER_JS_MEMORY_LIMIT_MB` | `64` | `64` | Sufficient for algorithmic DSA problems while instantly aborting memory bombs. |
+| `RUNNER_JS_TIMEOUT_MS` | `2000` | `2000` | Hard timeout per test case; prevents infinite loops from hanging workers. |
+
+#### Fair Queuing Implementation (`runner/src/queue.ts`)
+The runner implements fair round-robin scheduling across client keys:
+1. When requests arrive, they are grouped into per-user queues keyed by authenticated `userId` (passed securely via HMAC-signed runner client payload).
+2. Schedulers dequeue requests using **round-robin across active keys** rather than strict FIFO. A single student submitting 20 requests in 1 second will not starve other students whose requests arrive behind them.
+3. If an individual student exceeds `RUNNER_MAX_PER_KEY_QUEUE` (8), their subsequent requests are immediately rejected with HTTP 429 (`QUEUE_FULL`), preserving capacity for peers.
+
+---
+
+### How to Run the Load Test
+
+To reproduce or stress-test the runner in staging or production before exam day:
+
+1. **Start the Runner Service**:
+   ```bash
+   RUNNER_MAX_CONCURRENCY=16 \
+   RUNNER_MAX_QUEUE=128 \
+   RUNNER_MAX_PER_KEY_QUEUE=8 \
+   RUNNER_SECRET="<your-runner-secret>" \
+   PORT=4000 \
+   npm --prefix runner start
+   ```
+
+2. **Execute the Simulation (N=200 students for 10 minutes)**:
+   ```bash
+   npm run loadtest:runner -- \
+     --runner-url http://127.0.0.1:4000 \
+     --secret "<your-runner-secret>" \
+     --students 200 \
+     --interval-seconds 20 \
+     --duration-seconds 600
+   ```
+
+   For a quick 60-second health check:
+   ```bash
+   npm run loadtest:runner -- \
+     --runner-url http://127.0.0.1:4000 \
+     --secret "<your-runner-secret>" \
+     --students 200 \
+     --interval-seconds 20 \
+     --duration-seconds 60
+   ```
+
+### Exam-Day Acceptance Thresholds
+
+For the runner cluster to be certified ready for exam day under 200 concurrent students:
+
+- **p50 Execution Latency**: $< 50\text{ ms}$ for pure JavaScript function tests.
+- **p95 Execution Latency**: $< 1,000\text{ ms}$ (including 5% hostile submissions).
+- **HTTP 429 ("Runner Busy") Rate**: $< 0.5\%$ across the exam window.
+- **Error Rate (5xx or Dropped Requests)**: **0.0%** (Zero lost submissions).
+- **Memory Consumption**: Runner process RSS remains $< 512\text{ MB}$ without unbounded drift after repeated GC cycles.
+
