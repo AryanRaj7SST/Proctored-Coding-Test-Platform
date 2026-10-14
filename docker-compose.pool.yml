@@ -1,0 +1,86 @@
+# Multi-runner pool compose stack.
+# Provides isolated runner services (runner1, runner2, runner3) communicating on an internal Docker network.
+# Ports are not published to the host to keep runners unexposed.
+#
+# RUNNER_SECRET is required with no default fallback; compose fails if unset:
+#   RUNNER_SECRET=your-secret docker compose -f docker-compose.pool.yml config
+
+x-runner-base: &runner-base
+  build:
+    context: .
+    dockerfile: runner/Dockerfile
+  image: proctored-runner:latest
+  restart: unless-stopped
+  environment:
+    PORT: '4000'
+    RUNNER_SECRET: ${RUNNER_SECRET:?set RUNNER_SECRET}
+    RUNNER_ISOLATION: 'container'
+    RUNNER_MAX_CONCURRENCY: '4'
+    RUNNER_MAX_QUEUE: '64'
+    RUN_TIMEOUT_MS: '20000'
+    TEST_TIMEOUT_MS: '6000'
+    LOG_LEVEL: 'info'
+    RUNNER_CHROMIUM_NO_SANDBOX: ${RUNNER_CHROMIUM_NO_SANDBOX:-false}
+  expose:
+    - '4000'
+  mem_limit: 2g
+  cpus: 2.0
+  pids_limit: 512
+  security_opt:
+    - no-new-privileges:true
+  read_only: true
+  tmpfs:
+    - /tmp:rw,nosuid,size=256m
+    - /dev/shm:rw,nosuid,size=512m
+    - /home/pwuser:rw,nosuid,size=128m
+  healthcheck:
+    test: ['CMD-SHELL', "node -e \"fetch('http://127.0.0.1:4000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+    interval: 20s
+    timeout: 5s
+    retries: 3
+    start_period: 30s
+
+services:
+  # The Next.js app running on the same private Docker network
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: proctored-app:latest
+    container_name: coding-platform-app
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      # Matching RUNNER_URLS using docker service names on the internal network:
+      RUNNER_URLS: 'http://runner1:4000,http://runner2:4000,http://runner3:4000'
+      RUNNER_SECRET: ${RUNNER_SECRET:?set RUNNER_SECRET}
+      DATABASE_URL: ${DATABASE_URL:-postgresql://postgres:postgres@db:5432/coding_platform}
+    depends_on:
+      runner1:
+        condition: service_healthy
+      runner2:
+        condition: service_healthy
+      runner3:
+        condition: service_healthy
+
+  runner1:
+    <<: *runner-base
+    container_name: coding-platform-runner-1
+
+  runner2:
+    <<: *runner-base
+    container_name: coding-platform-runner-2
+
+  runner3:
+    <<: *runner-base
+    container_name: coding-platform-runner-3
+
+  # How to add runner4..N:
+  # 1. Duplicate a runner block below and increment the number:
+  #      runner4:
+  #        <<: *runner-base
+  #        container_name: coding-platform-runner-4
+  # 2. Add the new service URL to the app's RUNNER_URLS environment variable:
+  #      RUNNER_URLS: 'http://runner1:4000,http://runner2:4000,http://runner3:4000,http://runner4:4000'
+  # 3. Add runner4 to the app's depends_on list with condition: service_healthy.
