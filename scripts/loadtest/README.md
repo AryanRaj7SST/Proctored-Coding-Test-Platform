@@ -19,12 +19,26 @@ For each student:
 
 ---
 
-## Safety Guard (Production Refusal)
+## Safety Guard (Production Refusal & Opt-In)
 
 To prevent accidental load testing on production infrastructure:
 
 - `--base-url` is **mandatory**; it never defaults to any URL.
-- The runner hard-refuses targets matching `proctored-coding-test-platform.vercel.app` or any host specified in `PRODUCTION_URL`.
+- The runner hard-refuses targets matching `proctored-coding-test-platform.vercel.app` or any host specified in `PRODUCTION_URL` unless `--allow-production` is explicitly passed.
+- With `--allow-production`, the harness prints the target hostname, the `DATABASE_URL` host (host only, never credentials), student count, and duration, and **requires typing the exact hostname to continue**. The `--yes` flag is completely ignored on production.
+- Every student account and associated record uses the prefix `loadtest-<runId>-`.
+- The target exam title **MUST** start with `"LOADTEST "`. The harness refuses to run against any exam without this prefix.
+
+---
+
+## Running against production
+
+When executing a load test against the production deployment, strictly adhere to these rules:
+
+1. **No live exams**: Never run load tests against live or ongoing exams. The target exam ID must belong to an assessment with the title prefix `"LOADTEST "` (e.g. `"LOADTEST Final Capacity Run"`). Any other exam title is automatically refused by the runner.
+2. **Tell mentees first**: Inform mentees and team members in advance before running tests against production to avoid false alarms regarding system load, leaderboards, or notifications.
+3. **Secrets via env only**: Supply sensitive credentials such as `DATABASE_URL` and `AUTH_SECRET` through environment variables only (`DATABASE_URL=... AUTH_SECRET=...`). Never pass secrets as command-line flags or commit them to source control.
+4. **Run cleanup dry-run first**: Following a load-test run, always run the cleanup script in dry-run mode first (`npx tsx scripts/loadtest/cleanup.ts --run-id <runId>`) to verify the exact table row counts before executing the transaction with `--execute`.
 
 ---
 
@@ -106,12 +120,29 @@ npx tsx scripts/loadtest/run.ts \
 | Flag                     | Default      | Description                                                    |
 | :----------------------- | :----------- | :------------------------------------------------------------- |
 | `--base-url <url>`       | _(Required)_ | Target application base URL.                                   |
-| `--exam-id <id>`         | _(Required)_ | ID of the test/exam to run against.                            |
+| `--exam-id <id>`         | _(Required)_ | ID of the test/exam to run against (title must start with `LOADTEST `). |
 | `--students <N>`         | `250`        | Number of concurrent students to simulate.                     |
+| `--max-students <M>`     | `250`        | Safety limit for max concurrent students.                      |
 | `--ramp-seconds <S>`     | `30`         | Duration over which students start their tests.                |
 | `--duration-seconds <D>` | `45`         | Duration of each student's exam session before submission.     |
 | `--simultaneous-finish`  | `false`      | Synchronizes all students to submit at the exact same instant. |
 | `--skip-db-verify`       | `false`      | Skips database code match assertion.                           |
+| `--allow-production`     | `false`      | Explicit opt-in required to target production.                 |
+| `--run-id <id>`          | _(auto)_     | Unique run identifier for record tagging and scoped cleanup.   |
+
+---
+
+## Cleanup Script
+
+All records created by a test run are tagged with `loadtest-<runId>-`. To view or remove test artifacts:
+
+```bash
+# Dry run: view row counts across tables without deleting anything
+npx tsx scripts/loadtest/cleanup.ts --run-id <runId>
+
+# Execute: delete all records linked to this runId in an atomic transaction
+npx tsx scripts/loadtest/cleanup.ts --run-id <runId> --execute
+```
 
 ---
 

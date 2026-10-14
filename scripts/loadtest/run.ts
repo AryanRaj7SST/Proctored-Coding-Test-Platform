@@ -17,10 +17,46 @@
  */
 
 import { prisma } from '../../src/lib/prisma';
+import readline from 'node:readline';
 import { MetricsCollector } from './metrics';
 import { provisionStudents, resolveAuthSecret } from './session';
 
-const KNOWN_PRODUCTION_HOSTS = new Set(['proctored-coding-test-platform.vercel.app']);
+export const KNOWN_PRODUCTION_HOSTS = new Set(['proctored-coding-test-platform.vercel.app']);
+
+export function isProductionHost(urlStr: string): boolean {
+  try {
+    const parsed = new URL(urlStr);
+    const host = parsed.hostname.toLowerCase();
+    if (KNOWN_PRODUCTION_HOSTS.has(host)) return true;
+    if (process.env.PRODUCTION_URL) {
+      try {
+        const prod = new URL(process.env.PRODUCTION_URL);
+        if (prod.hostname.toLowerCase() === host) return true;
+      } catch {
+        // ignore
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
+export function validateExamForLoadtest(exam: { id: string; title: string } | null): {
+  ok: boolean;
+  reason?: string;
+} {
+  if (!exam) {
+    return { ok: false, reason: 'Exam not found in database' };
+  }
+  if (!exam.title.startsWith('LOADTEST ')) {
+    return {
+      ok: false,
+      reason: `Exam title "${exam.title}" does not start with "LOADTEST ". The target exam title MUST start with "LOADTEST " to prevent accidentally targeting real/live exams.`,
+    };
+  }
+  return { ok: true };
+}
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -33,20 +69,28 @@ function parseArgs() {
   const baseUrl = getArg('--base-url');
   const examId = getArg('--exam-id');
   const studentsCount = parseInt(getArg('--students') ?? '250', 10);
+  const maxStudents = parseInt(getArg('--max-students') ?? '250', 10);
   const rampSeconds = parseInt(getArg('--ramp-seconds') ?? '30', 10);
   const durationSeconds = parseInt(getArg('--duration-seconds') ?? '45', 10);
   const simultaneousFinish = hasFlag('--simultaneous-finish');
   const skipDbVerify = hasFlag('--skip-db-verify');
+  const allowProduction = hasFlag('--allow-production');
+  const runId = getArg('--run-id') ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+  const yes = hasFlag('--yes') || hasFlag('-y');
   const help = hasFlag('--help') || hasFlag('-h');
 
   return {
     baseUrl,
     examId,
     studentsCount,
+    maxStudents,
     rampSeconds,
     durationSeconds,
     simultaneousFinish,
     skipDbVerify,
+    allowProduction,
+    runId,
+    yes,
     help,
   };
 }
@@ -57,15 +101,18 @@ Usage: npx tsx scripts/loadtest/run.ts --base-url <URL> --exam-id <ID> [options]
 
 Required:
   --base-url <url>          Target application URL (e.g. http://localhost:3000 or https://preview-xyz.vercel.app)
-                            HARD GUARD: Refuses to run against the production domain!
-  --exam-id <id>            Target exam ID to run the load test against
+                            HARD GUARD: Refuses to run against production unless --allow-production is set!
+  --exam-id <id>            Target exam ID (title MUST start with "LOADTEST ")
 
 Options:
   --students <N>            Number of simulated students (default: 250)
+  --max-students <M>        Maximum permitted students limit (default: 250)
   --ramp-seconds <S>        Duration in seconds over which students are ramped up (default: 30)
   --duration-seconds <D>    Work duration in seconds for each student (default: 45)
   --simultaneous-finish     Barrier mode: all students submit their final code at the exact same instant
   --skip-db-verify          Skip verifying database attempt code match (only if DB is unreachable)
+  --allow-production        Explicit opt-in to execute against production (requires hostname typing)
+  --run-id <id>             Custom identifier for test user prefixing (default: auto-generated)
   --help, -h                Show this help message
 `);
 }
@@ -101,7 +148,15 @@ async function main() {
     process.exit(1);
   }
 
-  // Hard safety guard: refuse production URL
+  // Hard safety guard: check max students limit
+  if (args.studentsCount > args.maxStudents) {
+    console.error(
+      `\x1b[31m[ERROR] --students (${args.studentsCount}) exceeds --max-students (${args.maxStudents}). Pass a higher --max-students if intentionally increasing capacity.\x1b[0m`,
+    );
+    process.exit(1);
+  }
+
+  // Hard safety guard: refuse production URL without explicit confirmation
   let parsedUrl: URL;
   try {
     parsedUrl = new URL(args.baseUrl);
@@ -110,32 +165,67 @@ async function main() {
     process.exit(1);
   }
 
-  if (KNOWN_PRODUCTION_HOSTS.has(parsedUrl.hostname.toLowerCase())) {
-    console.error('\x1b[31m[HARD GUARD REFUSAL] Refusing to run load test against production host:\x1b[0m');
-    console.error(`  Target: ${args.baseUrl}`);
-    console.error(
-      '  Load tests must be executed against local instances or isolated Vercel preview deployments.',
-    );
-    process.exit(1);
-  }
-
-  if (process.env.PRODUCTION_URL) {
-    try {
-      const prodUrl = new URL(process.env.PRODUCTION_URL);
-      if (prodUrl.hostname.toLowerCase() === parsedUrl.hostname.toLowerCase()) {
-        console.error(
-          '\x1b[31m[HARD GUARD REFUSAL] Refusing to run load test against PRODUCTION_URL domain.\x1b[0m',
-        );
-        process.exit(1);
-      }
-    } catch {
-      /* ignore invalid PRODUCTION_URL env */
+  if (isProductionHost(args.baseUrl)) {
+    if (!args.allowProduction) {
+      console.error('\x1b[31m[HARD GUARD REFUSAL] Refusing to run load test against production host:\x1b[0m');
+      console.error(`  Target: ${args.baseUrl}`);
+      console.error(
+        '  Load tests must be executed against local instances or isolated Vercel preview deployments.\n' +
+          '  To explicitly opt in and run against production, pass --allow-production.',
+      );
+      process.exit(1);
     }
+
+    // Extract DATABASE_URL host (host only, never credentials)
+    const dbUrl = process.env.DATABASE_URL || '';
+    let dbHost = 'unknown';
+    try {
+      dbHost = new URL(dbUrl).host;
+    } catch {
+      // ignore
+    }
+
+    console.log('\x1b[33m========================================================================================');
+    console.log('⚠️  PRODUCTION LOAD TEST CONFIRMATION REQUIRED');
+    console.log('========================================================================================\x1b[0m');
+    console.log(`  Target Host:        ${parsedUrl.host}`);
+    console.log(`  Database Host:      ${dbHost}`);
+    console.log(`  Simulated Students: ${args.studentsCount}`);
+    console.log(`  Duration:           ${args.durationSeconds}s`);
+    console.log(
+      '\x1b[33m  WARNING: Running against production can impact live students. Confirm you intend to proceed.\x1b[0m',
+    );
+
+    // Prompt user to type the exact target hostname to continue (ignores --yes)
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    const answer = await new Promise<string>((resolve) => {
+      rl.question(`\nType the exact target hostname ("${parsedUrl.host}") to continue: `, (val) => {
+        rl.close();
+        resolve(val.trim());
+      });
+    });
+
+    if (answer !== parsedUrl.host) {
+      console.error('\x1b[31m[ABORTED] Hostname did not match. Aborting production load test.\x1b[0m');
+      process.exit(1);
+    }
+    console.log('\x1b[32m[CONFIRMED] Hostname match verified. Proceeding...\x1b[0m\n');
   }
 
   if (!args.examId) {
     console.error('\x1b[31m[ERROR] --exam-id is required.\x1b[0m');
     printUsage();
+    process.exit(1);
+  }
+
+  // Safety guard: Validate that target exam title starts with "LOADTEST "
+  const exam = await prisma.exam.findUnique({
+    where: { id: args.examId },
+    select: { id: true, title: true },
+  });
+  const examCheck = validateExamForLoadtest(exam);
+  if (!examCheck.ok) {
+    console.error(`\x1b[31m[REFUSAL] ${examCheck.reason}\x1b[0m`);
     process.exit(1);
   }
 
@@ -146,8 +236,9 @@ async function main() {
   console.log('========================================================================================');
   console.log('PROCTORED CODING PLATFORM LOAD TEST');
   console.log('========================================================================================');
+  console.log(`Run ID:               ${args.runId}`);
   console.log(`Target URL:           ${normalizedBaseUrl}`);
-  console.log(`Target Exam:          ${args.examId}`);
+  console.log(`Target Exam:          ${args.examId} ("${exam!.title}")`);
   console.log(`Simulated Students:   ${args.studentsCount}`);
   console.log(`Ramp-up Duration:     ${args.rampSeconds}s`);
   console.log(`Work Duration:        ${args.durationSeconds}s`);
@@ -156,12 +247,13 @@ async function main() {
   );
   console.log('========================================================================================\n');
 
-  // Provision accounts and generate session tokens
+  // Provision accounts and generate session tokens with loadtest-<runId>- prefix
   const students = await provisionStudents({
     count: args.studentsCount,
     examId: args.examId,
     baseUrl: normalizedBaseUrl,
     authSecret,
+    runId: args.runId,
   });
 
   // Track the final autosaved code per attempt for data-integrity verification
@@ -435,4 +527,14 @@ async function verifyZeroLostAnswers(expectedCodeMap: Map<string, SavedCode>) {
   console.log('========================================================================================\n');
 }
 
-void main();
+// Execute when invoked directly
+if (
+  process.argv[1] &&
+  process.argv[1].replace(/\\/g, '/').endsWith('scripts/loadtest/run.ts') &&
+  !process.env.VITEST
+) {
+  main().catch((err) => {
+    console.error('Fatal load test error:', err instanceof Error ? err.message : String(err));
+    process.exit(1);
+  });
+}
