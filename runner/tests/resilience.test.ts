@@ -134,3 +134,54 @@ test('resilience: shared Chromium disconnect recovers automatically for next run
     await closeBrowser();
   }
 });
+
+test('resilience: whole-run deadline expiry returns TIMEOUT status with tests marked not passed', async (t) => {
+  if (!hasBrowser) {
+    t.skip('Playwright chromium executable is not installed');
+    return;
+  }
+
+  try {
+    const studentJs = `
+      function wait(ms) {
+        const start = Date.now();
+        while (Date.now() - start < ms) {}
+      }
+    `;
+
+    const result = await executeRun(
+      {
+        runId: 'resilience-run-timeout',
+        html: '<div id="app"></div>',
+        css: '',
+        js: studentJs,
+        spec: {
+          version: 1,
+          viewport: { width: 800, height: 600 },
+          tests: [
+            {
+              id: 't1',
+              name: 'slow test 1',
+              timeoutMs: 1000,
+              assertions: [{ type: 'js', expression: 'wait(400); true', equals: true }],
+            },
+            {
+              id: 't2',
+              name: 'slow test 2',
+              timeoutMs: 1000,
+              assertions: [{ type: 'js', expression: 'wait(400); true', equals: true }],
+            },
+          ],
+        },
+      },
+      500,
+    );
+
+    assert.equal(result.status, 'TIMEOUT');
+    for (const r of result.results) {
+      assert.equal(r.passed, false, `Test result ${r.id} should be marked as not passed on TIMEOUT`);
+    }
+  } finally {
+    await closeBrowser();
+  }
+});

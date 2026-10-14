@@ -81,8 +81,8 @@ describe('Test-case leakage regression tests', () => {
     const projected = toStudentOutcome(outcome);
     const result = projected.results[0];
 
-    expect(result.message).toBeUndefined();
-    expect(result.expected).toBeUndefined();
-    expect(result.actual).toBeUndefined();
+    expect(result?.message).toBeUndefined();
+    expect(result?.expected).toBeUndefined();
+    expect(result?.actual).toBeUndefined();
   });
 });

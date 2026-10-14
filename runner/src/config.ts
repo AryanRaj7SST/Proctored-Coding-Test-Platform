@@ -49,6 +49,7 @@ export const config = {
   /** Requests older than this are rejected as replays. */
   signatureWindowMs: int('SIGNATURE_WINDOW_MS', 120_000),
   chromiumNoSandbox: bool('RUNNER_CHROMIUM_NO_SANDBOX', false),
+  chromiumMaxOldSpaceSizeMb: int('RUNNER_CHROMIUM_MAX_OLD_SPACE_SIZE_MB', 128),
   docker: {
     image: str('DOCKER_IMAGE', 'proctored-runner-sandbox:latest'),
     memory: str('DOCKER_MEMORY', '256m'),

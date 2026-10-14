@@ -28,23 +28,45 @@ const SANDBOX_URL = 'http://sandbox.localtest/index.html';
 let browserPromise: Promise<Browser> | null = null;
 
 export async function getBrowser(): Promise<Browser> {
+  if (browserPromise) {
+    const existing = await browserPromise.catch(() => null);
+    if (!existing || !existing.isConnected()) {
+      browserPromise = null;
+    }
+  }
+
   if (!browserPromise) {
-    browserPromise = chromium.launch({
-      headless: true,
-      args: [
-        // Defence in depth: even if route interception were bypassed, DNS for
-        // every host resolves to an address that cannot be reached.
-        '--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE localhost',
-        '--disable-background-networking',
-        '--disable-sync',
-        '--disable-default-apps',
-        '--disable-extensions',
-        '--no-first-run',
-        '--no-default-browser-check',
-        '--disable-dev-shm-usage',
-        ...(config.chromiumNoSandbox ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
-      ],
-    });
+    browserPromise = chromium
+      .launch({
+        headless: true,
+        args: [
+          // Defence in depth: even if route interception were bypassed, DNS for
+          // every host resolves to an address that cannot be reached.
+          '--host-resolver-rules=MAP * 0.0.0.0, EXCLUDE localhost',
+          '--disable-background-networking',
+          '--disable-sync',
+          '--disable-default-apps',
+          '--disable-extensions',
+          '--no-first-run',
+          '--no-default-browser-check',
+          '--disable-dev-shm-usage',
+          `--js-flags=--max-old-space-size=${config.chromiumMaxOldSpaceSizeMb}`,
+          ...(config.chromiumNoSandbox ? ['--no-sandbox', '--disable-setuid-sandbox'] : []),
+        ],
+      })
+      .then((browser) => {
+        browser.on('disconnected', () => {
+          log.warn('browser.disconnected', {
+            message: 'Shared Chromium instance disconnected; will relaunch on next run.',
+          });
+          browserPromise = null;
+        });
+        return browser;
+      })
+      .catch((err) => {
+        browserPromise = null;
+        throw err;
+      });
   }
   return browserPromise;
 }
@@ -177,8 +199,11 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, label: string): P
  * test so tests never leak state into each other, and hard timeouts at both
  * the per-test and whole-run level.
  */
-export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
+export async function executeRun(input: RunInput, runBudgetMs?: number): Promise<RunnerRunResult> {
   const started = Date.now();
+  const budget = runBudgetMs ?? (config.runTimeoutMs + input.spec.tests.length * config.testTimeoutMs);
+  const deadline = started + budget;
+
   const browser = await getBrowser();
   const document = buildDocument(input.html, input.css, input.js);
   const baseViewport = input.spec.viewport ?? DEFAULT_VIEWPORT;
@@ -186,6 +211,8 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
   let context: BrowserContext | null = null;
   const consoleLogs: string[] = [];
   const results: RunnerTestResult[] = [];
+  let isRunTimedOut = false;
+  let runTimer: NodeJS.Timeout | null = null;
 
   try {
     context = await browser.newContext({
@@ -199,6 +226,12 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
     });
     context.setDefaultTimeout(config.testTimeoutMs);
 
+    runTimer = setTimeout(() => {
+      isRunTimedOut = true;
+      log.warn('run.timeout', { runId: input.runId, budgetMs: budget });
+      void context?.close().catch(() => undefined);
+    }, budget);
+
     // Serve only the student document; abort every other request. Combined with
     // offline:true and the host-resolver rules this leaves the page with no
     // network at all.
@@ -211,29 +244,44 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
       await route.abort('blockedbyclient');
     });
 
-    const page = await context.newPage();
     const consoleErrors: string[] = [];
-    page.on('console', (msg) => {
-      if (consoleLogs.length < 100) consoleLogs.push(`[${msg.type()}] ${msg.text().slice(0, 300)}`);
-      // Resources the sandbox blocked (e.g. a photo URL) are not the student's errors.
-      if (msg.type() === 'error' && consoleErrors.length < 20 && !isSandboxNetworkNoise(msg.text())) {
-        consoleErrors.push(msg.text().slice(0, 300));
-      }
-    });
-    page.on('pageerror', (err) => {
-      const text = `[pageerror] ${String(err.message).slice(0, 300)}`;
-      if (consoleLogs.length < 100) consoleLogs.push(text);
-      if (consoleErrors.length < 20) consoleErrors.push(String(err.message).slice(0, 300));
-    });
-    // Student code must never be able to block execution with dialogs.
-    page.on('dialog', (dialog) => void dialog.dismiss().catch(() => undefined));
+
+    async function createFreshPage(): Promise<Page> {
+      const p = await context!.newPage();
+      p.on('console', (msg) => {
+        if (consoleLogs.length < 100) consoleLogs.push(`[${msg.type()}] ${msg.text().slice(0, 300)}`);
+        // Resources the sandbox blocked (e.g. a photo URL) are not the student's errors.
+        if (msg.type() === 'error' && consoleErrors.length < 20 && !isSandboxNetworkNoise(msg.text())) {
+          consoleErrors.push(msg.text().slice(0, 300));
+        }
+      });
+      p.on('pageerror', (err) => {
+        const text = `[pageerror] ${String(err.message).slice(0, 300)}`;
+        if (consoleLogs.length < 100) consoleLogs.push(text);
+        if (consoleErrors.length < 20) consoleErrors.push(String(err.message).slice(0, 300));
+      });
+      // Student code must never be able to block execution with dialogs.
+      p.on('dialog', (dialog) => void dialog.dismiss().catch(() => undefined));
+      return p;
+    }
+
+    let page = await createFreshPage();
 
     for (const test of input.spec.tests) {
+      if (isRunTimedOut || Date.now() >= deadline) {
+        isRunTimedOut = true;
+        break;
+      }
+
       const testStarted = Date.now();
       consoleErrors.length = 0;
       let passed = false;
       let message: string | undefined;
       let failedCheck: { expected: string; actual: string } | undefined;
+      let needsFreshPage = false;
+
+      const remainingRunTime = Math.max(100, deadline - Date.now());
+      const testBudget = Math.min(test.timeoutMs ?? config.testTimeoutMs, config.testTimeoutMs, remainingRunTime);
 
       try {
         await withTimeout(
@@ -256,16 +304,26 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
             }
             passed = true;
           })(),
-          Math.min(test.timeoutMs ?? config.testTimeoutMs, config.testTimeoutMs),
+          testBudget,
           'Test',
         );
       } catch (err) {
         passed = false;
+        needsFreshPage = true;
         const raw = safeError(err, 200);
         message = /timed out/i.test(raw)
           ? (test.failureMessage ?? 'The page did not reach the expected state in time.')
           : (test.failureMessage ?? 'The expected interaction could not be completed on your page.');
         log.debug('test.error', { runId: input.runId, testId: test.id, detail: raw });
+      } finally {
+        if (needsFreshPage && !isRunTimedOut && Date.now() < deadline) {
+          await page.close().catch(() => undefined);
+          try {
+            page = await createFreshPage();
+          } catch (pageErr) {
+            log.warn('page.recreate_failed', { runId: input.runId, error: safeError(pageErr) });
+          }
+        }
       }
 
       results.push({
@@ -275,6 +333,27 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
         ...(passed ? {} : { message: message ?? 'This test did not pass.', ...failedCheck }),
         durationMs: Date.now() - testStarted,
       });
+
+      if (isRunTimedOut || Date.now() >= deadline) {
+        isRunTimedOut = true;
+        break;
+      }
+    }
+
+    if (isRunTimedOut || Date.now() >= deadline) {
+      await context?.close().catch(() => undefined);
+      return {
+        runId: input.runId,
+        status: 'TIMEOUT',
+        results: results.map((r) => ({
+          ...r,
+          passed: false,
+          message: r.message ?? 'Execution timed out before run could complete.',
+        })),
+        durationMs: Date.now() - started,
+        consoleLogs,
+        error: 'Execution exceeded the time limit.',
+      };
     }
 
     return {
@@ -285,6 +364,21 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
       consoleLogs,
     };
   } catch (err) {
+    if (isRunTimedOut || Date.now() >= deadline) {
+      await context?.close().catch(() => undefined);
+      return {
+        runId: input.runId,
+        status: 'TIMEOUT',
+        results: results.map((r) => ({
+          ...r,
+          passed: false,
+          message: r.message ?? 'Execution timed out before run could complete.',
+        })),
+        durationMs: Date.now() - started,
+        consoleLogs,
+        error: 'Execution exceeded the time limit.',
+      };
+    }
     log.error('run.failed', { runId: input.runId, error: safeError(err) });
     return {
       runId: input.runId,
@@ -295,6 +389,7 @@ export async function executeRun(input: RunInput): Promise<RunnerRunResult> {
       error: safeError(err),
     };
   } finally {
+    if (runTimer) clearTimeout(runTimer);
     await context?.close().catch(() => undefined);
   }
 }
