@@ -2,9 +2,9 @@ import { Suspense, cache } from 'react';
 import Link from 'next/link';
 import { requireAdmin } from '@/lib/authz';
 import { dashboardStats, recentActivity, recentSubmissions } from '@/server/services/dashboard';
-import { runnerHealth } from '@/lib/runner-client';
+import { runnerPoolHealth, type RunnerPoolHealthResult } from '@/lib/runner-client';
 import { Badge, Card, CardBody, CardHeader, EmptyState, StatCard } from '@/components/ui';
-import { displayMarks, formatDateTime } from '@/lib/utils';
+import { displayMarks, formatDateTime, cn } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,28 +29,81 @@ function Section({ title, href, children }: { title: string; href: string; child
  * runner (up to 2 x 4 s of timeouts) must never hold up the whole dashboard.
  * `cache()` makes the badge and the alert share a single health check.
  */
-const getRunnerHealth = cache((): Promise<{ ok: boolean; detail?: string }> =>
-  runnerHealth().catch(() => ({ ok: false, detail: 'unreachable' })),
+const getRunnerPoolHealth = cache((): Promise<RunnerPoolHealthResult> =>
+  runnerPoolHealth().catch(() => ({ status: 'down' as const, runners: [] })),
 );
 
 async function RunnerBadge() {
-  const runner = await getRunnerHealth();
-  return <Badge tone={runner.ok ? 'ok' : 'bad'}>Runner {runner.ok ? 'online' : 'offline'}</Badge>;
+  const pool = await getRunnerPoolHealth();
+  const tone = pool.status === 'ok' ? 'ok' : pool.status === 'degraded' ? 'warn' : 'bad';
+  const label =
+    pool.status === 'ok'
+      ? `Runner online${pool.runners.length > 1 ? ` (${pool.runners.length})` : ''}`
+      : pool.status === 'degraded'
+        ? `Runner degraded (${pool.runners.filter((r) => r.ok).length}/${pool.runners.length})`
+        : 'Runner offline';
+
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Badge tone={tone}>{label}</Badge>
+      {pool.runners.length > 0 ? (
+        <div className="flex flex-wrap justify-end gap-1 text-[11px] text-slate-500">
+          {pool.runners.map((r) => (
+            <span
+              key={r.host}
+              className={cn(
+                'inline-flex items-center gap-1 rounded px-1.5 py-0.5 font-mono text-[10px]',
+                r.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700',
+              )}
+              title={r.detail ?? (r.ok ? 'healthy' : 'down')}
+            >
+              <span className={cn('h-1.5 w-1.5 rounded-full', r.ok ? 'bg-emerald-500' : 'bg-rose-500')} />
+              {r.host}
+              {r.active !== undefined ? ` (${r.active})` : ''}
+            </span>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 }
 
 async function RunnerAlert() {
-  const runner = await getRunnerHealth();
-  if (runner.ok) return null;
+  const pool = await getRunnerPoolHealth();
+  if (pool.status === 'ok') return null;
+  const isDown = pool.status === 'down';
+  const upCount = pool.runners.filter((r) => r.ok).length;
+
   return (
     <div
-      className="shadow-xs rounded-md border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"
+      className={cn(
+        'shadow-xs rounded-md border p-3 text-xs',
+        isDown ? 'border-rose-200 bg-rose-50 text-rose-800' : 'border-amber-200 bg-amber-50 text-amber-800',
+      )}
       role="alert"
     >
-      The test runner is not usable
-      {runner.detail ? <>: {runner.detail}</> : '.'} Students can still write and save code, but running
-      tests, grading and question validation will wait until it is fixed (submissions show &ldquo;grading
-      pending&rdquo;, never 0). Check <code>RUNNER_URL</code>, <code>RUNNER_SECRET</code> and the runner
-      service.
+      {isDown ? (
+        <>
+          The test runner is not usable. Students can still write and save code, but running
+          tests, grading and question validation will wait until it is fixed (submissions show &ldquo;grading
+          pending&rdquo;, never 0). Check <code>RUNNER_URLS</code>, <code>RUNNER_URL</code>,{' '}
+          <code>RUNNER_SECRET</code> and the runner service.
+        </>
+      ) : (
+        <>
+          Runner pool is degraded ({upCount}/{pool.runners.length} runners up). Some runners are unreachable or
+          reporting errors. Submissions are automatically routed to healthy runners.
+        </>
+      )}
+      {pool.runners.length > 0 ? (
+        <div className="mt-2 flex flex-wrap gap-2 font-mono text-[11px]">
+          {pool.runners.map((r) => (
+            <span key={r.host} className={r.ok ? 'text-emerald-700' : 'font-semibold text-rose-700'}>
+              {r.host}: {r.ok ? 'online' : r.detail ?? 'down'}
+            </span>
+          ))}
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { requireAdmin } from '@/lib/authz';
-import { env } from '@/lib/env';
-import { runnerHealth } from '@/lib/runner-client';
+import { env, getRunnerUrls } from '@/lib/env';
+import { runnerPoolHealth } from '@/lib/runner-client';
 import { prisma } from '@/lib/prisma';
 import { Badge, Card, CardBody, CardHeader, Table, Td, Th } from '@/components/ui';
 import { formatDateTime } from '@/lib/utils';
@@ -15,8 +15,8 @@ export const dynamic = 'force-dynamic';
 export default async function SettingsPage() {
   await requireAdmin();
 
-  const [runner, dbOk, audits] = await Promise.all([
-    runnerHealth().catch(() => ({ ok: false, detail: 'unreachable' })),
+  const [pool, dbOk, audits] = await Promise.all([
+    runnerPoolHealth().catch(() => ({ status: 'down' as const, runners: [] })),
     prisma.$queryRaw`SELECT 1`.then(() => true).catch(() => false),
     prisma.auditLog.findMany({
       orderBy: { createdAt: 'desc' },
@@ -25,8 +25,11 @@ export default async function SettingsPage() {
     }),
   ]);
 
+  const runnerUrls = getRunnerUrls();
+  const runnerValue = runnerUrls.length > 1 ? runnerUrls.join(', ') : env.runnerUrl || '(not set)';
+
   const rows: { label: string; value: string; note?: string }[] = [
-    { label: 'Runner URL', value: env.runnerUrl || '(not set)', note: 'Where graded executions are sent' },
+    { label: 'Runner URL', value: runnerValue, note: 'Where graded executions are sent' },
     { label: 'Runner timeout', value: `${env.runnerTimeoutMs} ms` },
     { label: 'Max code size', value: `${Math.round(env.maxCodeBytes / 1000)} KB per file` },
     { label: 'Run rate limit', value: `${env.runRateLimitPerMin}/min per student` },
@@ -48,6 +51,14 @@ export default async function SettingsPage() {
     { label: 'Environment', value: env.isProduction ? 'production' : 'development' },
   ];
 
+  const tone = pool.status === 'ok' ? 'ok' : pool.status === 'degraded' ? 'warn' : 'bad';
+  const label =
+    pool.status === 'ok'
+      ? `Runner online${pool.runners.length > 1 ? ` (${pool.runners.length})` : ''}`
+      : pool.status === 'degraded'
+        ? `Runner degraded (${pool.runners.filter((r) => r.ok).length}/${pool.runners.length})`
+        : 'Runner offline';
+
   return (
     <div className="space-y-4">
       <div>
@@ -58,11 +69,28 @@ export default async function SettingsPage() {
         </p>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge tone={dbOk ? 'ok' : 'bad'}>Database {dbOk ? 'connected' : 'unreachable'}</Badge>
-        <Badge tone={runner.ok ? 'ok' : 'bad'}>Runner {runner.ok ? 'online' : 'offline'}</Badge>
+        <Badge tone={tone}>{label}</Badge>
       </div>
-      {runner.detail ? <p className="text-xs text-slate-500">Runner: {runner.detail}</p> : null}
+      {pool.runners.length > 0 ? (
+        <div className="flex flex-wrap gap-2 text-xs">
+          {pool.runners.map((r) => (
+            <span
+              key={r.host}
+              className={`inline-flex items-center gap-1 rounded border px-2 py-0.5 font-mono text-xs ${
+                r.ok
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                  : 'border-rose-200 bg-rose-50 text-rose-700'
+              }`}
+              title={r.detail ?? (r.ok ? 'healthy' : 'down')}
+            >
+              <span className={`h-1.5 w-1.5 rounded-full ${r.ok ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+              {r.host}: {r.ok ? 'online' : r.detail ?? 'down'}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <Card>
         <CardHeader title="Configuration" />
