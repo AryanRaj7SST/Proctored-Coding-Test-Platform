@@ -239,6 +239,7 @@ model QuestionTest {
   expectedBehavior String?  @db.Text
   order            Int      @default(0)
   enabled          Boolean  @default(true) // disabled tests are neither run nor counted
+  hidden           Boolean  @default(false)
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 

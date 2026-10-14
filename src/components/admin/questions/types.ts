@@ -27,6 +27,7 @@ export interface AdminQuestionTest {
   expectedBehavior: string | null;
   order: number;
   enabled: boolean;
+  hidden?: boolean;
 }
 
 /** The full question the editor works on (GET / PATCH /api/questions/[id]). */
@@ -92,6 +93,7 @@ export interface DraftTest {
   expectedBehavior: string;
   testCode: string;
   enabled: boolean;
+  hidden?: boolean;
 }
 
 /** One test's verdict from "Validate Question". */

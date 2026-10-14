@@ -76,6 +76,7 @@ export const questionTestInput = z.object({
   expectedBehavior: z.string().max(2000).optional().nullable(),
   order: z.number().int().min(0).max(999).default(0),
   enabled: z.boolean().default(true),
+  hidden: z.boolean().default(false),
 });
 
 export const questionCreateInput = z.object({

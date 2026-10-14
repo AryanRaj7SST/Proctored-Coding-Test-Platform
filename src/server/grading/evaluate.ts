@@ -19,6 +19,7 @@ import type { TestVerdict } from './runner-result';
 export interface GradableTest {
   id: string;
   name: string;
+  hidden?: boolean;
 }
 
 export interface GradedTestCase {
@@ -32,6 +33,7 @@ export interface GradedTestCase {
   expected?: string;
   actual?: string;
   durationMs: number;
+  hidden?: boolean;
 }
 
 export interface QuestionGrade {
@@ -66,6 +68,7 @@ export function gradeQuestion(
       expected: verdict.expected,
       actual: verdict.actual,
       durationMs: verdict.durationMs,
+      hidden: t.hidden,
     };
   });
   const passedCount = results.filter((r) => r.passed).length;

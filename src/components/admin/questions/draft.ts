@@ -88,6 +88,7 @@ export function normalizeQuestion(input: object): AdminQuestion {
         expectedBehavior: strOrNull(t.expectedBehavior),
         order: numberOr(t.order, i),
         enabled: t.enabled !== false,
+        hidden: Boolean(t.hidden),
       }))
       .sort((a, b) => a.order - b.order),
   };
@@ -160,6 +161,7 @@ export function testsFromQuestion(q: AdminQuestion, previous?: DraftTest[]): Dra
       expectedBehavior: t.expectedBehavior ?? '',
       testCode: t.testCode,
       enabled: t.enabled,
+      hidden: Boolean(t.hidden),
     };
   });
 }
@@ -190,6 +192,7 @@ export function newTest(template: TestTemplate | null, existingNames: string[]):
     expectedBehavior: template?.expectedBehavior ?? '',
     testCode: JSON.stringify(template?.body ?? BLANK_BODY, null, 2),
     enabled: true,
+    hidden: false,
   };
 }
 
@@ -199,6 +202,7 @@ export function duplicateTest(test: DraftTest, existingNames: string[]): DraftTe
     _key: newKey(),
     id: undefined,
     name: uniqueName(`${test.name.trim() || 'Test case'} (copy)`, existingNames),
+    hidden: test.hidden ?? false,
   };
 }
 
@@ -215,6 +219,7 @@ export interface TestPayload {
   expectedBehavior: string | null;
   order: number;
   enabled: boolean;
+  hidden: boolean;
 }
 
 export function testsPayload(tests: DraftTest[]): TestPayload[] {
@@ -227,6 +232,7 @@ export function testsPayload(tests: DraftTest[]): TestPayload[] {
     expectedBehavior: t.expectedBehavior.trim() ? t.expectedBehavior : null,
     order: i,
     enabled: t.enabled,
+    hidden: Boolean(t.hidden),
   }));
 }
 

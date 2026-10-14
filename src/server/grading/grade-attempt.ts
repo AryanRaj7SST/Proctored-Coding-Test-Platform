@@ -4,7 +4,7 @@ import { AppError, conflict, notFound } from '@/lib/errors';
 import { logger, sanitizeError } from '@/lib/logger';
 import type { ExecutionOutcome, QuestionStatus } from '@/lib/outcome';
 import { recordAudit } from '@/server/services/audit';
-import { buildSnapshot } from '@/server/services/questions';
+import { buildSnapshot, type QuestionSnapshot } from '@/server/services/questions';
 import { executeTests } from './run-tests';
 import { fromMicro, marksToNumber, toMicro, type DecimalLike } from './marks';
 import { refreshSittingTotals } from './sitting-totals';
@@ -92,8 +92,9 @@ export async function gradeAttempt(
 
 /** A stored grading as an outcome, e.g. for a repeated submit. */
 export function storedOutcome(
-  attempt: Pick<Attempt, 'score' | 'maxScore' | 'resultStatus'>,
+  attempt: Pick<Attempt, 'score' | 'maxScore' | 'resultStatus'> & { snapshot?: Prisma.JsonValue | null },
   stored: {
+    testId?: string | null;
     testName: string;
     passed: boolean;
     points: DecimalLike;
@@ -102,8 +103,19 @@ export function storedOutcome(
     expected: string | null;
     actual: string | null;
     durationMs: number;
+    hidden?: boolean;
   }[],
 ): ExecutionOutcome {
+  const snapshot = attempt.snapshot ? (attempt.snapshot as unknown as QuestionSnapshot) : null;
+  const hiddenById = new Map<string, boolean>();
+  const hiddenByName = new Map<string, boolean>();
+  if (snapshot?.tests) {
+    for (const t of snapshot.tests) {
+      if (t.id) hiddenById.set(t.id, Boolean(t.hidden));
+      if (t.name) hiddenByName.set(t.name, Boolean(t.hidden));
+    }
+  }
+
   const score = marksToNumber(attempt.score);
   const maxScore = marksToNumber(attempt.maxScore);
   const passedCount = stored.filter((r) => r.passed).length;
@@ -111,16 +123,21 @@ export function storedOutcome(
     runId: '',
     status: 'COMPLETED',
     questionStatus: gradedStatus(attempt.resultStatus),
-    results: stored.map((r) => ({
-      testName: r.testName,
-      passed: r.passed,
-      points: marksToNumber(r.points),
-      pointsAwarded: marksToNumber(r.pointsAwarded),
-      message: r.message ?? undefined,
-      expected: r.expected ?? undefined,
-      actual: r.actual ?? undefined,
-      durationMs: r.durationMs,
-    })),
+    results: stored.map((r) => {
+      const isHidden =
+        r.hidden ?? (r.testId ? hiddenById.get(r.testId) : undefined) ?? hiddenByName.get(r.testName) ?? false;
+      return {
+        testName: r.testName,
+        passed: r.passed,
+        points: marksToNumber(r.points),
+        pointsAwarded: marksToNumber(r.pointsAwarded),
+        message: r.message ?? undefined,
+        expected: r.expected ?? undefined,
+        actual: r.actual ?? undefined,
+        durationMs: r.durationMs,
+        hidden: isHidden,
+      };
+    }),
     score,
     maxScore,
     percentage: maxScore ? Math.round((score / maxScore) * 10_000) / 100 : 0,

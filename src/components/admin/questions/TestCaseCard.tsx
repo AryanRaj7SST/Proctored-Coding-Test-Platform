@@ -82,6 +82,7 @@ export function TestCaseCard({
               {allProblems.length} problem{allProblems.length === 1 ? '' : 's'}
             </Badge>
           ) : null}
+          {test.hidden ? <Badge tone="warn">hidden</Badge> : null}
           {!test.enabled ? <Badge tone="neutral">disabled · not counted</Badge> : null}
         </button>
 
@@ -129,6 +130,21 @@ export function TestCaseCard({
         >
           <div className="min-w-0 space-y-4">
             <fieldset disabled={readOnly} className="space-y-4">
+              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 p-2.5">
+                <Switch
+                  checked={Boolean(test.hidden)}
+                  onChange={(hidden) => onChange({ hidden })}
+                  label={`Hidden test case ${index + 1}`}
+                  disabled={readOnly}
+                />
+                <div className="text-xs">
+                  <span className="font-medium text-slate-800">Hidden test case</span>
+                  <p className="text-slate-500">
+                    Conceals test definition, steps, checks, and failure details from students.
+                  </p>
+                </div>
+              </div>
+
               <div className="grid gap-3 md:grid-cols-2">
                 <Field label="Name" required htmlFor={`${idPrefix}-name`} hint="Unique within this question.">
                   <Input
@@ -184,6 +200,7 @@ export function TestCaseCard({
               expectedBehavior={test.expectedBehavior}
               testCode={test.testCode}
               shareText={shareText}
+              hidden={test.hidden}
             />
             {!test.enabled ? (
               <p className="text-xs text-slate-500">

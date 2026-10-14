@@ -135,6 +135,7 @@ export function executionOutcomeOf(
       expected: r.expected,
       actual: r.actual,
       durationMs: r.durationMs,
+      hidden: r.hidden,
     })),
     score: microToNumber(grade.scoreMicro),
     maxScore: microToNumber(grade.maxMicro),

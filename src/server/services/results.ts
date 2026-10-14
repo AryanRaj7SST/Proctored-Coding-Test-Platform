@@ -265,10 +265,29 @@ function definitionsOf(snapshot: QuestionSnapshot) {
   );
 }
 
-function questionResult(a: LoadedAttempt) {
+function questionResult(a: LoadedAttempt, options: { forStudent?: boolean } = {}) {
   const snapshot = snapshotOf(a);
   const definitions = definitionsOf(snapshot);
   const graded = a.status !== 'IN_PROGRESS' && a.gradedAt !== null;
+
+  const testMap = new Map<string, { hidden?: boolean; order: number; id: string }>();
+  for (const t of snapshot.tests) {
+    testMap.set(t.name, t);
+    if (t.id) testMap.set(t.id, t);
+  }
+
+  const enabled = enabledTests(snapshot);
+  const hiddenNameByTestId = new Map<string, string>();
+  const hiddenNameByTestName = new Map<string, string>();
+  let hiddenIdx = 1;
+  for (const t of enabled) {
+    if (t.hidden) {
+      const genericName = `Hidden test ${hiddenIdx++}`;
+      hiddenNameByTestId.set(t.id, genericName);
+      hiddenNameByTestName.set(t.name, genericName);
+    }
+  }
+
   return {
     attemptId: a.id,
     questionId: a.questionId,
@@ -283,17 +302,43 @@ function questionResult(a: LoadedAttempt) {
     enabledCount: a.enabledCount,
     submittedAt: a.submittedAt?.toISOString() ?? null,
     gradedAt: a.gradedAt?.toISOString() ?? null,
-    testCases: a.testResults.map((r) => ({
-      testName: r.testName,
-      passed: r.passed,
-      points: marksToNumber(r.points),
-      pointsAwarded: marksToNumber(r.pointsAwarded),
-      message: r.message,
-      expected: r.expected,
-      actual: r.actual,
-      durationMs: r.durationMs,
-      definition: definitions.get(r.testName) ?? null,
-    })),
+    testCases: a.testResults.map((r) => {
+      const isHidden = Boolean(
+        (r.testId && hiddenNameByTestId.has(r.testId)) ||
+          hiddenNameByTestName.has(r.testName) ||
+          testMap.get(r.testName)?.hidden,
+      );
+
+      if (options.forStudent && isHidden) {
+        const genericName =
+          (r.testId ? hiddenNameByTestId.get(r.testId) : null) ??
+          hiddenNameByTestName.get(r.testName) ??
+          'Hidden test';
+        return {
+          testName: genericName,
+          passed: r.passed,
+          points: marksToNumber(r.points),
+          pointsAwarded: marksToNumber(r.pointsAwarded),
+          message: null,
+          expected: null,
+          actual: null,
+          durationMs: r.durationMs,
+          definition: null,
+        };
+      }
+
+      return {
+        testName: r.testName,
+        passed: r.passed,
+        points: marksToNumber(r.points),
+        pointsAwarded: marksToNumber(r.pointsAwarded),
+        message: r.message,
+        expected: r.expected,
+        actual: r.actual,
+        durationMs: r.durationMs,
+        definition: definitions.get(r.testName) ?? null,
+      };
+    }),
   };
 }
 
@@ -334,7 +379,7 @@ export async function getSittingResultForAdmin(sessionId: string) {
       submittedAt: o.endedAt?.toISOString() ?? null,
     })),
     questions: s.attempts.map((a) => ({
-      ...questionResult(a),
+      ...questionResult(a, { forStudent: false }),
       code: { html: a.html, css: a.css, js: a.js },
       gradingError: a.gradingError,
       reviewFeedback: a.reviewFeedback,
@@ -392,7 +437,10 @@ export async function getSittingResultForStudent(sessionId: string, userId: stri
   return {
     ...base,
     totals,
-    questions: s.attempts.map((a) => ({ ...questionResult(a), feedback: a.reviewFeedback })),
+    questions: s.attempts.map((a) => ({
+      ...questionResult(a, { forStudent: true }),
+      feedback: a.reviewFeedback,
+    })),
   };
 }
 

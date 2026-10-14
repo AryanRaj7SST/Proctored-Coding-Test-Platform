@@ -199,6 +199,94 @@ describeDb('results (requires DATABASE_URL)', { timeout: 120_000 }, () => {
     await expect(results.getSittingResultForStudent(session.id, users[1]!)).rejects.toThrow(/not found/i);
   });
 
+  it('student results conceal hidden test cases, failure diffs, and definitions', async () => {
+    const hiddenQuestionId = `it-rs-hidden-q-${stamp}`;
+    await prisma.question.create({
+      data: {
+        id: hiddenQuestionId,
+        title: 'Hidden test question',
+        slug: hiddenQuestionId,
+        description: 'Question with hidden tests',
+        marks: 10,
+        tests: {
+          create: [
+            {
+              name: 'Public test 1',
+              testCode: JSON.stringify({ assertions: [{ type: 'exists', selector: '#pub1' }] }),
+              order: 0,
+              hidden: false,
+            },
+            {
+              name: 'Secret hidden test 2',
+              testCode: JSON.stringify({ assertions: [{ type: 'exists', selector: '#sec2' }] }),
+              order: 1,
+              hidden: true,
+            },
+          ],
+        },
+      },
+    });
+
+    try {
+      const exam = await prisma.exam.create({
+        data: {
+          id: `it-rs-hidden-exam-${stamp}`,
+          title: 'Hidden Test Exam',
+          status: 'PUBLISHED',
+          accessMode: 'ANY_AUTHENTICATED_USER',
+          durationMinutes: 30,
+          resultVisibility: 'FULL',
+          questions: { create: [{ questionId: hiddenQuestionId, order: 0, marks: 10 }] },
+        },
+      });
+      exams.push(exam.id);
+
+      // Finish with 0 tests passing so failure messages are generated
+      runner.passing = 0;
+      const fresh = await prisma.exam.findUniqueOrThrow({ where: { id: exam.id } });
+      const session = await sessions.startExamSession(fresh, users[0]!);
+      await attempts.ensureAttempts(session);
+      await finalization.endExam(exam.id, users[0]!);
+
+      // Student view:
+      const studentResult = await results.getSittingResultForStudent(session.id, users[0]!);
+      const testCases = studentResult.questions?.[0]?.testCases;
+      expect(testCases).toHaveLength(2);
+
+      // Public test has full name, message, expected/actual and definition
+      const pub = testCases?.find((t) => t.testName === 'Public test 1');
+      expect(pub).toBeDefined();
+      expect(pub?.definition).not.toBeNull();
+      expect(pub?.message).toBeDefined();
+
+      // Hidden test has generic name, no definition, no message/expected/actual
+      const secret = testCases?.find((t) => t.testName === 'Hidden test 1');
+      expect(secret).toBeDefined();
+      expect(secret?.definition).toBeNull();
+      expect(secret?.message).toBeNull();
+      expect(secret?.expected).toBeNull();
+      expect(secret?.actual).toBeNull();
+      expect(secret?.passed).toBe(false);
+      expect(secret?.points).toBe(5);
+      expect(secret?.pointsAwarded).toBe(0);
+
+      // Raw JSON must not contain secret test name or selector
+      const json = JSON.stringify(studentResult);
+      expect(json).not.toContain('Secret hidden test 2');
+      expect(json).not.toContain('#sec2');
+
+      // Admin view still sees secret test name, failure diff, and definition
+      const adminResult = await results.getSittingResultForAdmin(session.id);
+      const adminTestCases = adminResult.questions[0]?.testCases;
+      const adminSecret = adminTestCases?.find((t) => t.testName === 'Secret hidden test 2');
+      expect(adminSecret).toBeDefined();
+      expect(adminSecret?.definition?.checks[0]).toContain('#sec2');
+      expect(adminSecret?.message).toBeDefined();
+    } finally {
+      await prisma.question.delete({ where: { id: hiddenQuestionId } }).catch(() => {});
+    }
+  });
+
   it('exports formula-safe CSV rows', async () => {
     const exam = await newExam();
     await sitAndFinish(exam, users[0]!, 4);

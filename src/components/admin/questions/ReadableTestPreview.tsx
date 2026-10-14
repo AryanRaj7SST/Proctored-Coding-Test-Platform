@@ -1,6 +1,5 @@
-'use client';
-
 import * as React from 'react';
+import { Badge } from '@/components/ui';
 import { readableTest } from './student-view';
 
 /**
@@ -14,12 +13,14 @@ export function ReadableTestPreview({
   expectedBehavior,
   testCode,
   shareText,
+  hidden,
 }: {
   name: string;
   description: string;
   expectedBehavior: string;
   testCode: string;
   shareText: string | null;
+  hidden?: boolean;
 }) {
   const readable = React.useMemo(() => readableTest(testCode), [testCode]);
   const summary = expectedBehavior.trim() || description.trim();
@@ -27,11 +28,20 @@ export function ReadableTestPreview({
   return (
     <div className="shadow-xs space-y-2 rounded-md border border-slate-200 bg-slate-50 p-3 text-xs">
       <div className="flex items-start justify-between gap-2">
-        <p className="font-semibold text-slate-900">{name.trim() || 'Untitled test case'}</p>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <p className="font-semibold text-slate-900">{name.trim() || 'Untitled test case'}</p>
+          {hidden ? <Badge tone="warn">Hidden from students</Badge> : null}
+        </div>
         {shareText ? (
           <span className="shrink-0 font-mono text-[11px] font-medium text-slate-500">{shareText}</span>
         ) : null}
       </div>
+      {hidden ? (
+        <p className="rounded border border-amber-200 bg-amber-50 p-1.5 text-[11px] text-amber-800">
+          Students see only generic &ldquo;Hidden test N&rdquo; and points. Definition, steps, checks, and failure
+          details are concealed.
+        </p>
+      ) : null}
       {summary ? <p className="leading-relaxed text-slate-600">{summary}</p> : null}
       {readable ? (
         <>

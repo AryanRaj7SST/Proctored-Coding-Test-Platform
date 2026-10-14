@@ -47,7 +47,10 @@ export async function uniqueSlug(base: string, excludeId?: string): Promise<stri
  * (product requirement #15).
  */
 export function compileRunnerSpec(
-  tests: (Pick<QuestionTest, 'id' | 'name' | 'testCode' | 'testType' | 'order'> & { enabled?: boolean })[],
+  tests: (Pick<QuestionTest, 'id' | 'name' | 'testCode' | 'testType' | 'order'> & {
+    enabled?: boolean;
+    hidden?: boolean;
+  })[],
 ): RunnerSpec {
   const ordered = tests.filter(isEnabled).sort((a, b) => a.order - b.order);
   const runnerTests: RunnerTest[] = [];
@@ -58,8 +61,8 @@ export function compileRunnerSpec(
     if (!body.ok || !body.value) {
       throw badRequest(`Test "${t.name}" has an invalid specification: ${body.errors.join('; ')}`);
     }
-    // Marks are applied by the grading engine, not the runner; every test is visible.
-    runnerTests.push({ id: t.id, name: t.name, points: 0, hidden: false, ...body.value });
+    // Marks are applied by the grading engine, not the runner; hidden flag passed through.
+    runnerTests.push({ id: t.id, name: t.name, points: 0, hidden: Boolean(t.hidden), ...body.value });
   }
   if (runnerTests.length === 0) throw badRequest('This question has no enabled test cases.');
   return { version: 1, viewport: DEFAULT_VIEWPORT, tests: runnerTests };
@@ -74,18 +77,18 @@ export function isEnabled(test: { enabled?: boolean }): boolean {
 export interface StudentTestCase {
   id: string;
   name: string;
-  description: string | null;
-  expectedBehavior: string | null;
+  description?: string | null;
+  expectedBehavior?: string | null;
   points: number;
-  steps: string[];
-  checks: string[];
+  steps?: string[];
+  checks?: string[];
 }
 
 /**
  * Everything a student is allowed to see about a question. Every enabled test
- * case is visible (name, what it does, what it checks) with its equal share of
- * `marks` (the question's marks in this test); the reference solution and raw
- * grading internals never are.
+ * case is visible with its equal share of `marks` (the question's marks in this test);
+ * for hidden tests, only {id, points} and a generic name are returned.
+ * The reference solution and raw grading internals never are.
  */
 export function toStudentQuestion(
   question: {
@@ -107,6 +110,8 @@ export function toStudentQuestion(
       description: string | null;
       expectedBehavior?: string | null;
       enabled?: boolean;
+      hidden?: boolean;
+      isHidden?: boolean;
       order: number;
       testType: string;
       testCode: string;
@@ -117,6 +122,7 @@ export function toStudentQuestion(
   const tests = (question.tests ?? []).filter(isEnabled).sort((a, b) => a.order - b.order);
   const marksMicro = toMicro(marks);
   const share = microToNumber(testCaseShare(marksMicro, tests.length));
+  let hiddenIndex = 1;
   return {
     id: question.id,
     title: question.title,
@@ -131,7 +137,17 @@ export function toStudentQuestion(
     starterHtml: question.starterHtml,
     starterCss: question.starterCss,
     starterJs: question.starterJs,
-    tests: tests.map((t) => toStudentTestCase(t, share)),
+    tests: tests.map((t) => {
+      const isHidden = Boolean(t.hidden ?? t.isHidden);
+      if (isHidden) {
+        return {
+          id: t.id,
+          name: `Hidden test ${hiddenIndex++}`,
+          points: share,
+        };
+      }
+      return toStudentTestCase(t, share);
+    }),
   };
 }
 
@@ -235,6 +251,7 @@ export function buildSnapshot(question: {
         description: t.description,
         expectedBehavior: t.expectedBehavior,
         enabled: t.enabled,
+        hidden: Boolean(t.hidden),
         order: t.order,
         testType: String(t.testType),
         testCode: t.testCode,
@@ -293,6 +310,7 @@ export function specFromSnapshot(snapshot: QuestionSnapshot): RunnerSpec {
       testCode: t.testCode,
       testType: t.testType as 'DECLARATIVE',
       order: t.order,
+      hidden: Boolean(t.hidden),
     })),
   );
 }
@@ -318,7 +336,7 @@ function assertSuiteSaveable(tests: QuestionTestInput[]): void {
   });
 }
 
-/** Row data for a test case. Every test is student-visible; marks are split equally, never per test. */
+/** Row data for a test case. Marks are split equally, never per test. */
 function testRow(t: QuestionTestInput, index: number) {
   return {
     name: t.name.trim(),
@@ -328,6 +346,7 @@ function testRow(t: QuestionTestInput, index: number) {
     expectedBehavior: t.expectedBehavior?.trim() || null,
     order: t.order ?? index,
     enabled: t.enabled,
+    hidden: Boolean(t.hidden),
   };
 }
 

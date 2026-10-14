@@ -15,6 +15,8 @@ export interface ExecutionResultRow {
   expected?: string;
   actual?: string;
   durationMs: number;
+  hidden?: boolean;
+  isHidden?: boolean;
 }
 
 /** PASSED only when every enabled test case passed. */
@@ -70,25 +72,28 @@ export const MAX_STUDENT_VALUE = 300;
  * Student feedback for one test. Built field by field from the test's
  * definition and its execution result, so nothing else a row might carry --
  * runner errors, logs, stack traces, environment details -- can reach the
- * browser. A failing test always explains itself; a passing one needs no message.
+ * browser. For hidden tests, message, expected and actual are never returned.
+ * A failing test always explains itself; a passing one needs no message.
  */
 export function toStudentFeedback(row: ExecutionResultRow): StudentTestFeedback {
+  const isHidden = Boolean(row.hidden || row.isHidden);
   return {
     testName: row.testName,
     passed: row.passed,
     points: row.points,
     pointsAwarded: row.pointsAwarded,
     durationMs: row.durationMs,
-    message: row.passed
+    message: isHidden || row.passed
       ? undefined
       : (row.message ?? 'This test did not pass.').slice(0, MAX_STUDENT_MESSAGE),
-    expected: row.passed ? undefined : row.expected?.slice(0, MAX_STUDENT_VALUE),
-    actual: row.passed ? undefined : row.actual?.slice(0, MAX_STUDENT_VALUE),
+    expected: isHidden || row.passed ? undefined : row.expected?.slice(0, MAX_STUDENT_VALUE),
+    actual: isHidden || row.passed ? undefined : row.actual?.slice(0, MAX_STUDENT_VALUE),
   };
 }
 
 /** Student-safe projection of a whole run: the summary plus per-test feedback. */
 export function toStudentOutcome(outcome: ExecutionOutcome): StudentOutcome {
+  let hiddenIndex = 1;
   return {
     runId: outcome.runId,
     status: outcome.status,
@@ -100,6 +105,13 @@ export function toStudentOutcome(outcome: ExecutionOutcome): StudentOutcome {
     failedCount: outcome.failedCount,
     totalCount: outcome.totalCount,
     durationMs: outcome.durationMs,
-    results: outcome.results.map(toStudentFeedback),
+    results: outcome.results.map((row) => {
+      const feedback = toStudentFeedback(row);
+      const isHidden = Boolean(row.hidden || row.isHidden);
+      if (isHidden && !feedback.testName.startsWith('Hidden test')) {
+        feedback.testName = `Hidden test ${hiddenIndex++}`;
+      }
+      return feedback;
+    }),
   };
 }

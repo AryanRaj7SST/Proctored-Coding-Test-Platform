@@ -98,20 +98,28 @@ captured request can't be replayed indefinitely.
 
 ## Hidden tests stay hidden
 
-`toStudentQuestion` (`src/server/services/questions.ts`) is the single choke
-point for what a student's browser is allowed to learn about a question: test
-**names** and **points** for visible (`hidden: false`) tests only; a bare
-**count** of hidden tests; never `testCode`, never an expected value, never a
-selector. `toStudentOutcome` (`src/lib/outcome.ts`) is the equivalent choke
-point for run/submit results: a passing test carries no message at all; a
-failing test gets the author's message if one exists, or a generic
-"This test did not pass." otherwise — never the assertion internals.
-`scripts/verify-offline.mjs` greps for `testCode` leaking out of
-`toStudentQuestion` on every run.
+Test cases can be marked as hidden (`hidden: true`) on `QuestionTest`, which is persisted in PostgreSQL and frozen into `QuestionSnapshot` when attempts are pinned for grading. `compileRunnerSpec` passes this flag directly through to the execution runner.
 
-Admin-only surfaces (question edit/preview, `/admin/test-logs`,
-`/admin/attempts/[id]`) are the only places a hidden test's body is ever
-rendered, and they're behind `requireAdmin()`.
+`toStudentQuestion` (`src/server/services/questions.ts`) is the single choke
+point for what a student's browser is allowed to learn about a question: visible
+(`hidden: false`) tests include their name, description, steps, and checks;
+hidden tests return only `{ id, points }` and a generic name like "Hidden test N" —
+never `testCode`, never steps, never checks, never an expected value, selector, or JS expression.
+
+`toStudentOutcome` (`src/lib/outcome.ts`) is the equivalent choke point for
+run, practice, and submit results: for hidden tests it never returns `message`, `expected`,
+or `actual`, returning only `passed`, `pointsAwarded`, and `durationMs`.
+For visible tests, a passing test carries no message; a failing test gets the author's
+message if one exists, or a generic "This test did not pass." otherwise.
+
+`getSittingResultForStudent` (`src/server/services/results.ts`) sanitizes sitting results
+for student views: hidden test cases have their failure diffs (`message`, `expected`, `actual`)
+omitted, `definition` set to `null`, and generic names assigned so test specifications
+never leak after contest submission.
+
+Admin-only surfaces (question wizard and editor, `/admin/test-logs`,
+`/admin/attempts/[id]`, `/admin/results/[sessionId]`) are the only places a hidden test's full
+definition, failure diffs, and runner details are ever rendered, guarded by `requireAdmin()`.
 
 ## Rate limits and payload ceilings
 
