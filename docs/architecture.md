@@ -47,15 +47,17 @@ student's request, that decides which spec runs for a given attempt
 (`executeTests` in `src/server/services/attempts.ts` always derives the spec
 from the attempt's own snapshot).
 
-**Execution.** The runner (`runner/src/executor.ts`) builds a single HTML
-document from the student's code, intercepts all network requests so nothing
-the student wrote can reach the real internet, navigates a fresh browser
-context to it, runs each test's `steps` (click, fill, wait, …), then
-evaluates its `assertions` **inside the page** via `page-script.ts`'s
-`EVALUATOR_SOURCE` — a self-contained function injected with
-`page.evaluate`, reading only `getComputedStyle`, `getBoundingClientRect`,
-`textContent`, and attributes. It never receives the student's source text as
-a comparison target.
+**Execution.** The runner (`runner/src/executor.ts`, `runner/src/js-engine.ts`) executes code according to question kind:
+- **HTML/CSS/DOM questions (`kind: 'dom'`)**: The runner builds a single HTML
+  document from the student's code, intercepts all network requests so nothing
+  the student wrote can reach the real internet, navigates a fresh browser
+  context to it, runs each test's `steps` (click, fill, wait, …), then
+  evaluates its `assertions` **inside the page** via `page-script.ts`'s
+  `EVALUATOR_SOURCE` — a self-contained function injected with
+  `page.evaluate` directly via CDP (without invoking `globalThis.eval`), reading only `getComputedStyle`, `getBoundingClientRect`,
+  `textContent`, and attributes. It never receives the student's source text as
+  a comparison target.
+- **Pure JavaScript DSA questions (`kind: 'js-fn'`)**: The runner executes student functions inside an isolated V8 isolate (`isolated-vm`, `runner/src/js-engine.ts`). Each test case executes in a freshly spawned isolate with a 64MB memory limit and hard 2000ms timeout. A secure prelude harness captures pristine JavaScript intrinsics (`JSON.stringify`, `Array.isArray`, etc.) BEFORE the student's code is evaluated. The harness executes the target function with JSON-decoded arguments, and results are serialized and compared **strictly OUTSIDE the isolate** in the runner's host process. Student code cannot manipulate comparisons, tamper with `eval` or prototypes, or access host environment globals (`process`, `require`, `fetch`, etc.).
 
 ## Question versioning and grading integrity
 
@@ -173,6 +175,20 @@ The runner supports two isolation strategies, chosen by `RUNNER_ISOLATION`:
 Either way, the runner container itself runs with `no-new-privileges`,
 resource ceilings, and a `tmpfs` for `/tmp` (see `docker-compose.yml`).
 
+## Lightweight integrity tooling
+
+1. **Code similarity report (`src/server/services/integrity/similarity.ts`)**:
+   Normalizes submitted JavaScript by stripping comments and whitespace and renaming non-keyword identifiers to sequential placeholders (`v0, v1, v2...`). It partitions normalized token streams into 3-shingles and computes pairwise Jaccard similarity. The report runs per-question via `/admin/exams/[id]/similarity` and is audited (`exam.similarity_checked`).
+
+2. **Static red-flag scan on submit (`src/lib/static-analysis.ts`)**:
+   On submission, student code is scanned for known suspicious patterns (`eval`, `Function(`, `constructor`, prototype mutation, `globalThis`, `__proto__`, `Proxy`, hardcoded long test literals). Detected flags are non-blocking: they are saved to `Attempt.flags` and rendered as review badges and snippets on `/admin/attempts/[id]`.
+
+3. **Configurable clipboard violations (`src/lib/proctor.ts`, `Exam.countClipboardViolations`)**:
+   Controlled by a per-exam setting (`countClipboardViolations`, default false). When enabled, browser clipboard events (`COPY`, `CUT`) and right-click attempts (`CONTEXT_MENU`) increment the sitting's violation counter toward `Exam.maxViolations`.
+
+4. **Contest standings & ranking (`src/server/services/integrity/contest-ranking.ts`)**:
+   Ranks participants by total score descending, tie-breaking by earliest last-accepted-submission timestamp, followed by lowest violation count. Accessible at `/admin/exams/[id]/standings` and exportable as CSV with automatic spreadsheet formula-injection escaping (`'`, `+`, `-`, `=`, `@`).
+
 ## Directory-to-concept map
 
 | Concept                        | Where                                                          |
@@ -184,5 +200,10 @@ resource ceilings, and a `tmpfs` for `/tmp` (see `docker-compose.yml`).
 | Proctoring dedupe + status     | `src/lib/proctor.ts`, `src/server/services/proctoring.ts`      |
 | Student-safe projections       | `src/lib/outcome.ts`, `toStudentQuestion`                      |
 | Runner auth (HMAC)             | `src/lib/runner-client.ts`, `runner/src/auth.ts`               |
-| Runner execution               | `runner/src/executor.ts`, `runner/src/page-script.ts`          |
+| Runner execution (DOM)         | `runner/src/executor.ts`, `runner/src/page-script.ts`          |
+| Runner execution (JS V8 Isolate)| `runner/src/js-engine.ts`                                     |
+| Code similarity analysis       | `src/server/services/integrity/similarity.ts`                  |
+| Static red-flag scanner        | `src/lib/static-analysis.ts`                                   |
+| Contest ranking & standings    | `src/server/services/integrity/contest-ranking.ts`             |
 | Sandboxed live preview         | `src/lib/preview.ts`, `src/components/editor/PreviewFrame.tsx` |
+

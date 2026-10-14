@@ -171,14 +171,8 @@ async function evaluateAssertion(
   assertion: Assertion,
   consoleErrors: string[],
 ): Promise<{ passed: boolean; actual: string }> {
-  const result = (await page.evaluate(
-    ([source, a, errors]) => {
-      // eslint-disable-next-line no-eval
-      const fn = eval(source as string) as (x: unknown, e: string[]) => { passed: boolean; actual: string };
-      return fn(a, errors as string[]);
-    },
-    [EVALUATOR_SOURCE, assertion, consoleErrors.slice(0, 5)] as const,
-  )) as { passed: boolean; actual: string };
+  const script = `(${EVALUATOR_SOURCE})(${JSON.stringify(assertion)}, ${JSON.stringify(consoleErrors.slice(0, 5))})`;
+  const result = (await page.evaluate(script)) as { passed: boolean; actual: string };
   return { passed: Boolean(result?.passed), actual: String(result?.actual ?? '') };
 }
 

@@ -24,12 +24,25 @@ Priorities: **1. Never lose a student's answer**, **2. Reliable submission**, **
    - `CRON_SECRET`
    - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
 
-2. **Verify Database Region & Vercel Region Alignment**:
+2. **Execute Contest Preflight Verification**:
+   Run the preflight security verification script:
+
+   ```bash
+   npm run contest:preflight
+   ```
+
+   Confirm that:
+   - Upstash Redis rate limiting is active (or explicitly overridden with `ALLOW_NO_RATE_LIMIT=true`).
+   - `OPEN_ACCESS_EMAILS` is empty (no early-start or clipboard bypass accounts).
+   - Runner `/auth-check` responds HTTP 200 OK with HMAC authentication.
+   - All active contest exams enforce `ASSIGNED_USERS_ONLY`, have `maxViolations > 0`, and have assigned students.
+
+3. **Verify Database Region & Vercel Region Alignment**:
    - Confirm Vercel function region matches Neon PostgreSQL region (e.g. `sin1` AWS Singapore, or `cle1` AWS Ohio).
    - Cross-region latencies (>150ms roundtrip) will severely degrade throughput when 250 heartbeats fire concurrently.
    - Inspect `vercel.json` to verify `"regions"` matches your Neon region.
 
-3. **Warm Neon PostgreSQL Compute**:
+4. **Warm Neon PostgreSQL Compute**:
    Neon serverless Postgres suspends idle compute after periods of inactivity.
    - Cold starts introduce 1–3s latency on the first query wave.
    - Wake the compute and pooler by accessing `/admin` or running `npm run verify:deploy`.
@@ -176,6 +189,22 @@ $$T_{\text{drain}} = \frac{N \times T_{\text{run}}}{C}$$
 3. If any attempts remain pending due to initial runner throttling:
    - Click **"Grade pending attempts"** in the UI to trigger `/api/admin/attempts/regrade`.
    - Confirm all attempts show valid scores and `gradedAt` timestamps.
+
+### Post-Exam Integrity & Standings Audit
+
+1. **Review Flagged Submissions**:
+   - Inspect `/admin/attempts/[id]` for attempts with red flag indicators.
+   - Review static analysis badges (e.g. `eval`, prototype mutation, hardcoded literals) to distinguish benign patterns from sandbox attacks.
+
+2. **Run Pairwise Similarity Report**:
+   - Navigate to `/admin/exams/[id]/similarity`.
+   - Set threshold (e.g. 70% or 80%) to flag suspicious token-level matches.
+   - Open flagged pair attempts side-by-side to review common structure.
+
+3. **Export Contest Standings**:
+   - Navigate to `/admin/exams/[id]/standings`.
+   - Confirm rank ordering: Score DESC $\to$ earliest last-accepted-submission ASC $\to$ lowest violations ASC.
+   - Click **"Export CSV"** to download the audited standings (automatically escaped against formula injection).
 
 ---
 
