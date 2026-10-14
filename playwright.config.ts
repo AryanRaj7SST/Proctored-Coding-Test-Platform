@@ -41,5 +41,9 @@ export default defineConfig({
     timeout: 120_000,
     stdout: 'pipe',
     stderr: 'pipe',
+    env: {
+      ...(process.env as Record<string, string>),
+      ALLOW_NO_RATE_LIMIT: process.env.ALLOW_NO_RATE_LIMIT ?? 'true',
+    },
   },
 });
