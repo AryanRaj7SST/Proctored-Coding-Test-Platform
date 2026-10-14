@@ -25,17 +25,24 @@ describe('Production Env & Rate Limiting Hardening', () => {
   beforeEach(() => {
     resetRateLimits();
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
     process.env = { ...originalEnv };
   });
 
   afterEach(() => {
     resetRateLimits();
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
     process.env = { ...originalEnv };
   });
 
   describe('env.ts production Upstash requirements', () => {
     it('requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN in production', () => {
+      vi.stubEnv('ALLOW_NO_RATE_LIMIT', 'false');
+      delete process.env.ALLOW_NO_RATE_LIMIT;
+      delete process.env.UPSTASH_REDIS_REST_URL;
+      delete process.env.UPSTASH_REDIS_REST_TOKEN;
+
       const prodEnv = {
         ...env,
         isProduction: true,
@@ -57,7 +64,9 @@ describe('Production Env & Rate Limiting Hardening', () => {
       expect(missing.some((m) => m.includes('UPSTASH_REDIS_REST_TOKEN'))).toBe(true);
     });
 
-    it('allows missing Upstash in production if ALLOW_NO_RATE_LIMIT=true and logs loudly', () => {
+    it('allows missing Upstash in production if ALLOW_NO_RATE_LIMIT=true on env object and logs loudly', () => {
+      vi.stubEnv('ALLOW_NO_RATE_LIMIT', 'false');
+      delete process.env.ALLOW_NO_RATE_LIMIT;
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const prodEnv = {
@@ -74,6 +83,32 @@ describe('Production Env & Rate Limiting Hardening', () => {
         upstashRedisRestUrl: '',
         upstashRedisRestToken: '',
         allowNoRateLimit: true,
+      };
+
+      const missing = missingServerEnv(prodEnv as unknown as typeof env);
+      expect(missing.some((m) => m.includes('UPSTASH_REDIS_REST_URL'))).toBe(false);
+      expect(missing.some((m) => m.includes('UPSTASH_REDIS_REST_TOKEN'))).toBe(false);
+      expect(warnSpy).toHaveBeenCalledWith(expect.stringMatching(/ALLOW_NO_RATE_LIMIT/i));
+    });
+
+    it('allows missing Upstash in production if process.env.ALLOW_NO_RATE_LIMIT=true and logs loudly', () => {
+      vi.stubEnv('ALLOW_NO_RATE_LIMIT', 'true');
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const prodEnv = {
+        ...env,
+        isProduction: true,
+        databaseUrl: 'postgresql://user:pass@localhost:5432/db',
+        authSecret: '01234567890123456789012345678901',
+        googleId: 'google-id',
+        googleSecret: 'google-secret',
+        runnerSecret: '01234567890123456789012345678901',
+        runnerUrlConfigured: true,
+        runnerUrl: 'https://runner.internal',
+        cronSecret: '0123456789012345',
+        upstashRedisRestUrl: '',
+        upstashRedisRestToken: '',
+        allowNoRateLimit: false,
       };
 
       const missing = missingServerEnv(prodEnv as unknown as typeof env);
