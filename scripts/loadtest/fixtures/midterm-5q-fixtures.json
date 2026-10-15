@@ -1,0 +1,849 @@
+[
+  {
+    "slug": "deep-property-access-with-default-value",
+    "title": "Deep Property Access with Default Value",
+    "description": "Write a function `deepGet(obj, path)` that retrieves the value of a property located at a nested level inside an object.\n\n### Input\n- `obj` — a JavaScript object that may contain nested objects.\n- `path` — a non-empty string of property names separated by dots (`.`).\n\n### Output\n- If the property exists, return its value.\n- If it does not exist, or any property on the way is `null` or `undefined`, return `\"Not Found\"` without throwing.\n\n### Rules\n1. Path always uses dots as separators.\n2. Falsy values (`false`, `0`, `\"\"`) are real values — return them as they are.\n3. Do not modify the original object.",
+    "instructions": "Write your solution as a top-level function declaration named exactly `deepGet`.",
+    "starterJs": "function deepGet(obj, path) {\n  // Write your code here\n}",
+    "referenceJs": "function deepGet(obj, path) {\n  const keys = path.split('.');\n  let current = obj;\n  for (let i = 0; i < keys.length; i++) {\n    if (current === null || current === undefined) return 'Not Found';\n    current = current[keys[i]];\n  }\n  return (current === null || current === undefined) ? 'Not Found' : current;\n}",
+    "totalTests": 10,
+    "tests": [
+      {
+        "name": "Visible test: Example 1 from the description",
+        "description": "Student-visible check: Example 1 from the description",
+        "expectedBehavior": "Calling deepGet({\"a\":{\"b\":{\"c\":42}}}, \"a.b.c\") should return 42.",
+        "enabled": true,
+        "hidden": false,
+        "fn": "deepGet",
+        "args": [{"a": {"b": {"c": 42}}}, "a.b.c"],
+        "expected": 42,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 2: Missing property at the target depth",
+        "description": "Hidden check: Missing property at the target depth",
+        "expectedBehavior": "Checks the function on this scenario: missing property at the target depth.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{"a": {"b": {"c": 42}}}, "a.b.d"],
+        "expected": "Not Found",
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 3: Nested string value",
+        "description": "Hidden check: Nested string value",
+        "expectedBehavior": "Checks the function on this scenario: nested string value.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{"user": {"profile": {"name": "Kartik"}}}, "user.profile.name"],
+        "expected": "Kartik",
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 4: Intermediate property is null",
+        "description": "Hidden check: Intermediate property is null",
+        "expectedBehavior": "Checks the function on this scenario: intermediate property is null.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{"user": null}, "user.profile.name"],
+        "expected": "Not Found",
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 5: Existing false value must be returned",
+        "description": "Hidden check: Existing false value must be returned",
+        "expectedBehavior": "Checks the function on this scenario: existing false value must be returned.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{"settings": {"notifications": {"enabled": false}}}, "settings.notifications.enabled"],
+        "expected": false,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 6: Existing 0 value must be returned",
+        "description": "Hidden check: Existing 0 value must be returned",
+        "expectedBehavior": "Checks the function on this scenario: existing 0 value must be returned.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{"stats": {"score": 0}}, "stats.score"],
+        "expected": 0,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 7: Value is an array",
+        "description": "Hidden check: Value is an array",
+        "expectedBehavior": "Checks the function on this scenario: value is an array.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{"data": {"list": [1, 2, 3]}}, "data.list"],
+        "expected": [1, 2, 3],
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 8: Value is a nested object",
+        "description": "Hidden check: Value is a nested object",
+        "expectedBehavior": "Checks the function on this scenario: value is a nested object.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{"a": {"b": {"c": 1}}}, "a.b"],
+        "expected": {"c": 1},
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 9: Path with a single property name",
+        "description": "Hidden check: Path with a single property name",
+        "expectedBehavior": "Checks the function on this scenario: path with a single property name.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{"name": "Asha", "age": 20}, "name"],
+        "expected": "Asha",
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 10: Empty object, first key missing",
+        "description": "Hidden check: Empty object, first key missing",
+        "expectedBehavior": "Checks the function on this scenario: empty object, first key missing.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "deepGet",
+        "args": [{}, "x.y.z"],
+        "expected": "Not Found",
+        "compare": "deepEqual"
+      }
+    ],
+    "variants": [
+      {
+        "id": "q1-correct-ref",
+        "kind": "correct-reference",
+        "description": "Verified reference solution",
+        "code": "function deepGet(obj, path) {\n  const keys = path.split('.');\n  let current = obj;\n  for (let i = 0; i < keys.length; i++) {\n    if (current === null || current === undefined) return 'Not Found';\n    current = current[keys[i]];\n  }\n  return (current === null || current === undefined) ? 'Not Found' : current;\n}",
+        "expectedPassed": 10,
+        "weight": 50
+      },
+      {
+        "id": "q1-correct-alt",
+        "kind": "correct-alternate",
+        "description": "Alternative while loop",
+        "code": "function deepGet(obj, path) {\n  const keys = path.split('.');\n  let cur = obj;\n  let i = 0;\n  while (i < keys.length) {\n    if (cur == null) return 'Not Found';\n    cur = cur[keys[i]];\n    i++;\n  }\n  return cur == null ? 'Not Found' : cur;\n}",
+        "expectedPassed": 10,
+        "weight": 20
+      },
+      {
+        "id": "q1-wrong-logic",
+        "kind": "wrong-logic",
+        "description": "Always returns 'Not Found'",
+        "code": "function deepGet(obj, path) {\n  return 'Not Found';\n}",
+        "expectedPassed": 3,
+        "weight": 14
+      },
+      {
+        "id": "q1-wrong-edge",
+        "kind": "wrong-edge",
+        "description": "Treats falsy values as missing",
+        "code": "function deepGet(obj, path) {\n  const keys = path.split('.');\n  let cur = obj;\n  for (const k of keys) {\n    if (!cur) return 'Not Found';\n    cur = cur[k];\n  }\n  return cur || 'Not Found';\n}",
+        "expectedPassed": 8,
+        "weight": 8
+      },
+      {
+        "id": "q1-untouched",
+        "kind": "untouched-starter",
+        "description": "Untouched starter template",
+        "code": "function deepGet(obj, path) {\n  // Write your code here\n}",
+        "expectedPassed": 0,
+        "weight": 3
+      },
+      {
+        "id": "q1-syntax-error",
+        "kind": "syntax-error",
+        "description": "Syntax error in expression",
+        "code": "function deepGet(obj, path) {\n  return obj..path;\n}",
+        "expectedPassed": 0,
+        "weight": 1
+      },
+      {
+        "id": "q1-infinite-loop",
+        "kind": "infinite-loop",
+        "description": "Hostile infinite loop",
+        "code": "function deepGet(obj, path) {\n  while (true) {}\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      },
+      {
+        "id": "q1-memory-bomb",
+        "kind": "memory-bomb",
+        "description": "Hostile memory exhaustion",
+        "code": "function deepGet(obj, path) {\n  const leak = [];\n  while (true) { leak.push(new Array(1e6).fill('leak')); }\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      }
+    ]
+  },
+  {
+    "slug": "majority-element",
+    "title": "Majority Element",
+    "description": "Write a function `majorityElement(nums)` that returns the majority element of an array of numbers: the value that appears more than `nums.length / 2` times.",
+    "instructions": "Write your solution as a top-level function declaration named exactly `majorityElement`.",
+    "starterJs": "function majorityElement(nums) {\n  // Return the element that appears > nums.length / 2 times using nested loops\n}",
+    "referenceJs": "function majorityElement(nums) {\n  for (let i = 0; i < nums.length; i++) {\n    let count = 0;\n    for (let j = 0; j < nums.length; j++) {\n      if (nums[i] === nums[j]) count++;\n    }\n    if (count > nums.length / 2) return nums[i];\n  }\n}",
+    "totalTests": 8,
+    "tests": [
+      {
+        "name": "Visible test: Example 1 from the description",
+        "description": "Student-visible check: Example 1 from the description",
+        "expectedBehavior": "Calling majorityElement([3,2,3]) should return 3.",
+        "enabled": true,
+        "hidden": false,
+        "fn": "majorityElement",
+        "args": [[3, 2, 3]],
+        "expected": 3,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 2: Example 2 from the description (majority is not the first element)",
+        "description": "Hidden check: Example 2 from the description (majority is not the first element)",
+        "expectedBehavior": "Checks the function on this scenario: example 2 from the description (majority is not the first element).",
+        "enabled": true,
+        "hidden": true,
+        "fn": "majorityElement",
+        "args": [[2, 2, 1, 1, 1, 2, 2]],
+        "expected": 2,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 3: Single-element array",
+        "description": "Hidden check: Single-element array",
+        "expectedBehavior": "Checks the function on this scenario: single-element array.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "majorityElement",
+        "args": [[1]],
+        "expected": 1,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 4: All elements identical",
+        "description": "Hidden check: All elements identical",
+        "expectedBehavior": "Checks the function on this scenario: all elements identical.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "majorityElement",
+        "args": [[5, 5, 5, 5]],
+        "expected": 5,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 5: Negative majority element",
+        "description": "Hidden check: Negative majority element",
+        "expectedBehavior": "Checks the function on this scenario: negative majority element.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "majorityElement",
+        "args": [[-1, -1, -1, 2, 3]],
+        "expected": -1,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 6: Majority element is zero, interleaved with other values",
+        "description": "Hidden check: Majority element is zero, interleaved with other values",
+        "expectedBehavior": "Checks the function on this scenario: majority element is zero, interleaved with other values.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "majorityElement",
+        "args": [[0, 0, 1, 0, 2, 0, 3, 0, 0]],
+        "expected": 0,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 7: Majority element only appears at the end",
+        "description": "Hidden check: Majority element only appears at the end",
+        "expectedBehavior": "Checks the function on this scenario: majority element only appears at the end.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "majorityElement",
+        "args": [[7, 8, 8]],
+        "expected": 8,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 8: Longer array (15 items)",
+        "description": "Hidden check: Longer array (15 items)",
+        "expectedBehavior": "Checks the function on this scenario: longer array (15 items).",
+        "enabled": true,
+        "hidden": true,
+        "fn": "majorityElement",
+        "args": [[4, 9, 4, 4, 9, 4, 1, 4, 4, 9, 4, 2, 4, 4, 3]],
+        "expected": 4,
+        "compare": "deepEqual"
+      }
+    ],
+    "variants": [
+      {
+        "id": "q2-correct-ref",
+        "kind": "correct-reference",
+        "description": "Verified nested loops reference",
+        "code": "function majorityElement(nums) {\n  for (let i = 0; i < nums.length; i++) {\n    let count = 0;\n    for (let j = 0; j < nums.length; j++) {\n      if (nums[i] === nums[j]) count++;\n    }\n    if (count > nums.length / 2) return nums[i];\n  }\n}",
+        "expectedPassed": 8,
+        "weight": 50
+      },
+      {
+        "id": "q2-correct-alt",
+        "kind": "correct-alternate",
+        "description": "Boyer-Moore voting algorithm",
+        "code": "function majorityElement(nums) {\n  let candidate = nums[0];\n  let count = 1;\n  for (let i = 1; i < nums.length; i++) {\n    if (count === 0) {\n      candidate = nums[i];\n      count = 1;\n    } else if (nums[i] === candidate) {\n      count++;\n    } else {\n      count--;\n    }\n  }\n  return candidate;\n}",
+        "expectedPassed": 8,
+        "weight": 20
+      },
+      {
+        "id": "q2-wrong-logic",
+        "kind": "wrong-logic",
+        "description": "Assumes first element is always majority",
+        "code": "function majorityElement(nums) {\n  return nums[0];\n}",
+        "expectedPassed": 7,
+        "weight": 14
+      },
+      {
+        "id": "q2-wrong-edge",
+        "kind": "wrong-edge",
+        "description": "Assumes last element is always majority",
+        "code": "function majorityElement(nums) {\n  return nums[nums.length - 1];\n}",
+        "expectedPassed": 6,
+        "weight": 8
+      },
+      {
+        "id": "q2-untouched",
+        "kind": "untouched-starter",
+        "description": "Empty starter code",
+        "code": "function majorityElement(nums) {\n  // Return the element that appears > nums.length / 2 times using nested loops\n}",
+        "expectedPassed": 0,
+        "weight": 3
+      },
+      {
+        "id": "q2-syntax-error",
+        "kind": "syntax-error",
+        "description": "Syntax error",
+        "code": "function majorityElement(nums) {\n  return nums[;;\n}",
+        "expectedPassed": 0,
+        "weight": 1
+      },
+      {
+        "id": "q2-infinite-loop",
+        "kind": "infinite-loop",
+        "description": "Hostile infinite loop",
+        "code": "function majorityElement(nums) {\n  while (true) {}\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      },
+      {
+        "id": "q2-memory-bomb",
+        "kind": "memory-bomb",
+        "description": "Hostile memory bomb",
+        "code": "function majorityElement(nums) {\n  const arr = [];\n  while (true) { arr.push(new Array(1e6).fill(1)); }\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      }
+    ]
+  },
+  {
+    "slug": "count-vowels",
+    "title": "Count Vowels",
+    "description": "Write a function `countVowels(str)` that counts the vowels in a string, ignoring case.",
+    "instructions": "Write your solution as a top-level function declaration named exactly `countVowels`.",
+    "starterJs": "function countVowels(str) {\n  // Count vowels (a, e, i, o, u) in str, ignoring case\n}",
+    "referenceJs": "function countVowels(str) {\n  const vowels = 'aeiou';\n  let count = 0;\n  for (let i = 0; i < str.length; i++) {\n    if (vowels.includes(str[i].toLowerCase())) count++;\n  }\n  return count;\n}",
+    "totalTests": 8,
+    "tests": [
+      {
+        "name": "Visible test: Example 1 from the description",
+        "description": "Student-visible check: Example 1 from the description",
+        "expectedBehavior": "Calling countVowels(\"JavaScript\") should return 3.",
+        "enabled": true,
+        "hidden": false,
+        "fn": "countVowels",
+        "args": ["JavaScript"],
+        "expected": 3,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 2: Mixed-case sentence",
+        "description": "Hidden check: Mixed-case sentence",
+        "expectedBehavior": "Checks the function on this scenario: mixed-case sentence.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "countVowels",
+        "args": ["Hello World"],
+        "expected": 3,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 3: Uppercase vowels only",
+        "description": "Hidden check: Uppercase vowels only",
+        "expectedBehavior": "Checks the function on this scenario: uppercase vowels only.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "countVowels",
+        "args": ["AEIOU"],
+        "expected": 5,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 4: No vowels at all",
+        "description": "Hidden check: No vowels at all",
+        "expectedBehavior": "Checks the function on this scenario: no vowels at all.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "countVowels",
+        "args": ["rhythm"],
+        "expected": 0,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 5: Empty string",
+        "description": "Hidden check: Empty string",
+        "expectedBehavior": "Checks the function on this scenario: empty string.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "countVowels",
+        "args": [""],
+        "expected": 0,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 6: Capitalised words with spaces",
+        "description": "Hidden check: Capitalised words with spaces",
+        "expectedBehavior": "Checks the function on this scenario: capitalised words with spaces.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "countVowels",
+        "args": ["Programming Is Fun"],
+        "expected": 5,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 7: Pangram (every vowel appears several times)",
+        "description": "Hidden check: Pangram (every vowel appears several times)",
+        "expectedBehavior": "Checks the function on this scenario: pangram (every vowel appears several times).",
+        "enabled": true,
+        "hidden": true,
+        "fn": "countVowels",
+        "args": ["The quick brown fox jumps over the lazy dog"],
+        "expected": 11,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 8: Punctuation present and the letter y must not count",
+        "description": "Hidden check: Punctuation present and the letter y must not count",
+        "expectedBehavior": "Checks the function on this scenario: punctuation present and the letter y must not count.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "countVowels",
+        "args": ["Why? Yes, by my sky!"],
+        "expected": 1,
+        "compare": "deepEqual"
+      }
+    ],
+    "variants": [
+      {
+        "id": "q3-correct-ref",
+        "kind": "correct-reference",
+        "description": "Verified includes reference",
+        "code": "function countVowels(str) {\n  const vowels = 'aeiou';\n  let count = 0;\n  for (let i = 0; i < str.length; i++) {\n    if (vowels.includes(str[i].toLowerCase())) count++;\n  }\n  return count;\n}",
+        "expectedPassed": 8,
+        "weight": 50
+      },
+      {
+        "id": "q3-correct-alt",
+        "kind": "correct-alternate",
+        "description": "Switch/case character check",
+        "code": "function countVowels(str) {\n  let count = 0;\n  for (let i = 0; i < str.length; i++) {\n    const ch = str[i].toLowerCase();\n    if (ch === 'a' || ch === 'e' || ch === 'i' || ch === 'o' || ch === 'u') count++;\n  }\n  return count;\n}",
+        "expectedPassed": 8,
+        "weight": 20
+      },
+      {
+        "id": "q3-wrong-logic",
+        "kind": "wrong-logic",
+        "description": "Always returns 0",
+        "code": "function countVowels(str) {\n  return 0;\n}",
+        "expectedPassed": 2,
+        "weight": 14
+      },
+      {
+        "id": "q3-wrong-edge",
+        "kind": "wrong-edge",
+        "description": "Only checks lowercase, misses uppercase vowels",
+        "code": "function countVowels(str) {\n  let c = 0;\n  for (let i = 0; i < str.length; i++) {\n    if ('aeiou'.includes(str[i])) c++;\n  }\n  return c;\n}",
+        "expectedPassed": 6,
+        "weight": 8
+      },
+      {
+        "id": "q3-untouched",
+        "kind": "untouched-starter",
+        "description": "Empty starter",
+        "code": "function countVowels(str) {\n  // Count vowels (a, e, i, o, u) in str, ignoring case\n}",
+        "expectedPassed": 0,
+        "weight": 3
+      },
+      {
+        "id": "q3-syntax-error",
+        "kind": "syntax-error",
+        "description": "Syntax error",
+        "code": "function countVowels(str) {\n  return str.split({(\n}",
+        "expectedPassed": 0,
+        "weight": 1
+      },
+      {
+        "id": "q3-infinite-loop",
+        "kind": "infinite-loop",
+        "description": "Hostile loop",
+        "code": "function countVowels(str) {\n  while (true) {}\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      },
+      {
+        "id": "q3-memory-bomb",
+        "kind": "memory-bomb",
+        "description": "Hostile memory bomb",
+        "code": "function countVowels(str) {\n  const buf = [];\n  for (;;) { buf.push(new Array(1e6).fill('v')); }\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      }
+    ]
+  },
+  {
+    "slug": "remove-duplicates-from-sorted-array",
+    "title": "Remove Duplicates from Sorted Array",
+    "description": "Given a sorted array `nums`, write a function `removeDuplicates(nums)` that removes duplicates in-place so each element appears only once, returning the new length.",
+    "instructions": "Write your solution as a top-level function declaration named exactly `removeDuplicates`.",
+    "starterJs": "function removeDuplicates(nums) {\n  // Your solution\n}",
+    "referenceJs": "function removeDuplicates(nums) {\n  if (nums.length <= 1) return nums.length;\n  let currentIndex = 0;\n  for (let i = 1; i < nums.length; i++) {\n    if (nums[currentIndex] !== nums[i]) {\n      currentIndex++;\n      nums[currentIndex] = nums[i];\n    }\n  }\n  nums.length = currentIndex + 1;\n  return nums.length;\n}",
+    "totalTests": 8,
+    "tests": [
+      {
+        "name": "Visible test: Example 1 from the description",
+        "description": "Student-visible check: Example 1 from the description",
+        "expectedBehavior": "Calling removeDuplicates([1,1,2]) should return 2.",
+        "enabled": true,
+        "hidden": false,
+        "fn": "removeDuplicates",
+        "args": [[1, 1, 2]],
+        "expected": 2,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 2: Example 2 from the description",
+        "description": "Hidden check: Example 2 from the description",
+        "expectedBehavior": "Checks the function on this scenario: example 2 from the description.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "removeDuplicates",
+        "args": [[0, 1, 1, 1, 2, 2, 3, 3, 4]],
+        "expected": 5,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 3: Empty array",
+        "description": "Hidden check: Empty array",
+        "expectedBehavior": "Checks the function on this scenario: empty array.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "removeDuplicates",
+        "args": [[]],
+        "expected": 0,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 4: Single-element array",
+        "description": "Hidden check: Single-element array",
+        "expectedBehavior": "Checks the function on this scenario: single-element array.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "removeDuplicates",
+        "args": [[7]],
+        "expected": 1,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 5: No duplicates at all",
+        "description": "Hidden check: No duplicates at all",
+        "expectedBehavior": "Checks the function on this scenario: no duplicates at all.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "removeDuplicates",
+        "args": [[1, 2, 3, 4, 5]],
+        "expected": 5,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 6: Every element identical",
+        "description": "Hidden check: Every element identical",
+        "expectedBehavior": "Checks the function on this scenario: every element identical.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "removeDuplicates",
+        "args": [[4, 4, 4, 4]],
+        "expected": 1,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 7: Negative numbers and zero with duplicates",
+        "description": "Hidden check: Negative numbers and zero with duplicates",
+        "expectedBehavior": "Checks the function on this scenario: negative numbers and zero with duplicates.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "removeDuplicates",
+        "args": [[-3, -3, -1, 0, 0, 2, 2, 2, 5]],
+        "expected": 5,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 8: Longer array (15 items)",
+        "description": "Hidden check: Longer array (15 items)",
+        "expectedBehavior": "Checks the function on this scenario: longer array (15 items).",
+        "enabled": true,
+        "hidden": true,
+        "fn": "removeDuplicates",
+        "args": [[1, 1, 2, 3, 3, 4, 5, 5, 5, 6, 7, 7, 8, 9, 9]],
+        "expected": 9,
+        "compare": "deepEqual"
+      }
+    ],
+    "variants": [
+      {
+        "id": "q4-correct-ref",
+        "kind": "correct-reference",
+        "description": "Verified two-pointer in-place",
+        "code": "function removeDuplicates(nums) {\n  if (nums.length <= 1) return nums.length;\n  let currentIndex = 0;\n  for (let i = 1; i < nums.length; i++) {\n    if (nums[currentIndex] !== nums[i]) {\n      currentIndex++;\n      nums[currentIndex] = nums[i];\n    }\n  }\n  nums.length = currentIndex + 1;\n  return nums.length;\n}",
+        "expectedPassed": 8,
+        "weight": 50
+      },
+      {
+        "id": "q4-correct-alt",
+        "kind": "correct-alternate",
+        "description": "While loop two pointer",
+        "code": "function removeDuplicates(nums) {\n  if (nums.length === 0) return 0;\n  let write = 1;\n  let read = 1;\n  while (read < nums.length) {\n    if (nums[read] !== nums[read - 1]) {\n      nums[write] = nums[read];\n      write++;\n    }\n    read++;\n  }\n  nums.length = write;\n  return write;\n}",
+        "expectedPassed": 8,
+        "weight": 20
+      },
+      {
+        "id": "q4-wrong-logic",
+        "kind": "wrong-logic",
+        "description": "Returns original length without removing duplicates",
+        "code": "function removeDuplicates(nums) {\n  return nums.length;\n}",
+        "expectedPassed": 3,
+        "weight": 14
+      },
+      {
+        "id": "q4-wrong-edge",
+        "kind": "wrong-edge",
+        "description": "Always returns 1",
+        "code": "function removeDuplicates(nums) {\n  return 1;\n}",
+        "expectedPassed": 2,
+        "weight": 8
+      },
+      {
+        "id": "q4-untouched",
+        "kind": "untouched-starter",
+        "description": "Empty starter",
+        "code": "function removeDuplicates(nums) {\n  // Your solution\n}",
+        "expectedPassed": 0,
+        "weight": 3
+      },
+      {
+        "id": "q4-syntax-error",
+        "kind": "syntax-error",
+        "description": "Syntax error",
+        "code": "function removeDuplicates(nums) {\n  return nums.length = ;\n}",
+        "expectedPassed": 0,
+        "weight": 1
+      },
+      {
+        "id": "q4-infinite-loop",
+        "kind": "infinite-loop",
+        "description": "Hostile infinite loop",
+        "code": "function removeDuplicates(nums) {\n  while (true) {}\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      },
+      {
+        "id": "q4-memory-bomb",
+        "kind": "memory-bomb",
+        "description": "Hostile memory bomb",
+        "code": "function removeDuplicates(nums) {\n  const res = [];\n  for (;;) { res.push(new Array(1e6).fill('dup')); }\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      }
+    ]
+  },
+  {
+    "slug": "shortest-word",
+    "title": "Shortest Word",
+    "description": "Write a function `findShort(str)` that takes a non-empty string of words and returns the length of the shortest word.",
+    "instructions": "Write your solution as a top-level function declaration named exactly `findShort`.",
+    "starterJs": "function findShort(str) {\n  // Your solution\n}",
+    "referenceJs": "function findShort(str) {\n  const words = str.split(' ');\n  let shortest = words[0].length;\n  for (let i = 1; i < words.length; i++) {\n    if (words[i].length < shortest) {\n      shortest = words[i].length;\n    }\n  }\n  return shortest;\n}",
+    "totalTests": 8,
+    "tests": [
+      {
+        "name": "Visible test: Example 1 from the description",
+        "description": "Student-visible check: Example 1 from the description",
+        "expectedBehavior": "Calling findShort(\"Test where final word shortest see\") should return 3.",
+        "enabled": true,
+        "hidden": false,
+        "fn": "findShort",
+        "args": ["Test where final word shortest see"],
+        "expected": 3,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 2: Two shortest words tie for the minimum length",
+        "description": "Hidden check: Two shortest words tie for the minimum length",
+        "expectedBehavior": "Checks the function on this scenario: two shortest words tie for the minimum length.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "findShort",
+        "args": ["Lets all go on holiday somewhere very cold"],
+        "expected": 2,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 3: Single-letter shortest word",
+        "description": "Hidden check: Single-letter shortest word",
+        "expectedBehavior": "Checks the function on this scenario: single-letter shortest word.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "findShort",
+        "args": ["i want to travel the world writing code one day"],
+        "expected": 1,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 4: String containing only one word",
+        "description": "Hidden check: String containing only one word",
+        "expectedBehavior": "Checks the function on this scenario: string containing only one word.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "findShort",
+        "args": ["JavaScript"],
+        "expected": 10,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 5: Every word has the same length",
+        "description": "Hidden check: Every word has the same length",
+        "expectedBehavior": "Checks the function on this scenario: every word has the same length.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "findShort",
+        "args": ["one two six ten"],
+        "expected": 3,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 6: Shortest word appears first",
+        "description": "Hidden check: Shortest word appears first",
+        "expectedBehavior": "Checks the function on this scenario: shortest word appears first.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "findShort",
+        "args": ["a quick brown fox jumps"],
+        "expected": 1,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 7: Shortest word appears in the middle",
+        "description": "Hidden check: Shortest word appears in the middle",
+        "expectedBehavior": "Checks the function on this scenario: shortest word appears in the middle.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "findShort",
+        "args": ["Programming languages are fun to learn daily"],
+        "expected": 2,
+        "compare": "deepEqual"
+      },
+      {
+        "name": "Hidden case 8: Longer sentence with a tie",
+        "description": "Hidden check: Longer sentence with a tie",
+        "expectedBehavior": "Checks the function on this scenario: longer sentence with a tie.",
+        "enabled": true,
+        "hidden": true,
+        "fn": "findShort",
+        "args": ["bitcoin take over the world maybe who knows perhaps"],
+        "expected": 3,
+        "compare": "deepEqual"
+      }
+    ],
+    "variants": [
+      {
+        "id": "q5-correct-ref",
+        "kind": "correct-reference",
+        "description": "Verified reference solution",
+        "code": "function findShort(str) {\n  const words = str.split(' ');\n  let shortest = words[0].length;\n  for (let i = 1; i < words.length; i++) {\n    if (words[i].length < shortest) {\n      shortest = words[i].length;\n    }\n  }\n  return shortest;\n}",
+        "expectedPassed": 8,
+        "weight": 50
+      },
+      {
+        "id": "q5-correct-alt",
+        "kind": "correct-alternate",
+        "description": "Count-based scan without split",
+        "code": "function findShort(str) {\n  let minLen = Infinity;\n  let curLen = 0;\n  for (let i = 0; i <= str.length; i++) {\n    if (i === str.length || str[i] === ' ') {\n      if (curLen > 0 && curLen < minLen) minLen = curLen;\n      curLen = 0;\n    } else {\n      curLen++;\n    }\n  }\n  return minLen;\n}",
+        "expectedPassed": 8,
+        "weight": 20
+      },
+      {
+        "id": "q5-wrong-logic",
+        "kind": "wrong-logic",
+        "description": "Returns length of first word only",
+        "code": "function findShort(str) {\n  return str.split(' ')[0].length;\n}",
+        "expectedPassed": 4,
+        "weight": 14
+      },
+      {
+        "id": "q5-wrong-edge",
+        "kind": "wrong-edge",
+        "description": "Always returns 3",
+        "code": "function findShort(str) {\n  return 3;\n}",
+        "expectedPassed": 3,
+        "weight": 8
+      },
+      {
+        "id": "q5-untouched",
+        "kind": "untouched-starter",
+        "description": "Empty starter",
+        "code": "function findShort(str) {\n  // Your solution\n}",
+        "expectedPassed": 0,
+        "weight": 3
+      },
+      {
+        "id": "q5-syntax-error",
+        "kind": "syntax-error",
+        "description": "Syntax error",
+        "code": "function findShort(str) {\n  return str.split(' ')..length;\n}",
+        "expectedPassed": 0,
+        "weight": 1
+      },
+      {
+        "id": "q5-infinite-loop",
+        "kind": "infinite-loop",
+        "description": "Hostile loop",
+        "code": "function findShort(str) {\n  while (true) {}\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      },
+      {
+        "id": "q5-memory-bomb",
+        "kind": "memory-bomb",
+        "description": "Hostile memory bomb",
+        "code": "function findShort(str) {\n  const mem = [];\n  for (;;) { mem.push(new Array(1e6).fill('short')); }\n}",
+        "expectedPassed": 0,
+        "weight": 2
+      }
+    ]
+  }
+]
