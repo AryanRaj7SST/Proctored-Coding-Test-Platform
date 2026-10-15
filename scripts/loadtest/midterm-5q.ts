@@ -36,7 +36,10 @@ try {
       if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
         const [k, ...v] = trimmed.split('=');
         const key = k?.trim();
-        const val = v.join('=').trim().replace(/^["']|["']$/g, '');
+        const val = v
+          .join('=')
+          .trim()
+          .replace(/^["']|["']$/g, '');
         if (key && !process.env[key]) process.env[key] = val;
       }
     }
@@ -77,13 +80,7 @@ interface FixtureQuestion {
 }
 
 export type OutcomeClass =
-  | 'OK'
-  | 'WRONG_RESULT'
-  | 'RATE_LIMITED'
-  | 'RUNNER_BUSY'
-  | 'TIMEOUT'
-  | 'SERVER_ERROR'
-  | 'REDACTION_LEAK';
+  'OK' | 'WRONG_RESULT' | 'RATE_LIMITED' | 'RUNNER_BUSY' | 'TIMEOUT' | 'SERVER_ERROR' | 'REDACTION_LEAK';
 
 export interface RunOutcomeRecord {
   studentIndex: number;
@@ -179,7 +176,7 @@ export class MidtermLoadtest {
     if (isProductionHost(this.baseUrl)) {
       if (!this.allowProduction) {
         throw new Error(
-          `Refusing to run against production host ${this.baseUrl} without --allow-production.`
+          `Refusing to run against production host ${this.baseUrl} without --allow-production.`,
         );
       }
       const host = new URL(this.baseUrl).host;
@@ -232,7 +229,9 @@ export class MidtermLoadtest {
       while (!this.stopBackgroundSamplers) {
         for (const url of this.runnerUrls) {
           try {
-            const res = await fetch(`${url.replace(/\/+$/, '')}/health`, { signal: AbortSignal.timeout(4000) });
+            const res = await fetch(`${url.replace(/\/+$/, '')}/health`, {
+              signal: AbortSignal.timeout(4000),
+            });
             if (res.ok) {
               const data = (await res.json()) as any;
               this.runnerHealthSamples.push({
@@ -274,7 +273,7 @@ export class MidtermLoadtest {
       while (!this.stopBackgroundSamplers) {
         try {
           const res: any = await prisma.$queryRawUnsafe(
-            `SELECT count(*)::int as cnt FROM pg_stat_activity WHERE datname = current_database();`
+            `SELECT count(*)::int as cnt FROM pg_stat_activity WHERE datname = current_database();`,
           );
           const count = Number(res[0]?.cnt ?? 0);
           this.dbConnectionSamples.push({ timestamp: Date.now(), activeConnections: count });
@@ -298,19 +297,34 @@ export class MidtermLoadtest {
 
     if (scenario === 'r1') {
       // In R1 Smoke: 10 students cover every variant kind
-      const kindOrder = ['correct-reference', 'wrong', 'untouched-starter', 'syntax-error', 'infinite-loop', 'memory-bomb'];
+      const kindOrder = [
+        'correct-reference',
+        'wrong',
+        'untouched-starter',
+        'syntax-error',
+        'infinite-loop',
+        'memory-bomb',
+      ];
       const targetKind = kindOrder[(studentIdx - 1) % kindOrder.length]!;
-      const match = variants.find((v) => (v.kind && v.kind.includes(targetKind)) || (v.id && v.id.includes(targetKind))) ?? variants[studentIdx % variants.length]!;
+      const match =
+        variants.find(
+          (v) => (v.kind && v.kind.includes(targetKind)) || (v.id && v.id.includes(targetKind)),
+        ) ?? variants[studentIdx % variants.length]!;
       return match;
     }
 
     if (scenario === 'burst' && round === 5) {
       // Round 5 adds ~5% hostile code
       if (studentIdx % 20 === 1) {
-        return variants.find((v) => v.kind.includes('infinite-loop') || v.id.includes('infinite-loop')) ?? variants[0]!;
+        return (
+          variants.find((v) => v.kind.includes('infinite-loop') || v.id.includes('infinite-loop')) ??
+          variants[0]!
+        );
       }
       if (studentIdx % 20 === 2) {
-        return variants.find((v) => v.kind.includes('memory-bomb') || v.id.includes('memory-bomb')) ?? variants[0]!;
+        return (
+          variants.find((v) => v.kind.includes('memory-bomb') || v.id.includes('memory-bomb')) ?? variants[0]!
+        );
       }
     }
 
@@ -335,7 +349,7 @@ export class MidtermLoadtest {
     attemptId: string,
     qIdx: number,
     variant: FixtureVariant,
-    options: { checkNonceInDb?: boolean } = {}
+    options: { checkNonceInDb?: boolean } = {},
   ): Promise<RunOutcomeRecord> {
     const q = this.fixtures[qIdx]!;
     const nonce = `// nonce-${this.runId}-s${student.index}-q${qIdx + 1}-${Date.now()}`;
@@ -526,20 +540,26 @@ export class MidtermLoadtest {
         if (out.outcome === 'REDACTION_LEAK') leakCount++;
 
         console.log(
-          `  Student ${s.index} Q${qIdx + 1} (${(variant.kind || variant.id).slice(0, 16)}): [${out.outcome}] passed ${out.actualPassed}/${out.totalTests} in ${out.durationMs}ms (status: ${out.status}, nonceDb: ${out.nonceVerifiedInDb ? 'YES' : 'NO'})`
+          `  Student ${s.index} Q${qIdx + 1} (${(variant.kind || variant.id).slice(0, 16)}): [${out.outcome}] passed ${out.actualPassed}/${out.totalTests} in ${out.durationMs}ms (status: ${out.status}, nonceDb: ${out.nonceVerifiedInDb ? 'YES' : 'NO'})`,
         );
       }
     }
 
     console.log('----------------------------------------------------------------------------------------');
-    console.log(`[R1 GATE EVALUATION] WRONG_RESULT: ${wrongCount} | 5xx Errors: ${serverErrCount} | Leaks: ${leakCount}`);
+    console.log(
+      `[R1 GATE EVALUATION] WRONG_RESULT: ${wrongCount} | 5xx Errors: ${serverErrCount} | Leaks: ${leakCount}`,
+    );
 
     if (wrongCount > 0 || serverErrCount > 0 || leakCount > 0) {
-      console.error('\x1b[31m❌ R1 GATE FAILED: Non-zero wrong results, 5xx errors, or redaction leaks.\x1b[0m');
+      console.error(
+        '\x1b[31m❌ R1 GATE FAILED: Non-zero wrong results, 5xx errors, or redaction leaks.\x1b[0m',
+      );
       return false;
     }
 
-    console.log('\x1b[32m✅ R1 GATE PASSED: Zero wrong results, zero 5xx errors, complete redaction verification.\x1b[0m');
+    console.log(
+      '\x1b[32m✅ R1 GATE PASSED: Zero wrong results, zero 5xx errors, complete redaction verification.\x1b[0m',
+    );
     return true;
   }
 
@@ -581,7 +601,7 @@ export class MidtermLoadtest {
             const ids = (d.questions ?? []).map((q: any) => q.attempt?.id).filter(Boolean);
             studentAttempts.set(s.index, ids);
           }
-        })
+        }),
       );
     }
 
@@ -592,7 +612,9 @@ export class MidtermLoadtest {
     }
 
     // Phase 1: 5 Rounds of simultaneous barrier runs (one round per question, 20s apart)
-    console.log('\n[R2.1] Executing 5 Simultaneous Barrier Rounds (Q1 to Q5, 220 concurrent runs per round)...');
+    console.log(
+      '\n[R2.1] Executing 5 Simultaneous Barrier Rounds (Q1 to Q5, 220 concurrent runs per round)...',
+    );
 
     for (let round = 1; round <= 5; round++) {
       const qIdx = round - 1;
@@ -623,7 +645,7 @@ export class MidtermLoadtest {
       const p95 = durations[Math.floor(durations.length * 0.95)] ?? 0;
 
       console.log(
-        `  Round ${round} Summary: Total=${roundResults.length} | OK=${okCount} | BUSY=${busyCount} | WRONG=${wrongCount} | 5xx=${errCount} | p95=${p95}ms`
+        `  Round ${round} Summary: Total=${roundResults.length} | OK=${okCount} | BUSY=${busyCount} | WRONG=${wrongCount} | 5xx=${errCount} | p95=${p95}ms`,
       );
 
       // Sleep 20s before next round
@@ -631,7 +653,9 @@ export class MidtermLoadtest {
     }
 
     // Phase 2: Realistic exam repeat (3 runs per question, 20-40s apart)
-    console.log('\n[R2.2] Executing Realistic Exam Phase (3 runs per question, 20-40s apart across all students)...');
+    console.log(
+      '\n[R2.2] Executing Realistic Exam Phase (3 runs per question, 20-40s apart across all students)...',
+    );
     const realisticPromises = this.students.map(async (s) => {
       const attemptIds = studentAttempts.get(s.index);
       if (!attemptIds) return;
@@ -675,11 +699,22 @@ export class MidtermLoadtest {
             headers,
             body: JSON.stringify({}),
           });
-          return { student: s.index, status: res.status, ok: res.ok, durationMs: Math.round(performance.now() - startT) };
+          return {
+            student: s.index,
+            status: res.status,
+            ok: res.ok,
+            durationMs: Math.round(performance.now() - startT),
+          };
         } catch (err: any) {
-          return { student: s.index, status: 0, ok: false, error: err.message, durationMs: Math.round(performance.now() - startT) };
+          return {
+            student: s.index,
+            status: 0,
+            ok: false,
+            error: err.message,
+            durationMs: Math.round(performance.now() - startT),
+          };
         }
-      })
+      }),
     );
 
     const endedOk = endResults.filter((r) => r.ok).length;
@@ -700,7 +735,9 @@ export class MidtermLoadtest {
         },
       });
       totalGraded = graded;
-      console.log(`  [T+${Math.round((Date.now() - startMonitor) / 1000)}s] Graded attempts: ${totalGraded}/1100`);
+      console.log(
+        `  [T+${Math.round((Date.now() - startMonitor) / 1000)}s] Graded attempts: ${totalGraded}/1100`,
+      );
       if (totalGraded >= 1100) break;
     }
 
@@ -766,7 +803,9 @@ export class MidtermLoadtest {
     const peakDb = Math.max(0, ...this.dbConnectionSamples.map((s) => s.activeConnections));
 
     // Per question table
-    const perQuestion: { [qIdx: number]: { ok: number; wrong: number; busy: number; err: number; total: number } } = {};
+    const perQuestion: {
+      [qIdx: number]: { ok: number; wrong: number; busy: number; err: number; total: number };
+    } = {};
     for (let i = 0; i < 5; i++) perQuestion[i] = { ok: 0, wrong: 0, busy: 0, err: 0, total: 0 };
     for (const o of this.outcomes) {
       const q = perQuestion[o.questionIndex];

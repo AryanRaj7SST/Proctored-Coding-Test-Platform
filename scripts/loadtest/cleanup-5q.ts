@@ -86,7 +86,10 @@ export async function inspectCleanup(runId: string): Promise<Cleanup5QReport> {
   };
 }
 
-export async function executeCleanup5Q(runId: string, deleteExamAndQuestions = false): Promise<Cleanup5QReport> {
+export async function executeCleanup5Q(
+  runId: string,
+  deleteExamAndQuestions = false,
+): Promise<Cleanup5QReport> {
   const report = await inspectCleanup(runId);
   const userPrefix = `loadtest-${runId}-`;
 
@@ -157,7 +160,7 @@ export async function executeCleanup5Q(runId: string, deleteExamAndQuestions = f
         }
       }
     },
-    { timeout: 60000 }
+    { timeout: 60000 },
   );
 
   return report;
@@ -190,7 +193,9 @@ if (require.main === module) {
       console.log(`Test Runs:                          ${r.testRunsCount}`);
       console.log(`Test Results:                       ${r.testResultsCount}`);
       console.log(`Exam (LOADTEST Mid-term 5Q 220):    ${r.examsCount} (will delete if --with-exam passed)`);
-      console.log(`Questions (LOADTEST *):             ${r.questionsCount} (will delete if --with-exam passed)`);
+      console.log(
+        `Questions (LOADTEST *):             ${r.questionsCount} (will delete if --with-exam passed)`,
+      );
       console.log('----------------------------------------------------------------------------------------');
       console.log('No rows modified. Pass --execute to delete student records.');
     } else {

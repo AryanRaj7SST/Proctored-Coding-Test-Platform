@@ -40,7 +40,10 @@ export async function setup5qExam(): Promise<{ examId: string; questionIds: stri
         if (trimmed && !trimmed.startsWith('#') && trimmed.includes('=')) {
           const [k, ...v] = trimmed.split('=');
           const key = k?.trim();
-          const val = v.join('=').trim().replace(/^["']|["']$/g, '');
+          const val = v
+            .join('=')
+            .trim()
+            .replace(/^["']|["']$/g, '');
           if (key && !process.env[key]) process.env[key] = val;
         }
       }
@@ -86,7 +89,7 @@ export async function setup5qExam(): Promise<{ examId: string; questionIds: stri
             ],
           },
           null,
-          2
+          2,
         ),
         order: idx,
         enabled: tc.enabled,
@@ -112,7 +115,7 @@ export async function setup5qExam(): Promise<{ examId: string; questionIds: stri
           referenceJs: fq.referenceJs,
           tests: testsInput,
         },
-        admin.id
+        admin.id,
       );
       console.log(`  Created "${loadtestTitle}" (${q.id}) as DRAFT`);
 
@@ -162,7 +165,8 @@ export async function setup5qExam(): Promise<{ examId: string; questionIds: stri
       examCreateInput.parse({
         title: examTitle,
         description: 'Dedicated 5-question multi-student load test exam.',
-        instructions: 'Solve all 5 pure JavaScript functions using loops, conditionals, and standard operators.',
+        instructions:
+          'Solve all 5 pure JavaScript functions using loops, conditionals, and standard operators.',
         durationMinutes: 180,
         accessMode: 'ANY_AUTHENTICATED_USER',
         passingPercentage: '40.00',
@@ -176,7 +180,7 @@ export async function setup5qExam(): Promise<{ examId: string; questionIds: stri
         maxViolations: 0,
         timezone: 'Asia/Kolkata',
         questions: examQuestions,
-      })
+      }),
     );
 
     const published = await changeExamStatus(created.id, 'publish');

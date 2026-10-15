@@ -15,7 +15,7 @@
         "enabled": true,
         "hidden": false,
         "fn": "deepGet",
-        "args": [{"a": {"b": {"c": 42}}}, "a.b.c"],
+        "args": [{ "a": { "b": { "c": 42 } } }, "a.b.c"],
         "expected": 42,
         "compare": "deepEqual"
       },
@@ -26,7 +26,7 @@
         "enabled": true,
         "hidden": true,
         "fn": "deepGet",
-        "args": [{"a": {"b": {"c": 42}}}, "a.b.d"],
+        "args": [{ "a": { "b": { "c": 42 } } }, "a.b.d"],
         "expected": "Not Found",
         "compare": "deepEqual"
       },
@@ -37,7 +37,7 @@
         "enabled": true,
         "hidden": true,
         "fn": "deepGet",
-        "args": [{"user": {"profile": {"name": "Kartik"}}}, "user.profile.name"],
+        "args": [{ "user": { "profile": { "name": "Kartik" } } }, "user.profile.name"],
         "expected": "Kartik",
         "compare": "deepEqual"
       },
@@ -48,7 +48,7 @@
         "enabled": true,
         "hidden": true,
         "fn": "deepGet",
-        "args": [{"user": null}, "user.profile.name"],
+        "args": [{ "user": null }, "user.profile.name"],
         "expected": "Not Found",
         "compare": "deepEqual"
       },
@@ -59,7 +59,7 @@
         "enabled": true,
         "hidden": true,
         "fn": "deepGet",
-        "args": [{"settings": {"notifications": {"enabled": false}}}, "settings.notifications.enabled"],
+        "args": [{ "settings": { "notifications": { "enabled": false } } }, "settings.notifications.enabled"],
         "expected": false,
         "compare": "deepEqual"
       },
@@ -70,7 +70,7 @@
         "enabled": true,
         "hidden": true,
         "fn": "deepGet",
-        "args": [{"stats": {"score": 0}}, "stats.score"],
+        "args": [{ "stats": { "score": 0 } }, "stats.score"],
         "expected": 0,
         "compare": "deepEqual"
       },
@@ -81,7 +81,7 @@
         "enabled": true,
         "hidden": true,
         "fn": "deepGet",
-        "args": [{"data": {"list": [1, 2, 3]}}, "data.list"],
+        "args": [{ "data": { "list": [1, 2, 3] } }, "data.list"],
         "expected": [1, 2, 3],
         "compare": "deepEqual"
       },
@@ -92,8 +92,8 @@
         "enabled": true,
         "hidden": true,
         "fn": "deepGet",
-        "args": [{"a": {"b": {"c": 1}}}, "a.b"],
-        "expected": {"c": 1},
+        "args": [{ "a": { "b": { "c": 1 } } }, "a.b"],
+        "expected": { "c": 1 },
         "compare": "deepEqual"
       },
       {
@@ -103,7 +103,7 @@
         "enabled": true,
         "hidden": true,
         "fn": "deepGet",
-        "args": [{"name": "Asha", "age": 20}, "name"],
+        "args": [{ "name": "Asha", "age": 20 }, "name"],
         "expected": "Asha",
         "compare": "deepEqual"
       },

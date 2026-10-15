@@ -107,7 +107,7 @@ async function main() {
               currentRunActiveHosts.add(host);
             }
           } catch {}
-        })
+        }),
       );
       await new Promise((r) => setTimeout(r, 60));
     }
@@ -149,7 +149,9 @@ async function main() {
     }
 
     if (i % 10 === 0 || i === totalRuns) {
-      console.log(`  Progress: ${i}/${totalRuns} runs completed (${successCount} OK) | Last latency: ${duration}ms`);
+      console.log(
+        `  Progress: ${i}/${totalRuns} runs completed (${successCount} OK) | Last latency: ${duration}ms`,
+      );
     }
 
     // Space ~1s apart
@@ -196,7 +198,7 @@ async function main() {
         'Heap Delta (MB)': r.finalMemoryMb - r.initialMemoryMb,
         Status: inRotation ? 'IN ROTATION' : 'NOT IN ROTATION',
       };
-    })
+    }),
   );
 
   console.log(`\nAverage Share per Runner: ${avgShare.toFixed(1)} requests`);
