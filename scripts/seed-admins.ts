@@ -25,6 +25,9 @@ const DEFAULT_ADMINS = [
   'kartik.25bcs10035@sst.scaler.com',
   'aryan.25bcs10317@sst.scaler.com',
   'agnihotriaryan5361@gmail.com',
+  'tamanwit.25bcs10001@sst.scaler.com',
+  'sanyam.25bcs10038@sst.scaler.com',
+  'harman.25bcs10114@sst.scaler.com',
 ];
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '::1', '[::1]']);
