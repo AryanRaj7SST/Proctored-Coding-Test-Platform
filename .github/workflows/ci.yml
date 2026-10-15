@@ -12,7 +12,7 @@ on:
   pull_request:
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -85,6 +85,7 @@ jobs:
   runner:
     name: Runner — typecheck + unit tests + image build
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     defaults:
       run:
         working-directory: runner
@@ -120,9 +121,18 @@ jobs:
       - name: Build (tsc)
         run: npm run build
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Build the runner Docker image
-        working-directory: .
-        run: docker build -f runner/Dockerfile -t proctored-runner:ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: runner/Dockerfile
+          tags: proctored-runner:ci
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   e2e-public:
     name: E2E — unauthenticated tier

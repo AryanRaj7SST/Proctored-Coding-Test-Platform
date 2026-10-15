@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "express": "^4.21.2",
-    "isolated-vm": "^7.0.1",
+    "isolated-vm": "6.2.0",
     "playwright": "1.55.0"
   },
   "devDependencies": {

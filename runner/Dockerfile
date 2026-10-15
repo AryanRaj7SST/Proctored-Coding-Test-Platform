@@ -5,7 +5,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends python3 make g+
 WORKDIR /app
 COPY runner/package.json runner/package-lock.json* ./runner/
 WORKDIR /app/runner
-RUN npm install --no-audit --no-fund
+RUN npm ci --no-audit --no-fund
 WORKDIR /app
 COPY shared ./shared
 COPY runner ./runner
