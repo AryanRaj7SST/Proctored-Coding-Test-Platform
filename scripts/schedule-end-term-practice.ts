@@ -222,11 +222,11 @@ async function main() {
   console.log(`Found exam: "${exam.title}" (ID: ${exam.id})`);
 
   // 3. Today's date: 2026-10-15
-  // 2:30 PM to 4:30 PM IST (Asia/Kolkata is UTC+5:30)
-  // 14:30 IST = 09:00:00.000Z
-  // 16:30 IST = 11:00:00.000Z
-  const startTime = new Date('2026-10-15T09:00:00.000Z');
-  const endTime = new Date('2026-10-15T11:00:00.000Z');
+  // 2:45 PM to 4:45 PM IST (Asia/Kolkata is UTC+5:30)
+  // 14:45 IST = 09:15:00.000Z
+  // 16:45 IST = 11:15:00.000Z
+  const startTime = new Date('2026-10-15T09:15:00.000Z');
+  const endTime = new Date('2026-10-15T11:15:00.000Z');
   const durationMinutes = 120;
 
   exam = await prisma.exam.update({
@@ -242,8 +242,8 @@ async function main() {
   });
 
   console.log('Updated exam timing:');
-  console.log(`  Start Time: ${exam.startTime?.toISOString()} (2:30 PM IST)`);
-  console.log(`  End Time:   ${exam.endTime?.toISOString()} (4:30 PM IST)`);
+  console.log(`  Start Time: ${exam.startTime?.toISOString()} (2:45 PM IST)`);
+  console.log(`  End Time:   ${exam.endTime?.toISOString()} (4:45 PM IST)`);
   console.log(`  Duration:   ${exam.durationMinutes} minutes`);
   console.log(`  Status:     ${exam.status}, Active: ${exam.active}`);
 
@@ -325,7 +325,7 @@ async function main() {
   console.log(`\n=== Verification ===`);
   console.log(`Exam: ${exam.title} (${exam.id})`);
   console.log(`Total active assignments: ${totalAssignments}`);
-  console.log(`Scheduled: Today (2026-10-15) 2:30 PM IST to 4:30 PM IST`);
+  console.log(`Scheduled: Today (2026-10-15) 2:45 PM IST to 4:45 PM IST`);
 }
 
 main()
