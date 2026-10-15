@@ -150,8 +150,8 @@ export async function executeCleanup5Q(runId: string, deleteExamAndQuestions = f
           select: { id: true },
         });
         for (const q of questions) {
-          await tx.questionTestCase.deleteMany({ where: { questionId: q.id } });
-          await tx.questionValidationRun.deleteMany({ where: { questionId: q.id } });
+          await tx.testRun.deleteMany({ where: { questionId: q.id } });
+          await tx.questionTest.deleteMany({ where: { questionId: q.id } });
           await tx.examQuestion.deleteMany({ where: { questionId: q.id } });
           await tx.question.delete({ where: { id: q.id } });
         }

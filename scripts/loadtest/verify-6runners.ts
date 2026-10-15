@@ -60,6 +60,7 @@ async function main() {
     authSecret: resolveAuthSecret(),
     runId: 'verify-6runners',
   });
+  if (!student) throw new Error('No student found. Seed users first.');
 
   const startRes = await fetch(`${baseUrl}/api/exams/${examId}/start`, {
     method: 'POST',

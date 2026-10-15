@@ -4,6 +4,7 @@ import { prisma } from '../../src/lib/prisma';
 import { createQuestion, changeQuestionStatus } from '../../src/server/services/questions';
 import { validateQuestion } from '../../src/server/services/validation-runs';
 import { createExam, changeExamStatus } from '../../src/server/services/exams';
+import { examCreateInput } from '../../src/lib/validation';
 
 interface FixtureTest {
   name: string;
@@ -157,21 +158,26 @@ export async function setup5qExam(): Promise<{ examId: string; questionIds: stri
       marks: '10.00',
     }));
 
-    const created = await createExam({
-      title: examTitle,
-      description: 'Dedicated 5-question multi-student load test exam.',
-      instructions: 'Solve all 5 pure JavaScript functions using loops, conditionals, and standard operators.',
-      durationMinutes: 180,
-      accessMode: 'ANY_AUTHENTICATED_USER',
-      passingPercentage: '40.00',
-      resultVisibility: 'FULL',
-      leaderboardMode: 'LIVE',
-      shuffleQuestions: false,
-      maxAttempts: 1,
-      maxViolations: 0,
-      timezone: 'Asia/Kolkata',
-      questions: examQuestions,
-    });
+    const created = await createExam(
+      examCreateInput.parse({
+        title: examTitle,
+        description: 'Dedicated 5-question multi-student load test exam.',
+        instructions: 'Solve all 5 pure JavaScript functions using loops, conditionals, and standard operators.',
+        durationMinutes: 180,
+        accessMode: 'ANY_AUTHENTICATED_USER',
+        passingPercentage: '40.00',
+        resultVisibility: 'FULL',
+        leaderboardMode: 'LIVE',
+        shuffleQuestions: false,
+        countClipboardViolations: true,
+        wrongTryPenaltySeconds: 300,
+        mandatory: false,
+        maxAttempts: 1,
+        maxViolations: 0,
+        timezone: 'Asia/Kolkata',
+        questions: examQuestions,
+      })
+    );
 
     const published = await changeExamStatus(created.id, 'publish');
     console.log(`[Setup-5Q] Exam "${published.title}" published and ready! ID: ${published.id}`);
