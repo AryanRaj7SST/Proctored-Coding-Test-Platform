@@ -1,54 +1,54 @@
-name: Runner Keepalive
+# name: Runner Keepalive
 
-on:
-  schedule:
-    # Run every 10 minutes to prevent Render free instance from sleeping (15-minute idle limit)
-    - cron: '*/10 * * * *'
-  workflow_dispatch: # Allows manual trigger from GitHub Actions console
+# on:
+#   schedule:
+#     # Run every 10 minutes to prevent Render free instance from sleeping (15-minute idle limit)
+#     - cron: '*/10 * * * *'
+#   workflow_dispatch: # Allows manual trigger from GitHub Actions console
 
-concurrency:
-  group: runner-keepalive
-  cancel-in-progress: true
+# concurrency:
+#   group: runner-keepalive
+#   cancel-in-progress: true
 
-jobs:
-  ping-runner:
-    name: Ping Runner Health
-    runs-on: ubuntu-latest
-    steps:
-      - name: Validate Runner URL
-        run: |
-          if [ -z "${{ vars.RUNNER_HEALTH_URL }}" ]; then
-            echo "::error::Repository variable RUNNER_HEALTH_URL is not set. Please add it under Settings -> Secrets and variables -> Actions -> Variables (e.g. https://your-service.onrender.com/health)."
-            exit 1
-          fi
+# jobs:
+#   ping-runner:
+#     name: Ping Runner Health
+#     runs-on: ubuntu-latest
+#     steps:
+#       - name: Validate Runner URL
+#         run: |
+#           if [ -z "${{ vars.RUNNER_HEALTH_URL }}" ]; then
+#             echo "::error::Repository variable RUNNER_HEALTH_URL is not set. Please add it under Settings -> Secrets and variables -> Actions -> Variables (e.g. https://your-service.onrender.com/health)."
+#             exit 1
+#           fi
 
-      - name: Send Keepalive Ping
-        id: ping
-        env:
-          RUNNER_HEALTH_URL: ${{ vars.RUNNER_HEALTH_URL }}
-        run: |
-          echo "Pinging runner health endpoint at $RUNNER_HEALTH_URL ..."
-          HTTP_STATUS=$(curl -s -S -o /tmp/runner-health.json -w "%{http_code}" --max-time 60 "$RUNNER_HEALTH_URL") || true
-          echo "HTTP Status: $HTTP_STATUS"
-          if [ -f /tmp/runner-health.json ]; then
-            echo "Response payload:"
-            cat /tmp/runner-health.json
-            echo ""
-          fi
+#       - name: Send Keepalive Ping
+#         id: ping
+#         env:
+#           RUNNER_HEALTH_URL: ${{ vars.RUNNER_HEALTH_URL }}
+#         run: |
+#           echo "Pinging runner health endpoint at $RUNNER_HEALTH_URL ..."
+#           HTTP_STATUS=$(curl -s -S -o /tmp/runner-health.json -w "%{http_code}" --max-time 60 "$RUNNER_HEALTH_URL") || true
+#           echo "HTTP Status: $HTTP_STATUS"
+#           if [ -f /tmp/runner-health.json ]; then
+#             echo "Response payload:"
+#             cat /tmp/runner-health.json
+#             echo ""
+#           fi
 
-          if [ "$HTTP_STATUS" != "200" ]; then
-            echo "::error::Runner health probe failed with HTTP status: $HTTP_STATUS"
-            exit 1
-          fi
-          echo "Runner responded healthy with HTTP 200."
+#           if [ "$HTTP_STATUS" != "200" ]; then
+#             echo "::error::Runner health probe failed with HTTP status: $HTTP_STATUS"
+#             exit 1
+#           fi
+#           echo "Runner responded healthy with HTTP 200."
 
-      - name: Alert on Failure
-        if: failure() && env.ALERT_WEBHOOK_URL != ''
-        env:
-          ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
-          RUNNER_HEALTH_URL: ${{ vars.RUNNER_HEALTH_URL }}
-        run: |
-          echo "Dispatching failure alert to ALERT_WEBHOOK_URL..."
-          curl -s -S -X POST -H "Content-Type: application/json" \
-            -d "{\"text\":\"🚨 Alert: Render runner health check failed at $RUNNER_HEALTH_URL. Please check the service on Render.\",\"content\":\"🚨 Alert: Render runner health check failed at $RUNNER_HEALTH_URL. Please check the service on Render.\"}" \
-            "$ALERT_WEBHOOK_URL" || true
+#       - name: Alert on Failure
+#         if: failure() && env.ALERT_WEBHOOK_URL != ''
+#         env:
+#           ALERT_WEBHOOK_URL: ${{ secrets.ALERT_WEBHOOK_URL }}
+#           RUNNER_HEALTH_URL: ${{ vars.RUNNER_HEALTH_URL }}
+#         run: |
+#           echo "Dispatching failure alert to ALERT_WEBHOOK_URL..."
+#           curl -s -S -X POST -H "Content-Type: application/json" \
+#             -d "{\"text\":\"🚨 Alert: Render runner health check failed at $RUNNER_HEALTH_URL. Please check the service on Render.\",\"content\":\"🚨 Alert: Render runner health check failed at $RUNNER_HEALTH_URL. Please check the service on Render.\"}" \
+#             "$ALERT_WEBHOOK_URL" || true
